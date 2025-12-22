@@ -29,8 +29,6 @@ client = motor.motor_asyncio.AsyncIOMotorClient(
 
 db = client['blackstar_db']
 
-
-
 auto_replys = db.auto_replys
 loa = db.loa
 profiles = db.profiles
@@ -38,4 +36,3 @@ promotion_requests = db.promotion_requests
 reaction_roles = db.reaction_roles
 reminders = db.reminders
 sessions = db.sessions
-trainings = db.trainings

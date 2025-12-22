@@ -56,8 +56,7 @@ class CreateProfileModal(discord.ui.Modal):
                 'status': 'Active',
                 'join_date': str(datetime.now().date()),
                 'timezone': timezone,
-                'trainings': [],
-                'missions': []
+                'sessions': [],
             }
 
         await profiles.insert_one(profile)
