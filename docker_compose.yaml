@@ -1,0 +1,15 @@
+services:
+  blackstar_bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blackstar_bot_container
+
+    working_dir: /app
+
+    command: python -m main
+
+    env_file:
+      - .env  
+
+    restart: unless-stopped

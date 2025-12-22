@@ -1,0 +1,7 @@
+discord
+discord.py
+six
+cogwatch
+python-dotenv
+motor
+jishaku
