@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ui import View, Button, Modal
 from utils.utils import interaction_check
+from datetime import datetime
 
 class PaginatorView(View):
     def __init__(self, bot, user, items):
@@ -58,11 +59,24 @@ class PaginatorView(View):
         )
 
         for key, value in record.items():
-            if key not in ["message_id", "user_id", "channel_id", "guild_id", "created_at", "content", "attachments", "mentions", "reactions", "_id"]:
+            if key not in ["message_id", "channel_id", "guild_id", "created_at", "content", "attachments", "mentions", "reactions", "_id"]:
+                key=key.replace("_id", "")
+                key=key.replace("_", " ")
                 if isinstance(value, int):
-                    embed.add_field(name=key.title(), value=f"<@{value}>", inline=False)
+                    embed.add_field(name=key.title(), value=f"<@{value}>", inline=True)
+                elif isinstance(value, list):
+                    des = ""
+                    for v in value:
+                        if isinstance(v, int):
+                            des += f"<@{v}>, "
+                    embed.add_field(name=key.title(), value=des, inline=True)
+                elif isinstance(value, datetime):
+                    try:
+                        embed.add_field(name=key.title(), value=discord.utils.format_dt(value), inline=True)
+                    except Exception:
+                        embed.add_field(name=key.title(), value=value, inline=True)
                 else:
-                    embed.add_field(name=key.title(), value=value, inline=False)
+                    embed.add_field(name=key.title(), value=value, inline=True)
 
         embed.set_footer(text=f"Record {self.current_index + 1} of {len(self.items)}")
         

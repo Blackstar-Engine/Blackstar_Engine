@@ -68,6 +68,13 @@ class CreateProfileModal(discord.ui.Modal):
                                 )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+        dm_embed=discord.Embed(
+            title="Welcome to Blackstar!",
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+            color=discord.Color.light_grey()
+        )
+        await interaction.user.send(embed=dm_embed)
+
 class EditProfileModal(discord.ui.Modal):
     def __init__(self, bot, profile: dict, embed: discord.Embed):
         self.bot = bot
@@ -197,8 +204,8 @@ class Profile(commands.Cog):
                 color=discord.Color.light_grey()
             )
             embed.add_field(name="Points", value=f"**Current Points: **{profile.get('current_points')}\n**Total Points: **{profile.get('total_points')}", inline=True)
-            embed.add_field(name="Trainings Completed", value=f"{len(profile.get('tainings', []))} training(s) completed.", inline=True)
-            embed.add_field(name="Missions Completed", value=f"{len(profile.get('missions', []))} mission(s) completed.", inline=True)
+            embed.add_field(name="Sessions Completed", value=f"{len(profile.get('sessions', []))} sessions(s) completed.", inline=True)
+            #embed.add_field(name="Missions Completed", value=f"{len(profile.get('missions', []))} mission(s) completed.", inline=True)
 
             embed.set_author(name=f"{profile.get('codename')}'s Profile Information", icon_url=ctx.author.display_avatar.url)
             embed.set_thumbnail(url=ctx.author.display_avatar.url)
