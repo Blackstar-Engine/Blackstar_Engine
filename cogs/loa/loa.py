@@ -70,7 +70,7 @@ class ExtendAcceptDenyButtons(discord.ui.View):
         role = await interaction.guild.fetch_role(loa_role)
 
         await self.user.add_roles(role)
-        await self.user.send(f"Your LOA in **{interaction.guild.name}** has been **ACCEPTED**")
+        await self.user.send(f"Your LOA time extention in **{interaction.guild.name}** has been **ACCEPTED**")
 
     @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
     async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -87,7 +87,7 @@ class ExtendAcceptDenyButtons(discord.ui.View):
 
         await interaction.edit_original_response(embed=self.embed, view=None)
 
-        await self.user.send(f"Your LOA in **{interaction.guild.name}** has been **DENIED**\n**Reason: ** {reason}")
+        await self.user.send(f"Your LOA time extention in **{interaction.guild.name}** has been **DENIED**\n**Reason: ** {reason}")
 
 class AddTimeModal(discord.ui.Modal):
     def __init__(self, bot, active_loa, user, member):
