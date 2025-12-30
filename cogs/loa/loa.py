@@ -46,7 +46,7 @@ class EndLOAModal(discord.ui.Modal):
             color=discord.Color.green()
         )
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class ExtendAcceptDenyButtons(discord.ui.View):
     def __init__(self, bot, user, active_loa, new_end_date, embed):

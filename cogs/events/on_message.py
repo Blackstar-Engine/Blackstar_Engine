@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from utils.constants import loa
 
 class AutoReply(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -9,6 +10,15 @@ class AutoReply(commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author == self.bot.user:
             return
+        
+        if message.mentions != []:
+            for mention in message.mentions:
+                result = await loa.find_one({"guild_id": message.guild.id, "user_id": mention.id})
+                if result:
+                    embed = discord.Embed(title="On LOA", description=f"Please refrain from pinging **{mention.name}**", color=discord.Color.dark_embed())
+                    await message.reply(embed=embed)
+                else:
+                    return
 
         for auto_reply in self.bot.auto_replys:
             if auto_reply['guild_id'] == message.guild.id and auto_reply['message'] == message.content:

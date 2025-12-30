@@ -1,0 +1,430 @@
+class SessionEditModal(Modal):
+    def __init__(self, bot, record):
+        super().__init__(title="Edit Record")
+        self.bot = bot
+        self.record = record
+
+        self.name = discord.ui.TextInput(
+            label="Session Name",
+            placeholder=record.get('name'),
+            default=record.get('name'),
+            required=True,
+            row=1,
+            style=discord.TextStyle.short
+        )
+        self.add_item(self.name)
+
+        self.session_id = discord.ui.TextInput(
+            label="Session ID (Number)",
+            placeholder=record.get('session_id'),
+            default=record.get('session_id'),
+            required=True,
+            row=2,
+            style=discord.TextStyle.short
+        )
+        self.add_item(self.session_id)
+
+        self.duration = discord.ui.TextInput(
+            label="Duration",
+            placeholder=record.get('duration'),
+            default=record.get('duration'),
+            required=True,
+            row=3,
+            style=discord.TextStyle.short
+        )
+        self.add_item(self.duration)
+
+        self.note = discord.ui.TextInput(
+            label="Note",
+            placeholder=record.get('note'), 
+            default=record.get('note'), 
+            required=False,
+            row=4,
+            style=discord.TextStyle.paragraph
+        )
+        self.add_item(self.note)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        name = self.name.value
+        note = self.note.value
+        session_id = self.session_id.value
+        duration = self.duration.value
+
+        embed = discord.Embed(
+            title="Session Edited",
+            description=f"**Name:** {name}\n"
+                       f"**Session ID:** {session_id}\n"
+                       f"**Duration: ** {duration}\n"
+                       f"**Note: ** {note}",
+            color=discord.Color.green()
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=5)
+        self.stop()
+
+class SessionRoleSelections(View):
+    def __init__(self, bot, user, session_data):
+        super().__init__()
+        self.bot = bot
+        self.host = None
+        self.co_host = None
+        self.supervisor = None
+        self.attendees = None
+        self.mvp = None
+        self.user = user
+        self.session_data = session_data
+
+    async def check_select_options(self, interaction: discord.Interaction):
+        if self.host and self.attendees:
+            self.finish_button.disabled = False
+        else:
+            self.finish_button.disabled = True
+        
+        await interaction.response.edit_message(view=self)
+
+    @discord.ui.select(cls=discord.ui.UserSelect,
+                       max_values=1,
+                       min_values=1, 
+                       placeholder="Select the Host")
+    async def host_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction_check(self.user, interaction.user)
+        value = select.values[0]
+        self.host = value.id
+
+        await self.check_select_options(interaction)
+    
+    @discord.ui.select(cls=discord.ui.UserSelect,
+                       max_values=10,
+                       min_values=0, 
+                       placeholder="Select the Co-Host")
+    async def co_host_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction_check(self.user, interaction.user)
+        self.co_host = [role.id for role in select.values]
+
+        await self.check_select_options(interaction)
+
+    @discord.ui.select(cls=discord.ui.UserSelect,
+                       max_values=10,
+                       min_values=0, 
+                       placeholder="Select the Supervisor")
+    async def supervisor_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction_check(self.user, interaction.user)
+        self.supervisor = [role.id for role in select.values]
+
+        await self.check_select_options(interaction)
+    
+    @discord.ui.select(cls=discord.ui.UserSelect,
+                       max_values=25,
+                       min_values=1, 
+                       placeholder="Select the Attendees")
+    async def attendees_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction_check(self.user, interaction.user)
+        self.attendees = [role.id for role in select.values]
+
+        await self.check_select_options(interaction)
+    
+    @discord.ui.button(
+        label="Next",
+        style=discord.ButtonStyle.grey,
+        disabled=True
+    )
+    async def session_next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction_check(self.user, interaction.user)
+
+        if self.host and self.attendees:
+            embed=discord.Embed(
+                                title="Additional Session Information", 
+                                description="", 
+                                color=discord.Color.green()
+                                )
+            
+            self.session_data['host_id'] = self.host
+            self.session_data['co_host_id'] = self.co_host
+            self.session_data['supervisor_id'] = self.supervisor
+            self.session_data['attendees'] = self.attendees
+            
+            await interaction.response.edit_message(embed=embed, view=None)
+            self.stop()
+        else:
+            await interaction.response.send_message("Please make sure to have at least a host and attendees selected!", ephemeral=True)
+
+class SessionSecondSelections(View):
+    def __init__(self, bot, user, session_data):
+        super().__init__()
+        self.bot = bot
+        self.attendees = None
+        self.mvp = None
+        self.user = user
+        self.session_data = session_data
+
+    @discord.ui.select(cls=discord.ui.UserSelect,
+                       max_values=25,
+                       min_values=0, 
+                       placeholder="Select more Attendees")
+    async def attendees_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction_check(self.user, interaction.user)
+        await interaction.response.defer(ephemeral=True)
+        self.attendees = [role.id for role in select.values]
+
+    @discord.ui.select(cls=discord.ui.UserSelect,
+                       max_values=10,
+                       min_values=0, 
+                       placeholder="Select the MVP")
+    async def supervisor_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction_check(self.user, interaction.user)
+        await interaction.response.defer(ephemeral=True)
+        self.mvp = [role.id for role in select.values]
+
+    
+    @discord.ui.button(
+        label="Finish",
+        style=discord.ButtonStyle.grey,
+        disabled=True
+    )
+    async def session_finish_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction_check(self.user, interaction.user)
+
+        embed=discord.Embed(
+                            title="Session Added", 
+                            description="This session has been added", 
+                            color=discord.Color.green()
+                            )
+        
+        self.session_data['mvp'] = self.mvp
+        self.session_data['attendees'] += self.attendees
+        
+        await interaction.response.edit_message(embed=embed, view=None, delete_after=5)
+        self.stop()
+        
+
+class SessionAddModal(Modal):
+    def __init__(self, bot):
+        super().__init__(title="Add New Session", custom_id="session_add_modal")
+        self.bot = bot
+        self.data = None
+
+        self.name = discord.ui.TextInput(
+            label="Session Name",
+            placeholder="Messin Around",
+            required=True,
+            row=1,
+            style=discord.TextStyle.short
+        )
+        self.add_item(self.name)
+
+        self.session_id = discord.ui.TextInput(
+            label="Session ID (Number)",
+            placeholder="1234",
+            required=True,
+            row=2,
+            style=discord.TextStyle.short
+        )
+        self.add_item(self.session_id)
+
+        self.duration = discord.ui.TextInput(
+            label="Duration",
+            placeholder="2 hours 30 minutes",
+            required=True,
+            row=3,
+            style=discord.TextStyle.short
+        )
+        self.add_item(self.duration)
+
+        self.note = discord.ui.TextInput(
+            label="Note",
+            placeholder="Everything went well", 
+            required=False,
+            row=4,
+            style=discord.TextStyle.paragraph
+        )
+        self.add_item(self.note)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        name = self.name.value
+        note = self.note.value
+        session_id = self.session_id.value
+        duration = self.duration.value
+        
+        self.data = {
+            'guild_id': interaction.guild.id,
+            'name': name,
+            'session_id': session_id,
+            'date': str(datetime.now().date()),
+            'duration': duration,
+            'host_id': None,
+            'co_host_id': [],
+            'supervisor_id': [],
+            'mvp': [],
+            'attendees': [],
+            'note': note
+
+        }
+
+        embed = discord.Embed(
+            title="New Session Started",
+            description=f"**Name:** {name}\n"
+                       f"**Session ID:** {session_id}\n"
+                       f"**Duration: ** {duration}\n"
+                       f"**Note: ** {note}",
+            color=discord.Color.yellow()
+        )
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        self.stop()
+
+---------------------------------------------------------------------------------------------------------
+async def S_remove_record(self, interaction: discord.Interaction):
+        # Checking if theres no records to remove
+        if not self.sessions_view.items or self.sessions_view.current_index >= len(self.sessions_view.items):
+            await interaction.response.send_message("No record to remove.", ephemeral=True)
+            return
+        
+        # Getting the current record and sending the confirmation message
+        current_record = self.sessions_view.items[self.sessions_view.current_index]
+        embed = discord.Embed(
+            title="Confirm Removal",
+            description="Are you sure you want to remove this session?",
+            color=discord.Color.red()
+        )
+        
+        confirm_view = ConfirmRemovalView(self.bot, current_record, self.sessions_view.current_index)
+        await interaction.response.send_message(embed=embed, view=confirm_view, ephemeral=True)
+
+        #waiting for the user to interaction with the modal
+        await confirm_view.wait()
+
+        # Removing the item from the list in the pagnaitor and from the main bot list
+
+        if confirm_view.status == 1:
+            index = self.sessions_view.current_index
+            try:
+                self.sessions_view.items.pop(index)
+            except Exception as e:
+                print("Session item view pop error: ", e)
+
+            try:
+                await sessions.delete_one(current_record)
+            except Exception as e:
+                print("session record remove error: ", e)
+
+        # Reloading the paginator to show the removed record
+        self.sessions_view.current_index = 0
+        self.sessions_view.update_buttons()
+        embed = self.sessions_view.create_record_embed()
+        await interaction.edit_original_response(embed=embed, view=self.sessions_view)
+
+    async def S_edit_record(self, interaction: discord.Interaction):
+        # Checking if theres no records to edit
+        if not self.sessions_view.items or self.sessions_view.current_index >= len(self.sessions_view.items):
+            return await interaction.response.send_message("No record to edit.", ephemeral=True)
+        
+        # Getting current record and sending the modal to edit the record
+        current_record = self.sessions_view.items[self.sessions_view.current_index]
+        
+        edit_view = SessionEditModal(self.bot, current_record)
+        await interaction.response.send_modal(edit_view)
+
+        #waiting for the user to interact with the modal
+        await edit_view.wait()
+
+        # Updating the record in the pagiantor list and the main bot list
+        name = edit_view.name.value
+        note = edit_view.note.value
+        session_id = edit_view.session_id.value
+        duration = edit_view.duration.value
+
+        await sessions.update_one(current_record, {"$set": {'name': name, 'session_id': session_id, 'duration': duration, 'note': note}})
+        self.sessions_view.items[self.sessions_view.current_index]['name'] = name
+        self.sessions_view.items[self.sessions_view.current_index]['session_id'] = session_id
+        self.sessions_view.items[self.sessions_view.current_index]['duration'] = duration
+        self.sessions_view.items[self.sessions_view.current_index]['note'] = note
+
+        # reloading paginator to reflect changes
+        self.sessions_view.update_buttons()
+        embed = self.sessions_view.create_record_embed()
+        await interaction.edit_original_response(embed=embed, view=self.sessions_view)
+
+    async def S_add_record(self, interaction: discord.Interaction):
+        # Sending the modal to add a new record
+        session_add_view = SessionAddModal(self.bot)
+        await interaction.response.send_modal(session_add_view)
+
+        #waiting for the user to interact with the modal
+        await session_add_view.wait()
+
+        session_role_view = SessionRoleSelections(self.bot, interaction.user, session_add_view.data)
+        embed = discord.Embed(
+            title="User Selection",
+            description="**Host (Required):** The user that is the main host\n**Co-Host (Optional):** The user that is the co-host\n**Supervisor (Optional):** The user that is the supervisor\n**Attendees (Required):** Anyone that actually attended the session",
+            color=discord.Color.yellow()
+        )
+        await interaction.followup.send(embed=embed, view = session_role_view, ephemeral=True)
+
+        await session_role_view.wait()
+
+        # adding the record to the pagiantor list and the main bot list
+        session_doc = await sessions.insert_one(session_role_view.session_data)
+        self.sessions_view.items.append(session_role_view.session_data)
+
+        for attendee in session_role_view.session_data.get('attendees'):
+            await profiles.update_one({'guild_id': interaction.guild.id, 'user_id': attendee}, {'$addToSet': {'sessions': session_doc.inserted_id}})
+
+        # Reloading the paginator to reflect the new record
+        self.sessions_view.current_index = len(self.sessions_view.items) - 1
+        self.sessions_view.update_buttons()
+        embed = self.sessions_view.create_record_embed()
+        await interaction.edit_original_response(embed=embed, view=self.sessions_view)
+    
+    @manage.command(name="sessions", description="Manage all sessions in this server")
+    async def sessions(self, ctx: commands.Context):
+        records = await sessions.find({"guild_id": ctx.guild.id}).to_list(length=None)
+        self.sessions_view = PaginatorView(self.bot, ctx.author, records)
+
+        add_button = Button(
+            label="Add",
+            style=discord.ButtonStyle.green,
+            row=2
+        )
+        add_button.callback = self.S_add_record
+
+        edit_button = Button(
+            label="Edit",
+            style=discord.ButtonStyle.gray,
+            row=2
+        )
+        edit_button.callback = self.S_edit_record
+        
+        remove_button = Button(
+            label="Remove",
+            style=discord.ButtonStyle.red,
+            row=2
+        )
+        remove_button.callback = self.S_remove_record
+
+        self.sessions_view.extra_buttons = [add_button, edit_button, remove_button]
+        self.sessions_view.update_buttons()
+
+        embed = self.sessions_view.create_record_embed()
+        await ctx.send(embed=embed, view=self.sessions_view, ephemeral=True)
+---------------------------------------------------------------------------------
+import discord
+from discord.ext import commands
+from utils.ui.paginator import PaginatorView
+from utils.constants import sessions, profiles
+
+class Sessions(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    @commands.hybrid_command(name="session", description="Manage sessions", with_app_command=True)
+    async def session(self, ctx: commands.Context):
+        profile = await profiles.find_one({"guild_id": ctx.guild.id, "user_id": ctx.author.id})
+
+        all_sessions = await sessions.find({"guild_id": ctx.guild.id, "_id": {'$in': profile.get('sessions')}}).to_list(length=None)
+
+        view = PaginatorView(self.bot, ctx.author, all_sessions)
+        embed = view.create_record_embed()
+
+        await ctx.send(embed=embed, view=view, ephemeral=True)
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Sessions(bot))
