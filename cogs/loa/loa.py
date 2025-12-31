@@ -344,6 +344,12 @@ class LOA(commands.Cog):
 
     @loa.command(description="Get a list of all the active LOA's in the server.")
     async def active(self, ctx: commands.Context):
+        foundation_role = await ctx.guild.fetch_role(foundation_command)
+        site_role = await ctx.guild.fetch_role(site_command)
+
+        if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
+            return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+        
         items = await loa.find({'guild_id': ctx.guild.id}).to_list(length=None)
         view = PaginatorView(self.bot, ctx.author, items)
         embed = view.create_record_embed()

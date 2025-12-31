@@ -50,13 +50,11 @@ class CreateProfileModal(discord.ui.Modal):
                 'roblox_name': r_name,
                 'unit': [],
                 'private_unit': [],
-                'rank': 'Recruit',
                 'current_points': 0,
                 'total_points': 0,
                 'status': 'Active',
                 'join_date': str(datetime.now().date()),
                 'timezone': timezone,
-                'sessions': [],
             }
 
         await profiles.insert_one(profile)
@@ -75,80 +73,6 @@ class CreateProfileModal(discord.ui.Modal):
         )
         await interaction.user.send(embed=dm_embed)
 
-class EditProfileModal(discord.ui.Modal):
-    def __init__(self, bot, profile: dict, embed: discord.Embed):
-        self.bot = bot
-        self.profile = profile
-        self.embed = embed
-
-        super().__init__(title="Edit Your Profile")
-
-        self.codename = discord.ui.TextInput(
-            label="Codename",
-            placeholder=profile.get('codename'),
-            default=profile.get('codename'),
-            required=True,
-            max_length=5,
-            style=discord.TextStyle.short
-        )
-
-        self.roblox_name = discord.ui.TextInput(
-            label="Roblox Username",
-            placeholder=profile.get('roblox_name'),
-            default=profile.get('roblox_name'),
-            required=True,
-            max_length=32,
-            style=discord.TextStyle.short
-        )
-
-        self.timezone = discord.ui.TextInput(
-            label="Timezone",
-            placeholder=profile.get('timezone'),
-            default=profile.get('timezone'),
-            required=True,
-            max_length=5,
-            style=discord.TextStyle.short
-        )
-
-        self.status = discord.ui.TextInput(
-            label="Status (Active or Inactive)",
-            placeholder=profile.get('status'),
-            default=profile.get('status'),
-            required=True,
-            max_length=8,
-            style=discord.TextStyle.short
-        )
-
-        self.add_item(self.codename)
-        self.add_item(self.roblox_name)
-        self.add_item(self.timezone)
-        self.add_item(self.status)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        r_name = self.roblox_name.value
-        timezone = self.timezone.value
-        codename = self.codename.value
-        status = self.status.value
-
-        if status.lower() not in ['active', 'inactive']:
-            await interaction.response.send_message("Status must be either 'Active' or 'Inactive'. Please try again.", ephemeral=True)
-            return
-
-        await profiles.update_one({'user_id': interaction.user.id, 'guild_id': interaction.guild.id}, {'$set': {'roblox_name': r_name, 'timezone': timezone, 'codename': codename, 'status': status.title()}})
-
-        edit_embed = discord.Embed(
-                                title="Profile Edited!",
-                                description=f"Your profile has been edited!\n\n**Codename: **{codename}\n**Roblox Name: **{r_name}\n**Timezone: **{timezone}\n**Status: ** {status.title()}",
-                                color=discord.Color.green()
-                                )
-        
-        self.embed.description = f"**Codename: **{codename}\n**Roblox Name: **{r_name}\n**Timezone: **{timezone}\n**Rank: ** {self.profile.get('rank')}\n**Unit(s): **{', '.join(self.profile.get('unit', []))}\n**Private Unit(s): **{', '.join(self.profile.get('private_unit', []))}\n**Join Date: ** {self.profile.get('join_date')}\n**Status: ** {status.title()}"
-
-        await interaction.response.edit_message(embed=self.embed)
-        await interaction.followup.send(embed=edit_embed, ephemeral=True)
-
-        
-
 class CTXCreateProfileButton(discord.ui.View):
     def __init__(self, bot, user: discord.User):
         super().__init__(timeout=None)
@@ -163,23 +87,40 @@ class CTXCreateProfileButton(discord.ui.View):
         modal = CreateProfileModal(self.bot)
         await interaction.response.send_modal(modal)
 
-class ProfileButtons(discord.ui.View):
-    def __init__(self, bot, user: discord.User, profile: dict, embed: discord.Embed):
-        super().__init__(timeout=None)
+class UnitSelectView(discord.ui.View):
+    def __init__(self, bot, options, profile):
+        super().__init__(timeout=300)
         self.bot = bot
-        self.user = user
         self.profile = profile
-        self.embed = embed
-    
-    @discord.ui.button(label="Edit Profile", style=discord.ButtonStyle.grey)
-    async def edit_profile_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.user.id:
-            await interaction.response.send_message("Sorry but you can't use this button.", ephemeral=True)
 
-        modal = EditProfileModal(self.bot, self.profile, self.embed)
-        await interaction.response.send_modal(modal)
+        self.dept_role_select.options = options
     
+    @discord.ui.select(
+        placeholder="Select a Role",
+        min_values=1,
+        max_values=1,
+        options=[]
+    )
+    async def dept_role_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction.response.defer(ephemeral=True)
+        value = select.values[0]
 
+        select.values.clear()
+
+        await interaction.edit_original_response(view=self)
+
+        if value == "no_units":
+            return
+        
+        department = self.profile["unit"][value]
+
+        embed = discord.Embed(
+            title="Unit Information",
+            description=f"**Unit Name: ** {value}\n**Rank: ** {department.get('rank')}",
+            color=discord.Color.light_grey()
+        )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 class Profile(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -196,27 +137,32 @@ class Profile(commands.Cog):
                 view = CTXCreateProfileButton(self.bot, ctx.author)
                 await ctx.send("Please click the button to continue!", view=view)
         else:
-            unit = ", ".join(profile.get('unit', []))
+            options = []
+            units = profile.get("unit")
+
+            for unit, data in units.items():
+                if data.get("is_active"):
+                    options.append(discord.SelectOption(label=unit))
+            
+            if options == []:
+                options.append(discord.SelectOption(label="No Active Units", value="no_units"))
+
             private_unit = ", ".join(profile.get('private_unit', []))
             embed = discord.Embed(
                 title="",
-                description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Rank: ** {profile.get('rank')}\n**Unit(s): **{unit}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
+                description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
                 color=discord.Color.light_grey()
             )
             embed.add_field(name="Points", value=f"**Current Points: **{profile.get('current_points')}\n**Total Points: **{profile.get('total_points')}", inline=True)
-            embed.add_field(name="Sessions Completed", value=f"{len(profile.get('sessions', []))} sessions(s) completed.", inline=True)
-            #embed.add_field(name="Missions Completed", value=f"{len(profile.get('missions', []))} mission(s) completed.", inline=True)
 
             embed.set_author(name=f"{profile.get('codename')}'s Profile Information", icon_url=ctx.author.display_avatar.url)
             embed.set_thumbnail(url=ctx.author.display_avatar.url)
 
-            view = ProfileButtons(self.bot, ctx.author, profile, embed)
+            view = UnitSelectView(self.bot, options, profile)
 
-            await ctx.send(embed=embed, view=view)
+            await ctx.send(embed=embed, view=view, ephemeral=True)
 
 
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Profile(bot))
-
-# points, sessions (trainings and missions)

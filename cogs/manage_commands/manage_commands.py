@@ -2,10 +2,81 @@ import discord
 from discord.ext import commands
 from discord.ui import View, Button, Modal
 from utils.utils import interaction_check
-from utils.constants import auto_replys, sessions, profiles, departments
+from utils.constants import auto_replys, profiles, departments, foundation_command, site_command
 from utils.ui.paginator import PaginatorView
 from datetime import datetime
-from cogs.profile.profile import EditProfileModal
+
+class EditProfileModal(discord.ui.Modal):
+    def __init__(self, bot, profile: dict, embed: discord.Embed):
+        self.bot = bot
+        self.profile = profile
+        self.embed = embed
+
+        super().__init__(title="Edit Your Profile")
+
+        self.codename = discord.ui.TextInput(
+            label="Codename",
+            placeholder=profile.get('codename'),
+            default=profile.get('codename'),
+            required=True,
+            max_length=5,
+            style=discord.TextStyle.short
+        )
+
+        self.roblox_name = discord.ui.TextInput(
+            label="Roblox Username",
+            placeholder=profile.get('roblox_name'),
+            default=profile.get('roblox_name'),
+            required=True,
+            max_length=32,
+            style=discord.TextStyle.short
+        )
+
+        self.timezone = discord.ui.TextInput(
+            label="Timezone",
+            placeholder=profile.get('timezone'),
+            default=profile.get('timezone'),
+            required=True,
+            max_length=5,
+            style=discord.TextStyle.short
+        )
+
+        self.status = discord.ui.TextInput(
+            label="Status (Active or Inactive)",
+            placeholder=profile.get('status'),
+            default=profile.get('status'),
+            required=True,
+            max_length=8,
+            style=discord.TextStyle.short
+        )
+
+        self.add_item(self.codename)
+        self.add_item(self.roblox_name)
+        self.add_item(self.timezone)
+        self.add_item(self.status)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        r_name = self.roblox_name.value
+        timezone = self.timezone.value
+        codename = self.codename.value
+        status = self.status.value
+
+        if status.lower() not in ['active', 'inactive']:
+            await interaction.response.send_message("Status must be either 'Active' or 'Inactive'. Please try again.", ephemeral=True)
+            return
+
+        await profiles.update_one({'user_id': interaction.user.id, 'guild_id': interaction.guild.id}, {'$set': {'roblox_name': r_name, 'timezone': timezone, 'codename': codename, 'status': status.title()}})
+
+        edit_embed = discord.Embed(
+                                title="Profile Edited!",
+                                description=f"Your profile has been edited!\n\n**Codename: **{codename}\n**Roblox Name: **{r_name}\n**Timezone: **{timezone}\n**Status: ** {status.title()}",
+                                color=discord.Color.green()
+                                )
+        
+        self.embed.description = f"**Codename: **{codename}\n**Roblox Name: **{r_name}\n**Timezone: **{timezone}\n**Rank: ** {self.profile.get('rank')}\n**Unit(s): **{', '.join(self.profile.get('unit', []))}\n**Private Unit(s): **{', '.join(self.profile.get('private_unit', []))}\n**Join Date: ** {self.profile.get('join_date')}\n**Status: ** {status.title()}"
+
+        await interaction.response.edit_message(embed=self.embed)
+        await interaction.followup.send(embed=edit_embed, ephemeral=True)
 
 class AutoReplyAddModal(Modal):
     def __init__(self, bot):
@@ -145,77 +216,81 @@ class ProfileManageUnitsView(discord.ui.View):
         self.profile = profile
         self.user = user
 
-        # ORIGINAL state (used for comparison)
-        self.original_units = set(profile.get("unit", []))
-        self.original_private_units = set(profile.get("private_unit", []))
-
-        # Current state (will be read from selects)
-        self.unit = list(self.original_units)
-        self.private_unit = list(self.original_private_units)
-
-        # Configure selects
         self.profile_manage_units.options = normal_units
         self.profile_manage_units.max_values = len(normal_units)
 
         self.profile_manage_private_units.options = private_units
         self.profile_manage_private_units.max_values = len(private_units)
 
-    @discord.ui.select(
-        placeholder="No Units Selected",
-        options=[]
-    )
+    @discord.ui.select(placeholder="No Units Selected", options=[])
     async def profile_manage_units(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction_check(self.user, interaction.user)
         await interaction.response.defer(ephemeral=True)
 
-    @discord.ui.select(
-        placeholder="No Private Units Selected",
-        options=[]
-    )
+    @discord.ui.select(placeholder="No Private Units Selected", options=[])
     async def profile_manage_private_units(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction_check(self.user, interaction.user)
         await interaction.response.defer(ephemeral=True)
 
-    @discord.ui.button(
-        label="Submit",
-        style=discord.ButtonStyle.green
-    )
+    @discord.ui.button(label="Submit", style=discord.ButtonStyle.green)
     async def profile_manage_units_submit(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction_check(self.user, interaction.user)
 
-        # 🔑 Read current select state
-        new_units = set(self.profile_manage_units.values or [])
-        new_private_units = set(self.profile_manage_private_units.values or [])
+        # ✅ FALLBACK TO DEFAULTS IF NOT INTERACTED
+        selected_units = (
+            set(self.profile_manage_units.values)
+            if self.profile_manage_units.values
+            else {opt.label for opt in self.profile_manage_units.options if opt.default}
+        )
 
-        # 🔍 Check if anything actually changed
-        if (
-            new_units == self.original_units
-            and new_private_units == self.original_private_units
-        ):
-            # Nothing changed → do nothing
-            embed = discord.Embed(
-                title="No Changes Made",
-                description="No unit changes were detected.",
-                color=discord.Color.greyple()
-            )
-            await interaction.response.edit_message(embed=embed, view=None)
-            self.stop()
-            return
+        selected_private_units = (
+            set(self.profile_manage_private_units.values)
+            if self.profile_manage_private_units.values
+            else {opt.label for opt in self.profile_manage_private_units.options if opt.default}
+        )
 
-        # ✅ Something changed → update DB
+        all_departments = await departments.find(
+            {"is_private": False}
+        ).to_list(length=None)
+
+        dept_map = {d["display_name"]: d for d in all_departments}
+
+        units = dict(self.profile.get("unit", {}))
+
+        for unit in selected_units:
+            dept = dept_map.get(unit)
+            if not dept:
+                continue
+
+            first_rank = dept["ranks"][0]["name"] if dept.get("ranks") else None
+
+            units.setdefault(unit, {
+                "rank": first_rank,
+                "is_active": True
+            })
+            units[unit]["is_active"] = True
+
+        for unit in units:
+            if unit not in selected_units:
+                units[unit]["is_active"] = False
+
         await profiles.update_one(
             {"_id": self.profile["_id"]},
             {"$set": {
-                "unit": list(new_units),
-                "private_unit": list(new_private_units)
+                "unit": units,
+                "private_unit": list(selected_private_units)
             }}
         )
+
+        active_units = [
+            u for u, d in units.items() if d.get("is_active")
+        ]
 
         embed = discord.Embed(
             title="Profile Units Updated",
             description=(
-                f"**Units:** {', '.join(new_units) or 'None'}\n"
-                f"**Private Units:** {', '.join(new_private_units) or 'None'}"
+                f"**Units:** {', '.join(active_units) or 'None'}\n"
+                f"**Private Units:** {', '.join(selected_private_units) or 'None'}"
             ),
             color=discord.Color.green()
         )
@@ -224,7 +299,7 @@ class ProfileManageUnitsView(discord.ui.View):
         self.stop()
 
 class ManageProfileButtons(discord.ui.View):
-    def __init__(self, bot, user, profile, embed):
+    def __init__(self, bot, user, profile, embed, options):
         super().__init__(timeout=None)
         self.bot = bot
         self.profile = profile
@@ -232,7 +307,36 @@ class ManageProfileButtons(discord.ui.View):
         self.embed: discord.Embed = embed
         self.main_message: discord.Message = None
 
-    @discord.ui.button(label="Edit", style=discord.ButtonStyle.gray)
+        self.dept_role_select.options = options
+    
+    @discord.ui.select(
+        placeholder="Select a Role",
+        min_values=1,
+        max_values=1,
+        options=[]
+    )
+    async def dept_role_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction.response.defer(ephemeral=True)
+        value = select.values[0]
+
+        select.values.clear()
+
+        await interaction.edit_original_response(view=self)
+
+        if value == "no_units":
+            return
+        
+        department = self.profile["unit"][value]
+
+        embed = discord.Embed(
+            title="Unit Information",
+            description=f"**Unit Name: ** {value}\n**Rank: ** {department.get('rank')}",
+            color=discord.Color.light_grey()
+        )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="Edit", style=discord.ButtonStyle.gray, row=2)
     async def manage_profile_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction_check(self.user, interaction.user)
 
@@ -245,16 +349,21 @@ class ManageProfileButtons(discord.ui.View):
         self.profile["codename"] = modal.codename.value
         self.profile["status"] = modal.status.value
 
-    @discord.ui.button(label="Manage Units", style=discord.ButtonStyle.gray)
+    @discord.ui.button(label="Manage Units", style=discord.ButtonStyle.gray, row=2)
     async def manage_profile_units(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction_check(self.user, interaction.user)
 
-        # 🔄 Always reload profile
         self.profile = await profiles.find_one({"_id": self.profile["_id"]})
 
         results = await departments.find().to_list(length=None)
 
-        user_units = set(self.profile.get("unit", []))
+        user_units = []
+        units = self.profile.get("unit")
+
+        for unit, data in units.items():
+            if data.get("is_active"):
+                user_units.append(unit)
+
         user_private_units = set(self.profile.get("private_unit", []))
 
         normal_unit_results = []
@@ -295,23 +404,40 @@ class ManageProfileButtons(discord.ui.View):
         # 🔄 Reload profile after submit
         self.profile = await profiles.find_one({"_id": self.profile["_id"]})
 
-        units = ", ".join(self.profile.get("unit", [])) or "None"
-        private_units = ", ".join(self.profile.get("private_unit", [])) or "None"
+        private_units = ", ".join(self.profile.get("private_unit", [])) or ""
 
         self.embed.description = (
             f"**Codename:** {self.profile.get('codename')}\n"
             f"**Roblox Name:** {self.profile.get('r_name')}\n"
             f"**Timezone:** {self.profile.get('timezone')}\n"
-            f"**Rank:** {self.profile.get('rank')}\n"
-            f"**Unit(s):** {units}\n"
             f"**Private Unit(s):** {private_units}\n"
             f"**Join Date:** {self.profile.get('join_date')}\n"
             f"**Status:** {self.profile.get('status').title()}"
         )
 
-        await self.main_message.edit(embed=self.embed)
+        options = []
+        units = self.profile.get("unit")
 
-    @discord.ui.button(label="Delete", style=discord.ButtonStyle.red)
+        for unit, data in units.items():
+            if data.get("is_active"):
+                options.append(discord.SelectOption(label=unit))
+        
+        if options == []:
+            options.append(discord.SelectOption(label="No Active Units", value="no_units"))
+
+        view = ManageProfileButtons(self.bot, self.user, self.profile, self.embed, options)
+
+        await self.main_message.edit(embed=self.embed, view=view)
+
+    @discord.ui.button(label="Demote", style=discord.ButtonStyle.blurple, row=2)
+    async def demote_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction_check(self.user, interaction.user)
+        await interaction.response.send_message(
+            view=DemoteUnitView(self.profile),
+            ephemeral=True
+        )
+
+    @discord.ui.button(label="Delete", style=discord.ButtonStyle.red, row=3)
     async def manage_profile_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction_check(self.user, interaction.user)
 
@@ -329,6 +455,86 @@ class ManageProfileButtons(discord.ui.View):
             await profiles.delete_one(self.profile)
             await self.main_message.edit(content="Profile was deleted", embed=None, view=None)
             self.stop()
+
+class DemoteUnitView(discord.ui.View):
+    def __init__(self, profile):
+        super().__init__(timeout=120)
+        self.profile = profile
+
+        options = [
+            discord.SelectOption(label=unit)
+            for unit, data in profile.get("unit", {}).items()
+            if data.get("is_active")
+        ]
+
+        self.unit_select.options = options
+
+    @discord.ui.select(placeholder="Select unit to demote", options=[])
+    async def unit_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        unit = select.values[0]
+
+        dept = await departments.find_one({"display_name": unit})
+        if not dept:
+            await interaction.response.send_message("Department not found.", ephemeral=True)
+            return
+
+        current_rank = self.profile["unit"][unit]["rank"]
+
+        await interaction.response.send_message(
+            view=DemoteRankView(
+                profile=self.profile,
+                unit=unit,
+                ranks=dept.get("ranks", []),
+                current_rank=current_rank
+            ),
+            ephemeral=True
+        )
+
+class DemoteRankView(discord.ui.View):
+    def __init__(self, profile, unit, ranks, current_rank):
+        super().__init__(timeout=120)
+
+        self.profile = profile
+        self.unit = unit
+
+        # Find current rank order
+        current_rank_obj = next(
+            (r for r in ranks if r["name"] == current_rank),
+            None
+        )
+
+        if not current_rank_obj:
+            self.valid_ranks = []
+        else:
+            current_order = current_rank_obj["order"]
+            self.valid_ranks = [
+                r for r in ranks
+                if r.get("order", 0) <= current_order
+            ]
+
+        options = [
+            discord.SelectOption(label=r["name"])
+            for r in self.valid_ranks
+        ]
+
+        self.rank_select.options = options
+
+    @discord.ui.select(placeholder="Select rank to demote to", options=[])
+    async def rank_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        new_rank = select.values[0]
+
+        await profiles.update_one(
+            {"_id": self.profile["_id"]},
+            {"$set": {
+                f"unit.{self.unit}.rank": new_rank
+            }}
+        )
+
+        await interaction.response.send_message(
+            f"✅ {self.unit} rank updated to **{new_rank}**",
+            ephemeral=True
+        )
+
 
 class ManageCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -419,6 +625,12 @@ class ManageCommands(commands.Cog):
 
     @manage.command(name='auto_reply', description='Manage auto replys')
     async def auto_reply(self, ctx: commands.Context):
+        foundation_role = await ctx.guild.fetch_role(foundation_command)
+        site_role = await ctx.guild.fetch_role(site_command)
+
+        if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
+            return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+        
         items = [record for record in self.bot.auto_replys if record['guild_id'] == ctx.guild.id]
         self.auto_reply_view = PaginatorView(self.bot, ctx.author, items)
 
@@ -451,25 +663,38 @@ class ManageCommands(commands.Cog):
 
     @manage.command(name="profile", description="Manage a users profile")
     async def manage_profile(self, ctx: commands.Context, user: discord.User):
+        foundation_role = await ctx.guild.fetch_role(foundation_command)
+        site_role = await ctx.guild.fetch_role(site_command)
+
+        if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
+            return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+        
         profile = await profiles.find_one({'user_id': user.id, 'guild_id': ctx.guild.id})
         if not profile:
             await ctx.send(f"I cannot find a profile for {user.mention}! Please try again.", ephemeral=True)
         else:
-            unit = ", ".join(profile.get('unit', []))
+            options = []
+            units = profile.get("unit")
+
+            for unit, data in units.items():
+                if data.get("is_active"):
+                    options.append(discord.SelectOption(label=unit))
+            
+            if options == []:
+                options.append(discord.SelectOption(label="No Active Units", value="no_units"))
+
             private_unit = ", ".join(profile.get('private_unit', []))
             embed = discord.Embed(
                 title="",
-                description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Rank: ** {profile.get('rank')}\n**Unit(s): **{unit}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
+                description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
                 color=discord.Color.light_grey()
             )
             embed.add_field(name="Points", value=f"**Current Points: **{profile.get('current_points')}\n**Total Points: **{profile.get('total_points')}", inline=True)
-            embed.add_field(name="Sessions Completed", value=f"{len(profile.get('sessions', []))} sessions(s) completed.", inline=True)
-            #embed.add_field(name="Missions Completed", value=f"{len(profile.get('missions', []))} mission(s) completed.", inline=True)
 
             embed.set_author(name=f"{profile.get('codename')}'s Profile Information", icon_url=user.display_avatar.url)
             embed.set_thumbnail(url=user.display_avatar.url)
 
-            view = ManageProfileButtons(self.bot, ctx.author, profile, embed)
+            view = ManageProfileButtons(self.bot, ctx.author, profile, embed, options)
 
             message = await ctx.send(embed=embed, view=view, ephemeral=True)
 
