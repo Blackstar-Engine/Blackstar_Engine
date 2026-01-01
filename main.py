@@ -9,7 +9,7 @@ from utils.constants import BlackstarConstants, auto_replys
 
 constants = BlackstarConstants()
 
-if constants.environment == "PRODUCTION":
+if constants.environment() == "PRODUCTION":
     presence = "Viva La Blackstar"
 else:
     presence = "Doing Da Testing"

@@ -30,7 +30,7 @@ client = motor.motor_asyncio.AsyncIOMotorClient(
     serverSelectionTimeoutMS=5000,
 )
 
-if arcconstants.environment == "PRODUCTION":
+if arcconstants.environment() == "PRODUCTION":
     db = client['blackstar_db']
 else:
     db = client['blackstar_db_beta']
@@ -49,7 +49,7 @@ LOARegFormat = r"^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?$"
 loa_min = "1d"
 loa_max = "1y"
 
-if arcconstants.environment == "PRODUCTION":
+if arcconstants.environment() == "PRODUCTION":
     loa_channel = 1412244838660968590
     loa_role = 1418067647177691156
 
