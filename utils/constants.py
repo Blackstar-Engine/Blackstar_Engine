@@ -13,6 +13,9 @@ class BlackstarConstants:
     
     def mongodb_uri(self) -> str:
         return str(os.getenv('MONGODB_URI'))
+    
+    def environment(self) -> str:
+        return str(os.getenv('ENVIRONMENT'))
 
 arcconstants = BlackstarConstants()
 
@@ -27,7 +30,10 @@ client = motor.motor_asyncio.AsyncIOMotorClient(
     serverSelectionTimeoutMS=5000,
 )
 
-db = client['blackstar_db']
+if arcconstants.environment == "PRODUCTION":
+    db = client['blackstar_db']
+else:
+    db = client['blackstar_db_beta']
 
 auto_replys = db.auto_replys
 loa = db.loa
@@ -42,12 +48,24 @@ departments = db.departments
 LOARegFormat = r"^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?$"
 loa_min = "1d"
 loa_max = "1y"
-loa_channel = 1412244838660968590
-loa_role = 1418067647177691156
 
-foundation_command = 1413208971304636597
-site_command = 1422416268585341049
-high_command = 1413226553982320713
-central_command = 1413226456968069180
-ia_id = 1413193754013073459
-wolf_id = 1371489554279825439
+if arcconstants.environment == "PRODUCTION":
+    loa_channel = 1412244838660968590
+    loa_role = 1418067647177691156
+
+    foundation_command = 1413208971304636597
+    site_command = 1422416268585341049
+    high_command = 1413226553982320713
+    central_command = 1413226456968069180
+    ia_id = 1413193754013073459
+    wolf_id = 1371489554279825439
+else:
+    loa_channel = 1454232138571448524
+    loa_role = 1454233756545323200
+
+    foundation_command = 1450297609515307134
+    site_command = 1450297617073442816
+    high_command = 1450297635994079375
+    central_command = 1450297654662660156
+    ia_id = 1450297786254889021
+    wolf_id = 1371489554279825439

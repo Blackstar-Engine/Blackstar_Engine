@@ -9,6 +9,11 @@ from utils.constants import BlackstarConstants, auto_replys
 
 constants = BlackstarConstants()
 
+if constants.environment == "PRODUCTION":
+    presence = "Viva La Blackstar"
+else:
+    presence = "Doing Da Testing"
+
 
 class Bot(commands.Bot):
     def __init__(self):
@@ -73,7 +78,7 @@ class Bot(commands.Bot):
             bot.auto_replys.append(record)
         print(f"All {len(bot.auto_replys)} auto-replys loaded")
 
-        await bot.change_presence(activity=discord.CustomActivity(name='Viva la Blackstar'))
+        await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
         print(f'{self.user} is ready.')
 
