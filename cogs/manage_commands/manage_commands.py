@@ -358,7 +358,7 @@ class ManageProfileButtons(discord.ui.View):
         results = await departments.find().to_list(length=None)
 
         user_units = []
-        units = self.profile.get("unit")
+        units = dict(self.profile.get("unit", {}))
 
         for unit, data in units.items():
             if data.get("is_active"):
@@ -416,7 +416,7 @@ class ManageProfileButtons(discord.ui.View):
         )
 
         options = []
-        units = self.profile.get("unit")
+        units = dict(self.profile.get("unit", {}))
 
         for unit, data in units.items():
             if data.get("is_active"):
@@ -668,17 +668,18 @@ class ManageCommands(commands.Cog):
 
         if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
             return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
-        
+
         profile = await profiles.find_one({'user_id': user.id, 'guild_id': ctx.guild.id})
         if not profile:
             await ctx.send(f"I cannot find a profile for {user.mention}! Please try again.", ephemeral=True)
         else:
             options = []
-            units = profile.get("unit")
+            units = dict(profile.get("unit", {}))
 
             for unit, data in units.items():
                 if data.get("is_active"):
                     options.append(discord.SelectOption(label=unit))
+
             
             if options == []:
                 options.append(discord.SelectOption(label="No Active Units", value="no_units"))

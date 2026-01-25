@@ -138,7 +138,7 @@ class Profile(commands.Cog):
                 await ctx.send("Please click the button to continue!", view=view)
         else:
             options = []
-            units = profile.get("unit")
+            units = dict(profile.get("unit", {}))
 
             for unit, data in units.items():
                 if data.get("is_active"):

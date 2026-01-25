@@ -279,16 +279,20 @@ class LOA(commands.Cog):
             
             # Return full list of items
             return map(int, search.groups(default="0"))
+
+        error_embed = discord.Embed(title="", description="")
         
         # If time does not = the correct format, return
         if not re.match(LOARegFormat, time):
-            return await ctx.send("Please use the correct time format: <number>y<number>m<number>w<number>d<number>h")
+            error_embed.description = "Please use the correct time format: \n**<number>y<number>m<number>w<number>d<number>h**\n\n**__Examples:__**\n> `1y2m3w4d5h` = 1 year, 2 months, 3 weeks, 4 days, and 5 hours\n> `2w4d` = 2 weeks and 4 days\n> `5h` = 5 hours"
+            return await ctx.send(embed=error_embed, ephemeral=True)
 
         # Find a record for the user and return if record is found
         loa_record = await loa.find_one({"user_id": ctx.author.id, "guild_id": ctx.guild.id})
 
         if loa_record:
-            return await ctx.send("You have an ongoing LOA! End it to start a new one!")
+            error_embed.description = "You already have an active LOA. Please end it before starting a new one."
+            return await ctx.send(embed=error_embed, ephemeral=True)
 
         # Break time into y, m, w, d, h and find total days from that
         years, months, weeks, days, hours = extract_time_values(time)
@@ -304,9 +308,11 @@ class LOA(commands.Cog):
 
         # Checks to see if the requested days is in between the min and max days
         if total_days < min_total_days:
-            return await ctx.send("LOA time does not meet the minimum LOA time.")
+            error_embed.description = "LOA time does not meet the minimum LOA time."
+            return await ctx.send(embed=error_embed, ephemeral=True)
         elif total_days > max_total_days:
-            return await ctx.send("LOA time exceeds the maximum LOA time.")
+            error_embed.description = "LOA time exceeds the maximum LOA time."
+            return await ctx.send(embed=error_embed, ephemeral=True)
 
         # Creates the needed material for the request embed
         start_date = datetime.now()
@@ -373,7 +379,8 @@ class LOA(commands.Cog):
         stored_loas = await stored_loa.find({"user_id": member.id, "guild_id": ctx.guild.id}).to_list(length=None)
         
         if not active_loa and stored_loas == []:
-            return await ctx.send(f"{member.mention} has no LOA's to manage", ephemeral=True)
+            embed = discord.Embed(title="", description=f"{member.mention} has no LOA's to manage")
+            return await ctx.send(embed=embed, ephemeral=True)
 
         des = ""
 
