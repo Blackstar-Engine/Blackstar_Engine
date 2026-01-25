@@ -143,7 +143,7 @@ class Points(commands.Cog):
         profile = await profiles.find_one({"guild_id": ctx.guild.id, "user_id": ctx.author.id})
 
         options = []
-        units = profile.get("unit")
+        units = dict(profile.get("unit", {}))
 
         for unit, data in units.items():
             if data.get("is_active"):
@@ -170,7 +170,7 @@ class Points(commands.Cog):
                                   color=discord.Color.light_grey())
         
         mod_embed.add_field(name="__Profile Info:__",
-                            value=f"> **Codename: ** {profile.get('codename')}\n> **Rank: ** {profile.get('rank')}\n> **Join Date: ** {profile.get('join_date')}\n> **Current Points: ** {profile.get('current_points')}\n> **Total Points: ** {profile.get('total_points')}")
+                            value=f"> **Codename: ** {profile.get('codename')}\n> **Join Date: ** {profile.get('join_date')}\n> **Current Points: ** {profile.get('current_points')}\n> **Total Points: ** {profile.get('total_points')}")
 
 
         accept_deny_buttons_view = AcceptDenyButtons(self.bot, ctx.author, points, mod_embed, profile)

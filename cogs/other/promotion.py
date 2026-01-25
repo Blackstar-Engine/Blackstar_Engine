@@ -95,7 +95,7 @@ class Promotion(commands.Cog):
     async def promotion(self, ctx: commands.Context):
         await ctx.send("Available subcommands: request")
 
-    @promotion.command(name="request")
+    @promotion.command(name="request", description="Request a promotion in a department.")
     async def request(self, ctx: commands.Context, *, department: str):
         await ctx.defer(ephemeral=True)
 
