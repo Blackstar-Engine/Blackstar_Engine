@@ -14,6 +14,8 @@ class LOAEvent(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.check_loa_end_date.start()
+        if self.check_loa_end_date.is_running():
+            print("LOA End Date Checker is running.")
 
     @tasks.loop(minutes=1)
     async def check_loa_end_date(self):
