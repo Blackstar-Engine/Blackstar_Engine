@@ -1,6 +1,7 @@
 import discord
 import datetime
 from utils.constants import profiles
+from datetime import datetime
 
 class CreateProfileModal(discord.ui.Modal):
     def __init__(self, bot):
