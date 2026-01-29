@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from datetime import timedelta
-from utils.constants import foundation_command
+from utils.constants import foundation_command, wolf_id
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -21,6 +21,18 @@ class General(commands.Cog):
             raise commands.CommandInvokeError(e) from e
 
         await ctx.send(f"{user.mention} has been executed by the order of {ctx.author.mention}!")
+
+    @commands.hybrid_command(name="embed", description="Send an Embed")
+    async def embed(self, ctx: commands.Context, *, text: str):
+        if ctx.author.id != wolf_id:
+            return await ctx.send("You are not allowed to use this command!", ephemeral=True)
+        
+        custom_embed = discord.Embed(title="The Blackstar Corporation", description=text, color=discord.Color.light_grey())
+
+        await ctx.send(embed=custom_embed)
+        
+
+        
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))
