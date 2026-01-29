@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from datetime import timedelta
+from datetime import timedelta, datetime
 from utils.constants import foundation_command, wolf_id
 
 class General(commands.Cog):
@@ -27,7 +27,10 @@ class General(commands.Cog):
         if ctx.author.id != wolf_id:
             return await ctx.send("You are not allowed to use this command!", ephemeral=True)
         
-        custom_embed = discord.Embed(title="The Blackstar Corporation", description=text, color=discord.Color.light_grey())
+        custom_embed = discord.Embed(title="The Blackstar Corporation", description=f"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n{text}", color=discord.Color.light_grey())
+        custom_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+        custom_embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+
 
         await ctx.send(embed=custom_embed)
         
