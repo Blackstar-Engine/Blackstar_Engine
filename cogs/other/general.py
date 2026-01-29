@@ -26,6 +26,8 @@ class General(commands.Cog):
     async def embed(self, ctx: commands.Context, *, text: str):
         if ctx.author.id != wolf_id:
             return await ctx.send("You are not allowed to use this command!", ephemeral=True)
+
+        await ctx.message.delete()
         
         custom_embed = discord.Embed(title="The Blackstar Corporation", description=f"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n{text}", color=discord.Color.light_grey())
         custom_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
