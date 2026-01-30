@@ -11,7 +11,7 @@ class BlackstarConstants:
     '''
     Defines constants, they should always be capitals and set via the type of FINAL.
     '''
-    ENVIRONMENT: Final[bool] = str(os.getenv('ENVIRONMENT') or 'development').lower() == 'production'
+    ENVIRONMENT: Final[bool] = str(os.getenv('ENVIRONMENT'))
     TOKEN: Final[str] = str(os.getenv('TOKEN'))
     PREFIX: Final[str] = str(os.getenv('PREFIX'))
     MONGO_URI: Final[str] = str(os.getenv('MONGODB_URI'))
