@@ -1,13 +1,12 @@
 import discord
 from discord.ext import commands
-import datetime
 import re
-from utils.constants import loa, stored_loa, LOARegFormat, loa_min, loa_max, loa_channel, foundation_command, site_command
-import datetime
+from utils.constants import loa, stored_loa, LOARegFormat, loa_channel, foundation_command, site_command
 from datetime import datetime, timedelta
-from utils.ui.paginator import PaginatorView
-from utils.ui.loa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
-from utils.ui.loa.views.ManageExtendButtons import ManageExtendButton
+from ui.paginator import PaginatorView
+from ui.loa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
+from ui.loa.views.ManageExtendButtons import ManageExtendButton
+from typing import Optional
 
 
 class LOA(commands.Cog):
@@ -50,8 +49,8 @@ class LOA(commands.Cog):
         total_days = years * 365 + months * 30 + weeks * 7 + days
 
         # Find y, m, w, d, h from loa min and max
-        min_years, min_months, min_weeks, min_days, _ = extract_time_values(loa_min)
-        max_years, max_months, max_weeks, max_days, _ = extract_time_values(loa_max)
+        min_years, min_months, min_weeks, min_days, _ = extract_time_values('1d')
+        max_years, max_months, max_weeks, max_days, _ = extract_time_values('1y')
 
         # Find total days for loa min and max
         min_total_days = min_years * 365 + min_months * 30 + min_weeks * 7 + min_days
@@ -114,7 +113,7 @@ class LOA(commands.Cog):
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
     @loa.command(description="Manage a staff members LOA.")
-    async def manage(self, ctx: commands.Context, user: discord.Member = None):
+    async def manage(self, ctx: commands.Context, user: Optional[discord.Member | discord.User] = None):
         if not user or user.id == ctx.author.id:
             member = ctx.author
         else:

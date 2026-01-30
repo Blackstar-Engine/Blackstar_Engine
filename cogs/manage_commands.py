@@ -2,11 +2,11 @@ import discord
 from discord.ext import commands
 from discord.ui import Button
 from utils.constants import profiles, foundation_command, site_command
-from utils.ui.paginator import PaginatorView
-from utils.ui.manage_commands.modals.AutoReply import AutoReplyAddModal
-from utils.ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
-from utils.ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
-from utils.ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
+from ui.paginator import PaginatorView
+from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
+from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
+from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
+from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
 
 class DemoteRankView(discord.ui.View):
     def __init__(self, profile, unit, ranks, current_rank):

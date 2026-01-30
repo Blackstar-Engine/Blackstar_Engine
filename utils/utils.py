@@ -1,5 +1,8 @@
 import discord
-from discord.ext import commands
+from discord import commands
+
+from utils.constants import constants
+
 from utils.constants import (
     foundation_command,
     site_command,

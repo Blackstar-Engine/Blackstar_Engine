@@ -6,7 +6,7 @@ from utils.constants import (
     departments
 )
 
-from utils.ui.promotion.views.PromotionRequest import PromotionRequestView
+from ui.promotion.views.PromotionRequest import PromotionRequestView
 
 
 class Promotion(commands.Cog):

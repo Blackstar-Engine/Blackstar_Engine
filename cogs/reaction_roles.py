@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.ui.reaction_roles.views.RoleSelect import RoleSelect
+from ui.reaction_roles.views.RoleSelect import RoleSelect
 
 class ReactionRoles(commands.Cog):
     def __init__(self, bot: commands.Bot):
