@@ -408,7 +408,7 @@ async def S_remove_record(self, interaction: discord.Interaction):
 ---------------------------------------------------------------------------------
 import discord
 from discord.ext import commands
-from utils.ui.paginator import PaginatorView
+from ui.paginator import PaginatorView
 from utils.constants import sessions, profiles
 
 class Sessions(commands.Cog):
