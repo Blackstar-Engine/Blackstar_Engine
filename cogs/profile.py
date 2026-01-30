@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
 from utils.constants import profiles
-from utils.ui.profile.modals.CreateProfile import CreateProfileModal
-from utils.ui.profile.views.UnitSelect import UnitSelectView
-from utils.ui.profile.views.CTXCreateProfileButton import CTXCreateProfileButton
+from ui.profile.modals.CreateProfile import CreateProfileModal
+from ui.profile.views.UnitSelect import UnitSelectView
+from ui.profile.views.CTXCreateProfileButton import CTXCreateProfileButton
 
 class Profile(commands.Cog):
     def __init__(self, bot: commands.Bot):

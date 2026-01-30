@@ -1,26 +1,27 @@
-import os
+import os 
 from dotenv import load_dotenv
+from typing import Final
+import logging
+import sys
 import motor.motor_asyncio
 
 load_dotenv()
 
 class BlackstarConstants:
-    def token(self) -> str:
-        return str(os.getenv('TOKEN'))
-    
-    def prefix(self) -> str:
-        return str(os.getenv('PREFIX'))
-    
-    def mongodb_uri(self) -> str:
-        return str(os.getenv('MONGODB_URI'))
-    
-    def environment(self) -> str:
-        return str(os.getenv('ENVIRONMENT'))
+    '''
+    Defines constants, they should always be capitals and set via the type of FINAL.
+    '''
+    ENVIRONMENT: Final[bool] = str(os.getenv('ENVIRONMENT') or 'development').lower() == 'production'
+    TOKEN: Final[str] = str(os.getenv('TOKEN'))
+    PREFIX: Final[str] = str(os.getenv('PREFIX'))
+    MONGO_URI: Final[str] = str(os.getenv('MONGO_URI'))
 
-arcconstants = BlackstarConstants()
+constants = BlackstarConstants()
+
+LOARegFormat = r"^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?$"
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
-    arcconstants.mongodb_uri(),
+    constants.MONGO_URI,
     compressors=['zlib'],
     maxPoolSize=150,
     minPoolSize=10,
@@ -30,10 +31,10 @@ client = motor.motor_asyncio.AsyncIOMotorClient(
     serverSelectionTimeoutMS=5000,
 )
 
-if arcconstants.environment() == "PRODUCTION":
-    db = client['blackstar_db']
+if constants.ENVIRONMENT:
+    db = client['blackstar_prod']
 else:
-    db = client['blackstar_db_beta']
+    db = client['blackstar_beta']
 
 auto_replys = db.auto_replys
 loa = db.loa
@@ -45,11 +46,7 @@ reminders = db.reminders
 sessions = db.sessions
 departments = db.departments
 
-LOARegFormat = r"^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?$"
-loa_min = "1d"
-loa_max = "1y"
-
-if arcconstants.environment() == "PRODUCTION":
+if constants.ENVIRONMENT:
     loa_channel = 1412244838660968590
     loa_role = 1418067647177691156
 
@@ -69,3 +66,50 @@ else:
     central_command = 1450297654662660156
     ia_id = 1450297786254889021
     wolf_id = 1371489554279825439
+
+if not constants.ENVIRONMENT:
+    from rich.console import Console
+    from rich.logging import RichHandler
+    from rich.theme import Theme
+
+    console = Console(
+        theme=Theme(
+            {
+                'logging.level.info': '#a6e3a1',
+                'logging.level.debug': '#8aadf4',
+                'logging.level.warning': '#f9e2af',
+                'logging.level.error': '#f38ba8',
+            }
+        )
+    )
+    handler = RichHandler(tracebacks_width=200, console=console, rich_tracebacks=True)
+else:
+    handler = logging.StreamHandler()  # plain logs for prod
+
+
+handler.setFormatter(logging.Formatter('%(name)s: %(message)s'))
+level = logging.DEBUG if not constants.ENVIRONMENT else logging.INFO
+
+logger = logging.getLogger('InterChat')
+logger.setLevel(level)
+logger.addHandler(handler)
+logger.propagate = False
+
+discord_logger = logging.getLogger('discord')
+discord_logger.setLevel(logging.INFO)
+discord_logger.addHandler(handler)
+discord_logger.propagate = False
+
+discord_http_logger = logging.getLogger('discord.http')
+discord_http_logger.setLevel(logging.INFO)
+discord_http_logger.addHandler(handler)
+discord_http_logger.propagate = False
+
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    # Log the exception with full traceback
+    logger.critical('Uncaught exception', exc_info=(exc_type, exc_value, exc_traceback))

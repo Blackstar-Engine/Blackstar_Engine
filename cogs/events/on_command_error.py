@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from utils.constants import logger
 
 def create_dev_embed(error, guild, user, source, is_interaction):
     dev_embed = discord.Embed(title='Error', description=f'{error}', color=discord.Color.red())
@@ -68,6 +69,7 @@ class OnCommandError(commands.Cog):
 
         else:
             embed.description = "❌ Uh oh! An unexpected error occurred."
+            logger.error(f'An unexpected error has occurred: {error}')
 
             await send_dev_error(self.bot, error, guild, user, error, is_interaction)
         

@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 from utils.constants import profiles, departments
-from utils.ui.points.views.AcceptDenyButtons import AcceptDenyButtons
-from utils.ui.points.views.UnitSelect import UnitSelectView
+from ui.points.views.AcceptDenyButtons import AcceptDenyButtons
+from ui.points.views.UnitSelect import UnitSelectView
 
 
 class Points(commands.Cog):
