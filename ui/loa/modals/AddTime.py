@@ -2,7 +2,7 @@ import discord
 import re
 from datetime import timedelta
 from utils.constants import loa_channel, LOARegFormat, loa
-from utils.ui.loa.views.ExtendAcceptDenyButtons import ExtendAcceptDenyButtons
+from ui.loa.views.ExtendAcceptDenyButtons import ExtendAcceptDenyButtons
 
 class AddTimeModal(discord.ui.Modal):
     def __init__(self, bot, active_loa, user, member):

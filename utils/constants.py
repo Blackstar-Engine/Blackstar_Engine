@@ -14,7 +14,7 @@ class BlackstarConstants:
     ENVIRONMENT: Final[bool] = str(os.getenv('ENVIRONMENT') or 'development').lower() == 'production'
     TOKEN: Final[str] = str(os.getenv('TOKEN'))
     PREFIX: Final[str] = str(os.getenv('PREFIX'))
-    MONGO_URI: Final[str] = str(os.getenv('MONGO_URI'))
+    MONGO_URI: Final[str] = str(os.getenv('MONGODB_URI'))
 
 constants = BlackstarConstants()
 
@@ -31,10 +31,10 @@ client = motor.motor_asyncio.AsyncIOMotorClient(
     serverSelectionTimeoutMS=5000,
 )
 
-if constants.ENVIRONMENT:
-    db = client['blackstar_prod']
+if constants.ENVIRONMENT == "PRODUCTION":
+    db = client['blackstar_db']
 else:
-    db = client['blackstar_beta']
+    db = client['blackstar_db_beta']
 
 auto_replys = db.auto_replys
 loa = db.loa

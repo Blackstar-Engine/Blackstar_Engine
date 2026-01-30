@@ -1,5 +1,5 @@
 import discord
-from utils.ui.profile.modals.CreateProfile import CreateProfileModal
+from ui.profile.modals.CreateProfile import CreateProfileModal
 
 class CTXCreateProfileButton(discord.ui.View):
     def __init__(self, bot, user: discord.User):

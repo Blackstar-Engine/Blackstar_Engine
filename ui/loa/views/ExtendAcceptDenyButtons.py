@@ -1,5 +1,5 @@
 import discord
-from utils.ui.loa.modals.RequestDeny import RequestDenyModal
+from ui.loa.modals.RequestDeny import RequestDenyModal
 from utils.constants import loa_role, loa
 
 class ExtendAcceptDenyButtons(discord.ui.View):

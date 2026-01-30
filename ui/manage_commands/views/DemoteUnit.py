@@ -1,6 +1,6 @@
 import discord
 from utils.constants import departments
-from utils.ui.manage_commands.views.DemoteRank import DemoteRankView
+from ui.manage_commands.views.DemoteRank import DemoteRankView
 
 class DemoteUnitView(discord.ui.View):
     def __init__(self, profile):
