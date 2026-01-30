@@ -1,6 +1,6 @@
 import discord
 from utils.constants import loa_role, loa
-from utils.ui.loa.modals.RequestDeny import RequestDenyModal
+from ui.loa.modals.RequestDeny import RequestDenyModal
 
 class RequestAcceptDenyButtons(discord.ui.View):
     def __init__(self, bot, user, reason, start_date, end_date, time, embed):

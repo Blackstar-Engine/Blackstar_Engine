@@ -1,6 +1,6 @@
 import discord
-from utils.ui.loa.modals.AddTime import AddTimeModal
-from utils.ui.loa.modals.EndLOA import EndLOAModal
+from ui.loa.modals.AddTime import AddTimeModal
+from ui.loa.modals.EndLOA import EndLOAModal
 
 class ManageExtendButton(discord.ui.View):
     def __init__(self, bot, user, member, document):

@@ -9,7 +9,7 @@ from utils.constants import BlackstarConstants, auto_replys
 
 constants = BlackstarConstants()
 
-if constants.environment() == "PRODUCTION":
+if constants.ENVIRONMENT == "PRODUCTION":
     presence = "Viva La Blackstar"
 else:
     presence = "Doing Da Testing"
@@ -22,7 +22,7 @@ class Bot(commands.Bot):
         intent.members = True
 
         super().__init__(
-            command_prefix=constants.prefix(),
+            command_prefix=constants.PREFIX,
             intents=intent,
             chunk_guilds_at_startup=False,
             help_command=None,
@@ -92,7 +92,7 @@ async def start_bot():
     while retries < max_retries:
         try:
             print(f'Starting bot... (Attempt {retries + 1})')
-            await bot.start(constants.token())
+            await bot.start(constants.TOKEN)
         except (TimeoutError) as e:
             retries += 1
             print(f'Connection error occured. Thrown error: {e}')

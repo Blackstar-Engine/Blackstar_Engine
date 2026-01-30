@@ -1,9 +1,9 @@
 import discord
 from utils.constants import profiles, departments
-from utils.ui.manage_commands.modals.EditProfile import EditProfileModal
-from utils.ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
-from utils.ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
-from utils.ui.manage_commands.views.DemoteUnit import DemoteUnitView
+from ui.manage_commands.modals.EditProfile import EditProfileModal
+from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
+from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
+from ui.manage_commands.views.DemoteUnit import DemoteUnitView
 from utils.utils import interaction_check
 
 class ManageProfileButtons(discord.ui.View):
