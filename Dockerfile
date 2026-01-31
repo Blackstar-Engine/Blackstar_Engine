@@ -1,25 +1,42 @@
+# 1. Grab the uv binary from the official image
+FROM ghcr.io/astral-sh/uv:latest AS uv
 
-# Use a lightweight Python base
+# 2. Start the main image
 FROM python:3.12-slim
 
-# Prevent Python from writing .pyc files & force stdout/stderr to be unbuffered
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# Copy uv binaries into the slim image
+COPY --from=uv /uv /uvx /bin/
 
-# Set work directory
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    # Compile bytecode for faster startup
+    UV_COMPILE_BYTECODE=1 \
+    # Where the venv will live
+    VIRTUAL_ENV=/app/.venv
+
+# Update PATH so 'python' automatically uses the venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
 WORKDIR /app
 
-# Pre-install system dependencies (if needed)
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+# Copy requirements
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+# Install dependencies
+# --mount=type=cache uses Docker's build cache for uv, making re-builds instant
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv && \
+    uv pip install -r requirements.txt
 
 # Copy the bot code
 COPY . .
 
-# Use CMD to run the bot
+# Run the bot
+# Because we updated PATH above, this uses the venv python automatically
 CMD ["python", "-m", "main"]

@@ -7,9 +7,9 @@ services:
 
     working_dir: /app
 
-    command: python -m main
+    command: uv run main.py
 
     env_file:
-      - .env  
+      - .env
 
     restart: unless-stopped
