@@ -50,38 +50,39 @@ class DataImport(commands.Cog):
                     if discord_username == "N/A" or discord_username == "" or discord_username == "na":
                         print(f"Skipping entry with codename {codename} due to missing Discord username.")
                         continue
+                    else:
 
-                    for member in ctx.guild.members:
-                        if member.name == discord_username:
+                        for member in ctx.guild.members:
+                            if member.name == discord_username:
 
-                            profile = await profiles.find_one({'user_id': member.id, 'guild_id': ctx.guild.id})
-                            if profile:
-                                print(f"Profile for {discord_username} already exists. Skipping...")
-                                break
+                                profile = await profiles.find_one({'user_id': member.id, 'guild_id': ctx.guild.id})
+                                if profile:
+                                    print(f"Profile for {discord_username} already exists. Skipping...")
+                                    break
+                                else:
+
+                                    profile = {
+                                        'user_id': member.id,
+                                        'guild_id': ctx.guild.id,
+                                        'codename': codename,
+                                        'roblox_name': roblox_username,
+                                        'unit': {
+                                            f"{unit}": {
+                                                'rank': rank,
+                                                'is_active': status,
+                                                'current_points': float(current_point),
+                                                'total_points': float(total_point)
+                                            }
+                                        },
+                                        'private_unit': [],
+                                        'status': 'Active',
+                                        'join_date': join_date,
+                                        'timezone': timezone,
+                                    }
+
+                                    print(profile)
                             else:
-
-                                profile = {
-                                    'user_id': member.id,
-                                    'guild_id': ctx.guild.id,
-                                    'codename': codename,
-                                    'roblox_name': roblox_username,
-                                    'unit': {
-                                        f"{unit}": {
-                                            'rank': rank,
-                                            'is_active': status,
-                                            'current_points': float(current_point),
-                                            'total_points': float(total_point)
-                                        }
-                                    },
-                                    'private_unit': [],
-                                    'status': 'Active',
-                                    'join_date': join_date,
-                                    'timezone': timezone,
-                                }
-
-                                print(profile)
-                        else:
-                            print(f"{discord_username} not found in guild!")
+                                print(f"{discord_username} not found in guild!")
                 
             except Exception as e:
                 print(f"Error loading CSV from link: {e}")
