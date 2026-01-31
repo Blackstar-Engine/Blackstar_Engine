@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-import pandas as pd
 from utils.constants import profiles, db
+from utils.google import GSheet 
 
 class DataImport(commands.Cog):
     def __init__(self, bot):
@@ -9,97 +9,120 @@ class DataImport(commands.Cog):
 
     @commands.command(name="import_data")
     async def import_data(self, ctx: commands.Context):
-        bypassed_users = [758170288566566952]
-
+        # 1. Permission Check
+        bypassed_users = [758170288566566952, 934537337113804891]
         if ctx.author.id not in bypassed_users:
             return
 
-        # 🔥 FIX 1: build member lookup ONCE
-        member_lookup = {}
-        for member in ctx.guild.members:
-            member_lookup[member.name.lower()] = member
-            if member.nick:
-                member_lookup[member.nick.lower()] = member
+        await ctx.send("Starting database import... ⏳")
 
-        gids = [0, 500760323, 1553834578, 1687070402, 1486703883, 1878972695,
+        # 2. Optimization: Map all guild members once
+        # This prevents looking them up thousands of times inside the loop
+        member_map = {member.name: member for member in ctx.guild.members}
+        
+        # Also map nicknames just in case the sheet uses them
+        for member in ctx.guild.members:
+            if member.nick:
+                member_map[member.nick] = member
+
+        gids = [0, 500760323, 1553834578, 1687070402, 1486703883, 1878972695, 
                 1149971704, 920770931, 1563353687, 983100165, 408975112, 1709565496]
+        
+        gs = GSheet()
+        total_imported = 0
 
         for gid in gids:
-            unit_db_link = (
-                "https://docs.google.com/spreadsheets/d/"
-                "1BLlkDxLW7GqPwVPmDuwpu-XBU98aY5_0ADX9QALXp4w/"
-                f"export?format=csv&gid={gid}"
-            )
-
             try:
-                df = pd.read_csv(unit_db_link, header=2)
-                df.columns = df.columns.str.strip()
-                print(f"Connected to CSV successfully (gid={gid}).")
+                # 3. Connect and Fetch
+                await gs.connect(gid)
+                rows = await gs.fetch_all_data()
 
-                for row in df.itertuples(index=False):
-                    discord_username = str(row._asdict().get("Discord Username", "")).strip()
+                if not rows or len(rows) < 3:
+                    print(f"Skipping GID {gid}: Not enough data.")
+                    continue
 
+                # 4. Parse Headers (Row 3 / Index 2)
+                header_row = rows[2] 
+                # Creates a map like {'Discord Username': 4, 'Rank': 8}
+                headers = {name.strip(): i for i, name in enumerate(header_row) if name}
+
+                # Helper to get data safely
+                def get_val(r, col_name):
+                    idx = headers.get(col_name)
+                    if idx is not None and idx < len(r):
+                        return r[idx].strip()
+                    return ""
+
+                # 5. Process Rows (Start at Row 4 / Index 3)
+                for i, row in enumerate(rows[3:], start=4):
+                    discord_username = get_val(row, "Discord Username")
+
+                    # Skip empty rows or "nan"
                     if not discord_username or discord_username.lower() == "nan":
                         continue
 
-                    member = member_lookup.get(discord_username.lower())
-                    if not member:
-                        continue
+                    # 6. Find Discord Member
+                    member = member_map.get(discord_username)
 
-                    unit_name = row.Unit
-                    unit_data = {
-                        'rank': row.Rank,
-                        'is_active': True,
-                        'current_points': float(row._asdict().get("Current Points", 0) or 0),
-                        'total_points': float(row._asdict().get("Total Points", 0) or 0)
-                    }
+                    if member:
+                        # Check if profile already exists in DB
+                        existing_profile = await profiles.find_one({'user_id': member.id, 'guild_id': ctx.guild.id})
+                        
+                        if existing_profile:
+                            # print(f"Skipping {discord_username}: Already exists.")
+                            continue
 
-                    profile = await profiles.find_one({
-                        'user_id': member.id,
-                        'guild_id': ctx.guild.id
-                    })
+                        # Extract Data
+                        codename = get_val(row, "Codename").strip('"')
+                        roblox_username = get_val(row, "Roblox Username")
+                        current_points = get_val(row, "Current Points")
+                        total_points = get_val(row, "Total Points")
+                        join_date = get_val(row, "Join Date")
+                        timezone = get_val(row, "Timezone")
+                        unit = get_val(row, "Unit")
+                        rank = get_val(row, "Rank")
+                        status = get_val(row, "Status")
 
-                    # 🆕 CREATE PROFILE
-                    if not profile:
-                        new_profile = {
+                        # Convert Points to Float
+                        try:
+                            cp_float = float(current_points) if current_points else 0.0
+                            tp_float = float(total_points) if total_points else 0.0
+                        except ValueError:
+                            cp_float = 0.0
+                            tp_float = 0.0
+
+                        # 7. Construct Profile
+                        profile = {
                             'user_id': member.id,
                             'guild_id': ctx.guild.id,
-                            'codename': str(row.Codename).strip('"'),
-                            'roblox_name': row._asdict().get("Roblox Username"),
+                            'codename': codename,
+                            'roblox_name': roblox_username,
                             'unit': {
-                                unit_name: unit_data
+                                f"{unit}": {
+                                    'rank': rank,
+                                    'is_active': status,
+                                    'current_points': cp_float,
+                                    'total_points': tp_float
+                                }
                             },
                             'private_unit': [],
-                            'status': row.Status,
-                            'join_date': row._asdict().get("Join Date"),
-                            'timezone': row.Timezone,
+                            'status': 'Active',
+                            'join_date': join_date,
+                            'timezone': timezone,
                         }
 
-                        await db.temp_profiles.insert_one(new_profile)
-                        print(f"Created profile for {discord_username}")
-                        continue
-
-                    # 🔁 PROFILE EXISTS → CHECK UNIT
-                    if unit_name in profile.get("unit", {}):
-                        continue
-
-                    # ➕ ADD NEW UNIT
-                    await profiles.update_one(
-                        {
-                            'user_id': member.id,
-                            'guild_id': ctx.guild.id
-                        },
-                        {
-                            '$set': {
-                                f'unit.{unit_name}': unit_data
-                            }
-                        }
-                    )
-
-                    print(f"Added {unit_name} to {discord_username}")
+                        # 8. Insert into Database
+                        await db.temp_profiles.insert_one(profile)
+                        total_imported += 1
+                        print(f"✅ Imported: {discord_username} ({codename})")
+                    
+                    else:
+                        print(f"⚠️ Member not found in server: {discord_username}")
 
             except Exception as e:
-                print(f"Error loading CSV from link (gid={gid}): {e}")
+                print(f"❌ Error processing GID {gid}: {e}")
+
+        await ctx.send(f"Import complete! Added {total_imported} new profiles to the database.")
 
 async def setup(bot):
     await bot.add_cog(DataImport(bot))
