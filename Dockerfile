@@ -1,44 +1,52 @@
 # syntax=docker/dockerfile:1
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
 
-# 1. Use the official UV image with Python 3.12 (Stable)
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
-
-# 2. Set Env Vars
+# Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    UV_COMPILE_BYTECODE=1 \
-    VIRTUAL_ENV=/app/.venv \
-    PATH="/app/.venv/bin:$PATH"
+    PIP_NO_CACHE_DIR=1 \
+    DEBIAN_FRONTEND=noninteractive
 
-# 3. Create non-root user
-RUN groupadd -g 1000 interchat && \
-    useradd -u 1000 -g interchat -m -s /bin/bash interchat
+# Create non-root user
+RUN groupadd -g 1000 botuser && \
+    useradd -u 1000 -g botuser -m -s /bin/bash botuser
 
-# 4. Install Git (Required for discord.py from GitHub)
+# Install system dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    git build-essential && \
-    rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /app
 
-# 5. Copy requirements
-COPY requirements.txt .
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
-# 6. Install dependencies using 'uv pip' (Compatible with requirements.txt)
+# Install dependencies (without the project itself)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv venv && \
-    uv pip install -r requirements.txt
+    uv sync --frozen --no-dev --no-install-project
 
-# 7. Copy your code
+# Copy application code
 COPY . .
 
-# 8. Set permissions
-RUN chown -R interchat:interchat /app
+# Install the project and set ownership
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev && \
+    chown -R botuser:botuser /app
 
-USER interchat
+# Switch to non-root user
+USER botuser
 
-# 9. Run the bot
-CMD ["python", "-m", "main"]
+# Set default credentials path
+ENV GOOGLE_APPLICATION_CREDENTIALS=/home/botuser/home/credentials.json
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD ["uv", "run", "python", "-c", "import sys; sys.exit(0)"]
+
+# Run the bot
+CMD ["uv", "run", "python", "-m", "main"]

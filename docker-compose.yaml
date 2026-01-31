@@ -12,4 +12,7 @@ services:
     env_file:
       - .env
 
+    volumes:
+      - ~/home/credentials.json:/home/botuser/home/credentials.json:ro
+
     restart: unless-stopped
