@@ -1,10 +1,12 @@
 import discord
-from utils.constants import profiles
+from utils.constants import profiles, overall_promotion_channel
 from utils.utils import has_approval_perms
 from ui.promotion.modals.PointsRemoval import PointsRemovalModal
+from datetime import datetime
 class PromotionRequestView(discord.ui.View):
-    def __init__(self, user: discord.Member, embed: discord.Embed, profile, department, new_rank):
+    def __init__(self, bot, user: discord.Member, embed: discord.Embed, profile, department, new_rank):
         super().__init__(timeout=None)
+        self.bot = bot
         self.user = user
         self.embed = embed
         self.profile = profile
@@ -52,6 +54,15 @@ class PromotionRequestView(discord.ui.View):
         await interaction.message.edit(embed=self.embed, view=None)
 
         await self.user.send(f"Your Promotion to **{self.new_rank}** in **{interaction.guild.name}** has been **APPROVED**")
+
+        channel: discord.TextChannel = self.bot.get_channel(overall_promotion_channel)
+        user_profile: discord.Member = self.bot.get_user(self.profile.get("user_id"))
+        if channel:
+            embed = discord.Embed(title="New Promotion", description=f"**User: ** {user_profile.mention}\n**New Rank: ** {self.new_rank}\n**Department: ** {self.department}", color=discord.Color.green())
+            embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+
+            embed.set_thumbnail(url=user_profile.display_avatar.url)
+            await channel.send(embed=embed)
 
     @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
     async def deny(

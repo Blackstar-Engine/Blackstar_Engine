@@ -94,6 +94,7 @@ class Promotion(commands.Cog):
         embed.add_field(name="Proof", value=proof, inline=False)
 
         view = PromotionRequestView(
+            self.bot,
             ctx.author,
             embed,
             profile,
