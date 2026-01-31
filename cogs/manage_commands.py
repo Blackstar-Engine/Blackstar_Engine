@@ -8,52 +8,6 @@ from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
 
-class DemoteRankView(discord.ui.View):
-    def __init__(self, profile, unit, ranks, current_rank):
-        super().__init__(timeout=120)
-
-        self.profile = profile
-        self.unit = unit
-
-        # Find current rank order
-        current_rank_obj = next(
-            (r for r in ranks if r["name"] == current_rank),
-            None
-        )
-
-        if not current_rank_obj:
-            self.valid_ranks = []
-        else:
-            current_order = current_rank_obj["order"]
-            self.valid_ranks = [
-                r for r in ranks
-                if r.get("order", 0) <= current_order
-            ]
-
-        options = [
-            discord.SelectOption(label=r["name"])
-            for r in self.valid_ranks
-        ]
-
-        self.rank_select.options = options
-
-    @discord.ui.select(placeholder="Select rank to demote to", options=[])
-    async def rank_select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        new_rank = select.values[0]
-
-        await profiles.update_one(
-            {"_id": self.profile["_id"]},
-            {"$set": {
-                f"unit.{self.unit}.rank": new_rank
-            }}
-        )
-
-        await interaction.response.send_message(
-            f"✅ {self.unit} rank updated to **{new_rank}**",
-            ephemeral=True
-        )
-
-
 class ManageCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -208,7 +162,6 @@ class ManageCommands(commands.Cog):
                 description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
                 color=discord.Color.light_grey()
             )
-            embed.add_field(name="Points", value=f"**Current Points: **{profile.get('current_points')}\n**Total Points: **{profile.get('total_points')}", inline=True)
 
             embed.set_author(name=f"{profile.get('codename')}'s Profile Information", icon_url=user.display_avatar.url)
             embed.set_thumbnail(url=user.display_avatar.url)
