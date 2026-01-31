@@ -33,7 +33,8 @@ class Bot(commands.Bot):
         bypassed_users = [
             758170288566566952, #Ghost
             1371489554279825439, #Wolf
-            412192199028113408 #Maz
+            412192199028113408, #Maz
+            934537337113804891 # big daddy
         ]
 
         return user.id in bypassed_users
@@ -80,6 +81,10 @@ class Bot(commands.Bot):
 
         await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
+        for guild in bot.guild:
+            print(f'Chunked: {guild.id}')
+            await guild.chunk()
+        
         print(f'{self.user} is ready.')
 
 bot = Bot()
