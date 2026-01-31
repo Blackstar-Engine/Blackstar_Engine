@@ -50,8 +50,6 @@ class CreateProfileModal(discord.ui.Modal):
                 'roblox_name': r_name,
                 'unit': [],
                 'private_unit': [],
-                'current_points': 0,
-                'total_points': 0,
                 'status': 'Active',
                 'join_date': str(datetime.now().date()),
                 'timezone': timezone,
