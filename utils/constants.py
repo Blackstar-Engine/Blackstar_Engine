@@ -46,7 +46,7 @@ reminders = db.reminders
 sessions = db.sessions
 departments = db.departments
 
-if constants.ENVIRONMENT:
+if constants.ENVIRONMENT == "PRODUCTION":
     loa_channel = 1412244838660968590
     loa_role = 1418067647177691156
 
@@ -67,7 +67,7 @@ else:
     ia_id = 1450297786254889021
     wolf_id = 1371489554279825439
 
-if not constants.ENVIRONMENT:
+if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console
     from rich.logging import RichHandler
     from rich.theme import Theme
@@ -88,9 +88,9 @@ else:
 
 
 handler.setFormatter(logging.Formatter('%(name)s: %(message)s'))
-level = logging.DEBUG if not constants.ENVIRONMENT else logging.INFO
+level = logging.DEBUG if constants.ENVIRONMENT != "PRODUCTION" else logging.INFO
 
-logger = logging.getLogger('InterChat')
+logger = logging.getLogger('Blackstar Engine')
 logger.setLevel(level)
 logger.addHandler(handler)
 logger.propagate = False

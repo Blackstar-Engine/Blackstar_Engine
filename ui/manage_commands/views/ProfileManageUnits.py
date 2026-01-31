@@ -2,6 +2,17 @@ import discord
 from utils.constants import profiles, departments
 from utils.utils import interaction_check
 
+
+def ensure_unit_defaults(unit_data: dict, first_rank: str | None):
+    """
+    Initialize unit fields safely without overwriting existing data.
+    """
+    unit_data.setdefault("rank", first_rank)
+    unit_data.setdefault("is_active", True)
+    unit_data.setdefault("current_points", 0)
+    unit_data.setdefault("total_points", 0)
+
+
 class ProfileManageUnitsView(discord.ui.View):
     def __init__(self, bot, profile, user, normal_units, private_units):
         super().__init__(timeout=300)
@@ -58,7 +69,7 @@ class ProfileManageUnitsView(discord.ui.View):
     ):
         await interaction_check(self.user, interaction.user)
 
-        # ───── NORMAL UNITS (rank + active/inactive) ─────
+        # ───── NORMAL UNITS SELECTION ─────
 
         if self.normal_units_interacted:
             selected_units = set(self.profile_manage_units.values)
@@ -69,7 +80,7 @@ class ProfileManageUnitsView(discord.ui.View):
                 if opt.default
             }
 
-        # ───── PRIVATE UNITS (in or out) ─────
+        # ───── PRIVATE UNITS SELECTION ─────
 
         if self.private_units_interacted:
             selected_private_units = set(self.profile_manage_private_units.values)
@@ -88,10 +99,11 @@ class ProfileManageUnitsView(discord.ui.View):
 
         dept_map = {d["display_name"]: d for d in all_departments}
 
-        # Existing unit data
+        # Existing unit data (copy to mutate safely)
         units = dict(self.profile.get("unit", {}))
 
-        # Activate / add selected units
+        # ───── ACTIVATE / ADD SELECTED UNITS ─────
+
         for unit in selected_units:
             dept = dept_map.get(unit)
             if not dept:
@@ -103,33 +115,34 @@ class ProfileManageUnitsView(discord.ui.View):
                 else None
             )
 
-            units.setdefault(unit, {
-                "rank": first_rank,
-                "is_active": True
-            })
+            unit_data = units.setdefault(unit, {})
+            ensure_unit_defaults(unit_data, first_rank)
+            unit_data["is_active"] = True
 
-            units[unit]["is_active"] = True
+        # ───── DEACTIVATE UNSELECTED UNITS (DO NOT DELETE) ─────
 
-        # Deactivate unselected units (do NOT delete — preserves rank)
-        for unit in units:
-            if unit not in selected_units:
-                units[unit]["is_active"] = False
+        for unit_name, unit_data in units.items():
+            if unit_name not in selected_units:
+                unit_data["is_active"] = False
 
         # ───── SAVE PROFILE ─────
 
         await profiles.update_one(
             {"_id": self.profile["_id"]},
-            {"$set": {
-                "unit": units,
-                "private_unit": list(selected_private_units)
-            }}
+            {
+                "$set": {
+                    "unit": units,
+                    "private_unit": list(selected_private_units)
+                }
+            }
         )
 
         # ───── RESPONSE EMBED ─────
 
         active_units = [
-            unit for unit, data in units.items()
-            if data.get("is_active")
+            unit_name
+            for unit_name, unit_data in units.items()
+            if unit_data.get("is_active")
         ]
 
         embed = discord.Embed(

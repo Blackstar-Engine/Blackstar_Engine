@@ -1,7 +1,7 @@
 import discord
 from utils.constants import profiles
 from utils.utils import has_approval_perms
-
+from ui.promotion.modals.PointsRemoval import PointsRemovalModal
 class PromotionRequestView(discord.ui.View):
     def __init__(self, user: discord.Member, embed: discord.Embed, profile, department, new_rank):
         super().__init__(timeout=None)
@@ -24,12 +24,25 @@ class PromotionRequestView(discord.ui.View):
             )
             return
         
+        modal = PointsRemovalModal(self.profile)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        points_to_remove = modal.data
+        if points_to_remove is None:
+            await interaction.followup.send("Promotion approval cancelled.", ephemeral=True)
+            return
+        
+        
         await profiles.update_one(
             {"_id": self.profile["_id"]},
             {
                 "$set": {
                     f"unit.{self.department}.rank": self.new_rank
                 },
+                "$inc": {
+                    f"unit.{self.department}.current_points": -float(points_to_remove)
+                }
             }
         )
 
