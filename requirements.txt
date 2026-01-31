@@ -4,5 +4,4 @@ cogwatch
 python-dotenv
 motor
 jishaku
-pandas
-gspread
+gspread_asyncio
