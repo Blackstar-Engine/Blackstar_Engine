@@ -11,13 +11,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd -g 1000 botuser && \
     useradd -u 1000 -g botuser -m -s /bin/bash botuser
 
-# Install system dependencies
+# Install system dependencies INCLUDING GIT
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
