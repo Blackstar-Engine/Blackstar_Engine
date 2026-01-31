@@ -1,0 +1,31 @@
+[project]
+name = "blackstar-engine-1"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+  "aiofiles",
+  "aiohttp",
+  "alembic",
+  "asyncpg",
+  "cogwatch",
+  "colorlog",
+  "discord-py @ git+https://github.com/Rapptz/discord.py.git",
+  "dotenv",
+  "jinja2",
+  "jishaku",
+  "playwright",
+  "cuid2",
+  "psutil",
+  "pyyaml",
+  "redis",
+  "requests",
+  "sentry-sdk",
+  "six",
+  "rich",
+  "motor>=3.7.1",
+  "pandas",
+  "python-dotenv>=1.2.1",
+  "gspread-asyncio>=2.0.0",
+]

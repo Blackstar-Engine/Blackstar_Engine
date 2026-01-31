@@ -1,0 +1,8 @@
+discord.py
+six
+cogwatch
+python-dotenv
+motor
+jishaku
+pandas
+gspread
