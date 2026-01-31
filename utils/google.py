@@ -9,18 +9,27 @@ load_dotenv()
 def get_creds():
     """
     Create Google credentials from a JSON file.
-    Expects credentials at ~/home/credentials.json by default.
     """
-    # Path to the credentials file (expanduser handles ~ expansion)
-    creds_path = os.path.expanduser(
-        os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "~/home/credentials.json")
-    )
+    # Use the environment variable set in docker-compose
+    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/app/credentials.json")
+    
+    # Debug: Print the path and check if it exists
+    print(f"🔍 Looking for credentials at: {creds_path}")
+    print(f"🔍 File exists: {os.path.exists(creds_path)}")
+    print(f"🔍 Is file: {os.path.isfile(creds_path)}")
+    print(f"🔍 Is directory: {os.path.isdir(creds_path)}")
     
     if not os.path.exists(creds_path):
         raise FileNotFoundError(
             f"Google credentials file not found at: {creds_path}\n"
-            f"Please ensure credentials.json is at ~/home/credentials.json\n"
-            f"or set GOOGLE_APPLICATION_CREDENTIALS environment variable"
+            f"Please ensure credentials.json is mounted correctly"
+        )
+    
+    if os.path.isdir(creds_path):
+        raise IsADirectoryError(
+            f"Expected a file but found a directory at: {creds_path}\n"
+            f"This usually means the source file doesn't exist on the host.\n"
+            f"Check that your credentials.json exists at the path specified in docker-compose.yml"
         )
     
     try:

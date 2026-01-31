@@ -13,6 +13,13 @@ services:
       - .env
 
     volumes:
-      - ~/home/credentials.json:/home/botuser/home/credentials.json:ro
+      # Use absolute path or check where your credentials actually are
+      - /home/tristyn/credentials.json:/app/credentials.json:ro # change me
+      # find ~ -name "credentials.json" 2>/dev/null
+      # OR if it's in the current directory:
+      # - ./credentials.json:/app/credentials.json:ro
+
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
 
     restart: unless-stopped
