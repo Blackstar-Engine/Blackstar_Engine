@@ -45,6 +45,19 @@ class ThreadProfileCreation(commands.Cog):
             return await thread.send(embed=embed)
         
         codename = main_message[codename_start + 9:discord_username].strip()
+
+        profanity_list = [
+                        "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
+                        "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
+                        "cunt", "nigger", "mother fucker", "titties", "titty", "boobs", "cum",
+                        "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker"
+                        ]
+        for word in profanity_list:
+            result = codename.lower().find(word)
+            if result != -1:
+                embed = discord.Embed(title="Profanity Detected", description="We do not allow any type of profanity in codenames. Please reopen another thread and choose a different codename.", color=discord.Color.red())
+                return await thread.send(embed=embed)
+
         roblox_name = main_message[roblox_start + 13:department_start].strip()
         department = main_message[department_start + 11:unit_start].strip()
         timezone = main_message[timezone_start + 10:reason_start].strip()
@@ -117,7 +130,10 @@ class ThreadProfileCreation(commands.Cog):
 
         dm_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
         dm_embed.set_image(url="https://cdn.discordapp.com/attachments/1450512700034781256/1463307219159220316/Untitled_design_13.gif?ex=697be68b&is=697a950b&hm=53b2c67aedf52d6392e6c41c4d708e1a52b1c4c9bdda5c7c0f304c717e04cf04&")
-        await member.send(embed=dm_embed)
+        try:
+            await member.send(embed=dm_embed)
+        except discord.Forbidden:
+            return
 
 async def setup(bot):
     await bot.add_cog(ThreadProfileCreation(bot))
