@@ -48,7 +48,7 @@ class CreateProfileModal(discord.ui.Modal):
                 'guild_id': guild,
                 'codename': codename,
                 'roblox_name': r_name,
-                'unit': [],
+                'unit': {},
                 'private_unit': [],
                 'status': 'Active',
                 'join_date': str(datetime.now().date()),

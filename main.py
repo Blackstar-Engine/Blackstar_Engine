@@ -81,7 +81,7 @@ class Bot(commands.Bot):
 
         await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
-        for guild in bot.guild:
+        for guild in bot.guilds:
             print(f'Chunked: {guild.id}')
             await guild.chunk()
         
