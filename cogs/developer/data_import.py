@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import pandas as pd
-from utils.constants import profiles
+from utils.constants import profiles, db
 
 class DataImport(commands.Cog):
     def __init__(self, bot):
@@ -47,12 +47,14 @@ class DataImport(commands.Cog):
                     rankings,
                     statuses
                 ):
-                    if discord_username == "N/A" or discord_username == "" or discord_username == "na":
-                        print(f"Skipping entry with codename {codename} due to missing Discord username.")
+                    discord_username = str(discord_username)
+                    #print(discord_username)
+                    if discord_username == "nan" or discord_username == "":
+                        # print(f"Skipping entry with codename {codename} due to missing Discord username.")
                         continue
                     else:
-
                         for member in ctx.guild.members:
+                            #print(discord_username, " | member name: ", member.name)
                             if member.name == discord_username:
 
                                 profile = await profiles.find_one({'user_id': member.id, 'guild_id': ctx.guild.id})
@@ -80,10 +82,10 @@ class DataImport(commands.Cog):
                                         'timezone': timezone,
                                     }
 
-                                    print(profile)
+                                    await db.temp_profiles.insert_one(profile)
                             else:
-                                print(f"{discord_username} not found in guild!")
-                
+                                # print(f"{discord_username} not found in guild!")
+                                continue
             except Exception as e:
                 print(f"Error loading CSV from link: {e}")
 
