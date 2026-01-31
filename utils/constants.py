@@ -57,6 +57,7 @@ if constants.ENVIRONMENT == "PRODUCTION":
     ia_id = 1413193754013073459
     wolf_id = 1371489554279825439
     overall_promotion_channel = 1412244417380618320
+    profile_thread_channel = 1433946174791876740
 else:
     loa_channel = 1454232138571448524
     loa_role = 1454233756545323200
@@ -68,6 +69,7 @@ else:
     ia_id = 1450297786254889021
     wolf_id = 1371489554279825439
     overall_promotion_channel = 1450298055336136716
+    profile_thread_channel = 1450298068162576525
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console
