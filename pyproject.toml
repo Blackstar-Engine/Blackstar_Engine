@@ -25,4 +25,5 @@ dependencies = [
   "six",
   "rich",
   "motor>=3.7.1",
+  "pandas"
 ]
