@@ -74,7 +74,7 @@ class Promotion(commands.Cog):
             return await ctx.send(embed=embed, ephemeral=True)
 
         if next_rank.get("appointment_only"):
-            embed = discord.Embed(title="", description="This rank is appointment-only.", color=discord.Color.dark_embed())
+            embed = discord.Embed(title="", description=f"{next_rank['name']} is an appointment-only rank.", color=discord.Color.dark_embed())
             return await ctx.send(embed=embed, ephemeral=True)
 
         # ─── Send request ───
@@ -102,7 +102,7 @@ class Promotion(commands.Cog):
         )
         await channel.send(embed=embed, view=view)
 
-        await ctx.send("Promotion request submitted.", ephemeral=True)
+        await ctx.send("Promotion request submitted.", ephemeral=True, delete_after=10)
 
 
 async def setup(bot: commands.Bot):

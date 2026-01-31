@@ -38,7 +38,7 @@ class ManageProfileButtons(discord.ui.View):
 
         embed = discord.Embed(
             title="Unit Information",
-            description=f"**Unit Name: ** {value}\n**Rank: ** {department.get('rank')}",
+            description=f"**Unit Name: ** {value}\n**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}",
             color=discord.Color.light_grey()
         )
 
@@ -176,7 +176,7 @@ class ManageProfileButtons(discord.ui.View):
             f"**Codename:** {self.profile.get('codename')}\n"
             f"**Roblox Name:** {self.profile.get('r_name')}\n"
             f"**Timezone:** {self.profile.get('timezone')}\n"
-            f"**Private Unit(sssssssssss):** {private_unit}\n"
+            f"**Private Unit(s):** {private_unit}\n"
             f"**Join Date:** {self.profile.get('join_date')}\n"
             f"**Status:** {self.profile.get('status').title()}"
         )

@@ -2,13 +2,14 @@ import discord
 from utils.constants import ia_id, central_command, high_command, site_command, foundation_command, wolf_id, profiles
 
 class AcceptDenyButtons(discord.ui.View):
-    def __init__(self, bot, user, points, embed, profile):
+    def __init__(self, bot, user, points, embed, profile, dept):
         super().__init__(timeout=None)
         self.bot = bot
         self.points = points
         self.embed: discord.Embed = embed
         self.profile = profile
         self.user: discord.Member = user
+        self.dept = dept
 
     @discord.ui.button(
         label="Accept",
@@ -67,8 +68,8 @@ class AcceptDenyButtons(discord.ui.View):
         await profiles.update_one(
             self.profile,
             {'$inc': {
-                "current_points": self.points,
-                "total_points": self.points
+                f"unit.{self.dept}.current_points": self.points,
+                f"unit.{self.dept}.total_points": self.points
             }}
         )
 
