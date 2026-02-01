@@ -8,6 +8,8 @@ class AutoReply(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        await self.bot.wait_until_ready()
+        
         if message.author == self.bot.user:
             return
         

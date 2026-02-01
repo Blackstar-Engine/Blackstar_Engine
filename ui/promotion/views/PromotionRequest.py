@@ -57,6 +57,7 @@ class PromotionRequestView(discord.ui.View):
 
         channel: discord.TextChannel = self.bot.get_channel(overall_promotion_channel)
         user_profile: discord.Member = self.bot.get_user(self.profile.get("user_id"))
+        
         if channel:
             embed = discord.Embed(title="New Promotion", description=f"**User: ** {user_profile.mention}\n**New Rank: ** {self.new_rank}\n**Department: ** {self.department}", color=discord.Color.green())
             embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")

@@ -7,7 +7,7 @@ from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
-
+from utils.utils import fetch_profile, fetch_unit_options
 class ManageCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -97,15 +97,18 @@ class ManageCommands(commands.Cog):
 
     @manage.command(name='auto_reply', description='Manage auto replys')
     async def auto_reply(self, ctx: commands.Context):
+        # User must be in foundation or site command to run this command
         foundation_role = await ctx.guild.fetch_role(foundation_command)
         site_role = await ctx.guild.fetch_role(site_command)
 
         if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
             return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
         
+        # Find all auto replys and create the paginator view object
         items = [record for record in self.bot.auto_replys if record['guild_id'] == ctx.guild.id]
         self.auto_reply_view = PaginatorView(self.bot, ctx.author, items)
 
+        # Add an "Add", "Edit", and "Remove" button to the paginator
         add_button = Button(
             label="Add",
             style=discord.ButtonStyle.green,
@@ -128,6 +131,8 @@ class ManageCommands(commands.Cog):
         remove_button.callback = self.AR_remove_record
 
         self.auto_reply_view.extra_buttons = [add_button, edit_button, remove_button]
+
+        # Update the buttons and create the embed from the paginator
         self.auto_reply_view.update_buttons()
 
         embed = self.auto_reply_view.create_record_embed()
@@ -135,28 +140,24 @@ class ManageCommands(commands.Cog):
 
     @manage.command(name="profile", description="Manage a users profile")
     async def manage_profile(self, ctx: commands.Context, user: discord.User):
+        # User must be in foundation or site command to run this command
         foundation_role = await ctx.guild.fetch_role(foundation_command)
         site_role = await ctx.guild.fetch_role(site_command)
 
         if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
             return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
 
-        profile = await profiles.find_one({'user_id': user.id, 'guild_id': ctx.guild.id})
+        # check to see if they have a profile
+        profile = await fetch_profile(ctx)
         if not profile:
-            await ctx.send(f"I cannot find a profile for {user.mention}! Please try again.", ephemeral=True)
+            return
         else:
-            options = []
-            units = dict(profile.get("unit", {}))
-
-            for unit, data in units.items():
-                if data.get("is_active"):
-                    options.append(discord.SelectOption(label=unit))
-
-            
-            if options == []:
-                options.append(discord.SelectOption(label="No Active Units", value="no_units"))
+            # Fetch active departments
+            options = fetch_unit_options(profile)
 
             private_unit = ", ".join(profile.get('private_unit', []))
+
+            # Create the embed and view
             embed = discord.Embed(
                 title="",
                 description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
@@ -168,8 +169,10 @@ class ManageCommands(commands.Cog):
 
             view = ManageProfileButtons(self.bot, ctx.author, profile, embed, options)
 
+            # Send to the user
             message = await ctx.send(embed=embed, view=view, ephemeral=True)
 
+            # Add the message Object to the view
             view.main_message = message
 
 async def setup(bot: commands.Bot):

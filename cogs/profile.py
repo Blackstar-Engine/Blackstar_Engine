@@ -4,6 +4,7 @@ from utils.constants import profiles
 from ui.profile.modals.CreateProfile import CreateProfileModal
 from ui.profile.views.UnitSelect import UnitSelectView
 from ui.profile.views.CTXCreateProfileButton import CTXCreateProfileButton
+from utils.utils import fetch_profile, fetch_unit_options
 
 class Profile(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -11,8 +12,12 @@ class Profile(commands.Cog):
 
     @commands.hybrid_command(name="profile", description="View or create your profile in the server.", with_app_command=True)
     async def profile(self, ctx: commands.Context):
-        profile = await profiles.find_one({'user_id': ctx.author.id, 'guild_id': ctx.guild.id})
+        await ctx.defer()
+
+        # Fetch the profile and check to see if they alrady have one or not
+        profile = await fetch_profile(ctx, False)
         if not profile:
+            # Try to send the creation as a modal, if not send a button to the channel
             try:
                 modal = CreateProfileModal(self.bot)
                 await ctx.interaction.response.send_modal(modal)
@@ -20,17 +25,12 @@ class Profile(commands.Cog):
                 view = CTXCreateProfileButton(self.bot, ctx.author)
                 await ctx.send("Please click the button to continue!", view=view)
         else:
-            options = []
-            units = dict(profile.get("unit", {}))
-
-            for unit, data in units.items():
-                if data.get("is_active"):
-                    options.append(discord.SelectOption(label=unit))
-            
-            if options == []:
-                options.append(discord.SelectOption(label="No Active Units", value="no_units"))
+            # Fetch current department options
+            options = fetch_unit_options(profile)
 
             private_unit = ", ".join(profile.get('private_unit', []))
+
+            # Create the embed, view, and send to the channel
             embed = discord.Embed(
                 title="",
                 description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
