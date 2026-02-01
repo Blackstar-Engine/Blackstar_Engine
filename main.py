@@ -34,7 +34,7 @@ class Bot(commands.Bot):
             758170288566566952, #Ghost
             1371489554279825439, #Wolf
             412192199028113408, #Maz
-            934537337113804891 # big daddy
+            934537337113804891 #Bread
         ]
 
         return user.id in bypassed_users

@@ -9,6 +9,8 @@ class ThreadProfileCreation(commands.Cog):
     
     @commands.Cog.listener()
     async def on_thread_create(self, thread: discord.Thread):
+        await self.bot.wait_until_ready()
+
         if thread.parent_id != profile_thread_channel:
             return
         

@@ -37,7 +37,7 @@ class EditProfileModal(discord.ui.Modal):
         )
 
         self.status = discord.ui.TextInput(
-            label="Status (Active or Inactive)",
+            label="Status (Active|Inactive|LOA|ROA|Retired)",
             placeholder=profile.get('status'),
             default=profile.get('status'),
             required=True,
@@ -56,9 +56,9 @@ class EditProfileModal(discord.ui.Modal):
         codename = self.codename.value
         status = self.status.value
 
-        if status.lower() not in ['active', 'inactive']:
-            await interaction.response.send_message("Status must be either 'Active' or 'Inactive'. Please try again.", ephemeral=True)
-            return
+        if status.lower() not in ['active', 'inactive', 'loa', 'roa', 'retired']:
+            embed = discord.Embed(title="Error", description="Please make sure the status is one of below:\n\n`Active`\n`Inactive`\n`LOA`\n`ROA`\n`retired`", color=discord.Color.light_grey())
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
 
         await profiles.update_one({'user_id': interaction.user.id, 'guild_id': interaction.guild.id}, {'$set': {'roblox_name': r_name, 'timezone': timezone, 'codename': codename, 'status': status.title()}})
 

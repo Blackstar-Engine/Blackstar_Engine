@@ -1,12 +1,8 @@
 import discord
 from discord.ext import commands
-
-from utils.constants import (
-    profiles,
-    departments
-)
-
+from utils.constants import departments
 from ui.promotion.views.PromotionRequest import PromotionRequestView
+from utils.utils import fetch_profile, fetch_department
 
 
 class Promotion(commands.Cog):
@@ -21,29 +17,19 @@ class Promotion(commands.Cog):
     async def request(self, ctx: commands.Context, department: str, *, proof: str):
         await ctx.defer(ephemeral=True)
 
-        profile = await profiles.find_one(
-            {"user_id": ctx.author.id, "guild_id": ctx.guild.id}
-        )
-
+        # Fetch the profile
+        profile = await fetch_profile(ctx)
         if not profile:
-            embed = discord.Embed(title="", description="Profile Not Found", color=discord.Color.dark_embed())
-            return await ctx.send(embed=embed, ephemeral=True)
+            return
 
-        # ─── Find department ───
-        dept = await departments.find_one({
-            "$or": [
-                {"name": department},
-                {"display_name": department}
-            ]
-        })
+        # fetch the department
+        department_doc = await fetch_department(ctx, department)
+        if not department_doc:
+            return
 
-        if not dept:
-            embed = discord.Embed(title="", description="Department not found.", color=discord.Color.dark_embed())
-            return await ctx.send(embed=embed, ephemeral=True)
+        dept_name = department_doc["display_name"]
 
-        dept_name = dept["display_name"]
-
-        # ─── Membership + active check ───
+        # Check to see if they are an active member
         unit_data = profile.get("unit", {}).get(dept_name)
 
         if not unit_data or not unit_data.get("is_active"):
@@ -52,8 +38,8 @@ class Promotion(commands.Cog):
 
         current_rank_name = unit_data.get("rank")
 
-        # ─── Resolve ranks ───
-        ranks = sorted(dept.get("ranks", []), key=lambda r: r["order"])
+        # Get the current rank
+        ranks = sorted(department_doc.get("ranks", []), key=lambda r: r["order"])
 
         current_rank = next(
             (r for r in ranks if r["name"] == current_rank_name),
@@ -64,6 +50,7 @@ class Promotion(commands.Cog):
             embed = discord.Embed(title="", description="Your current rank could not be resolved.", color=discord.Color.dark_embed())
             return await ctx.send(embed=embed, ephemeral=True)
 
+        # Get the next rank
         next_rank = next(
             (r for r in ranks if r["order"] == current_rank["order"] + 1),
             None
@@ -77,8 +64,8 @@ class Promotion(commands.Cog):
             embed = discord.Embed(title="", description=f"{next_rank['name']} is an appointment-only rank.", color=discord.Color.dark_embed())
             return await ctx.send(embed=embed, ephemeral=True)
 
-        # ─── Send request ───
-        channel = ctx.guild.get_channel(dept.get("promo_request_channel"))
+        # Send the request to the mods
+        channel = ctx.guild.get_channel(department_doc.get("promo_request_channel"))
         if not channel:
             embed = discord.Embed(title="Error!", description="Promotion request channel not found. Please contact DSM!", color=discord.Color.red())
             return await ctx.send(embed=embed, ephemeral=True)
