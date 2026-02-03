@@ -64,27 +64,32 @@ class ThreadProfileCreation(commands.Cog):
         department = main_message[department_start + 11:unit_start].strip()
         timezone = main_message[timezone_start + 10:reason_start].strip()
 
-        department_doc = await departments.find_one({"display_name": department, "is_private": False})
-        if not department_doc:
-            embed = discord.Embed(title="Department Error", description="The department you specified does not exist or is private. Please check the department name and try again.", color=discord.Color.red())
-            return await thread.send(embed=embed)
-        
-        first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
+        departments_list = department.split("/")
+
+        units = {}
+
+        for dept in departments_list:
+
+            department_doc = await departments.find_one({"display_name": dept, "is_private": False})
+            if not department_doc:
+                embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact DSM if this is incorrect!", color=discord.Color.red())
+                await thread.send(embed=embed)
+
+                departments_list.remove(dept)
+            else:
+            
+                first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
+
+                unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0, 'subunits': []}}
+
+                units.update(unit_doc)
 
         profile = {
                 'user_id': member.id,
                 'guild_id': guild.id,
                 'codename': codename,
                 'roblox_name': roblox_name,
-                'unit': {
-                    department: {
-                        'rank': first_rank,
-                        'is_active': True,
-                        'current_points': 0,
-                        'total_points': 0,
-                        'subunits': []
-                    }
-                },
+                'unit': units,
                 'private_unit': [],
                 'status': 'Active',
                 'join_date': str(join_date),
@@ -95,7 +100,7 @@ class ThreadProfileCreation(commands.Cog):
 
         embed = discord.Embed(
                                 title="Profile Created!",
-                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_name}\n**Timezone: **{timezone}\n**Current Points: **0\n**Total Points: **0",
+                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_name}\n**Timezone: **{timezone}\n**Departments: ** {", ".join(departments_list)}\n**Current Points: **0\n**Total Points: **0",
                                 color=discord.Color.green()
                                 )
         await thread.send(embed=embed)
