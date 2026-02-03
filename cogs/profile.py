@@ -12,7 +12,6 @@ class Profile(commands.Cog):
 
     @commands.hybrid_command(name="profile", description="View or create your profile in the server.", with_app_command=True)
     async def profile(self, ctx: commands.Context):
-        await ctx.defer()
 
         # Fetch the profile and check to see if they alrady have one or not
         profile = await fetch_profile(ctx, False)
