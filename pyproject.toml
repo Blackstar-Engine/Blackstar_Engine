@@ -27,4 +27,8 @@ dependencies = [
   "motor>=3.7.1",
   "python-dotenv>=1.2.1",
   "gspread-asyncio>=2.0.0",
+  "pynacl>=1.6.2",
+  "uuid>=1.30",
+  "ffmpeg>=1.4",
+  "gtts>=2.5.4",
 ]

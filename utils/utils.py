@@ -1,5 +1,8 @@
 import discord
 from discord.ext import commands
+import uuid
+from gtts import gTTS
+import threading
 
 from utils.constants import (
     foundation_command,
@@ -10,7 +13,9 @@ from utils.constants import (
     profiles,
     departments
 )
-    
+
+tts_lock = threading.Lock()
+
 async def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
         raise discord.errors.InvalidData("Sorry but you can't use this button.")
@@ -67,3 +72,12 @@ def fetch_unit_options(profile):
         options.append(discord.SelectOption(label="No Active Units", value="no_units"))
     
     return options
+
+def tts_to_file(user, text: str) -> str:
+    filename = f"tts_{uuid.uuid4()}.wav"
+    text = f"{user} said {text}"
+    with tts_lock:
+        tts = gTTS(text=text, lang="en")
+        tts.save(filename)
+
+    return filename

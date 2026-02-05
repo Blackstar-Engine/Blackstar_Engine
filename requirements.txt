@@ -5,3 +5,9 @@ python-dotenv
 motor
 jishaku
 gspread_asyncio
+os
+uuid
+threading
+gtts
+ffmpeg
+discord.py[voice]
