@@ -15,6 +15,7 @@ RUN groupadd -g 1000 botuser && \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
+    apt-get install -y ffmpeg &&\
     apt-get install -y --no-install-recommends \
     ca-certificates \
     build-essential \
