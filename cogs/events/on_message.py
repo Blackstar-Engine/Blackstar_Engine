@@ -66,6 +66,8 @@ class AutoReply(commands.Cog):
         if message.channel.type == discord.ChannelType.voice: 
             bot_vc = message.guild.voice_client 
             if bot_vc and message.channel == message.guild.voice_client.channel: 
+                if message.content.startswith("https://"):
+                    message.content = "an image"
                 file = tts_to_file(message.author.display_name, str(message.content)) 
                 queue = self.tts_queues[message.guild.id]
                 await queue.put(file)
