@@ -1,6 +1,7 @@
 import discord
 from utils.constants import loa_role, loa
 from ui.loa.modals.RequestDeny import RequestDenyModal
+from utils.constants import foundation_command, site_command, high_command, central_command
 
 class RequestAcceptDenyButtons(discord.ui.View):
     def __init__(self, bot, user, reason, start_date, end_date, time, embed):
@@ -15,6 +16,14 @@ class RequestAcceptDenyButtons(discord.ui.View):
 
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.green)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        foundation_role = await interaction.guild.fetch_role(foundation_command)
+        site_role = await interaction.guild.fetch_role(site_command)
+        high_role = await interaction.guild.fetch_role(high_command)
+        central_role = await interaction.guild.fetch_role(central_command)
+
+        if foundation_role not in interaction.user.roles and site_role not in interaction.user.roles or high_role not in interaction.user.roles or central_role not in interaction.user.roles:
+            return await interaction.response.send_message("You need to be foundation/site/high/central command to use this function", ephemeral=True)
+        
         self.embed.title = "Leave Of Absence Approved"
         self.embed.color = discord.Color.green()
         self.embed.add_field(name="Approved by", value=interaction.user.mention)
@@ -39,6 +48,14 @@ class RequestAcceptDenyButtons(discord.ui.View):
 
     @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
     async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
+        foundation_role = await interaction.guild.fetch_role(foundation_command)
+        site_role = await interaction.guild.fetch_role(site_command)
+        high_role = await interaction.guild.fetch_role(high_command)
+        central_role = await interaction.guild.fetch_role(central_command)
+
+        if foundation_role not in interaction.user.roles and site_role not in interaction.user.roles or high_role not in interaction.user.roles or central_role not in interaction.user.roles:
+            return await interaction.response.send_message("You need to be foundation/site/high/central command to use this function", ephemeral=True)
+        
         modal = RequestDenyModal(self.bot)
         await interaction.response.send_modal(modal)
 
