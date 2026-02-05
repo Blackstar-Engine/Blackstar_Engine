@@ -62,24 +62,19 @@ class AutoReply(commands.Cog):
         # Emoji added by role
 
         # Text to Speech
-        if not message.author.voice:
-            return
 
-        vc = message.guild.voice_client
-        user_vc = message.author.voice.channel
+        if message.channel.type == discord.ChannelType.voice: 
+            bot_vc = message.guild.voice_client 
+            if bot_vc and message.channel == message.guild.voice_client.channel: 
+                file = tts_to_file(message.author.display_name, str(message.content)) 
+                queue = self.tts_queues[message.guild.id]
+                await queue.put(file)
 
-        if not vc or vc.channel != user_vc:
-            return
+                if message.guild.id not in self.tts_tasks or self.tts_tasks[message.guild.id].done():
+                    self.tts_tasks[message.guild.id] = self.bot.loop.create_task(
+                        self.tts_player(message.guild)
+                    )
 
-        file = tts_to_file(message.author.display_name, message.content)
-
-        queue = self.tts_queues[message.guild.id]
-        await queue.put(file)
-
-        if message.guild.id not in self.tts_tasks or self.tts_tasks[message.guild.id].done():
-            self.tts_tasks[message.guild.id] = self.bot.loop.create_task(
-                self.tts_player(message.guild)
-            )
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AutoReply(bot))
