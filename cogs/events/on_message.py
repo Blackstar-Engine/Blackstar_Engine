@@ -1,10 +1,11 @@
 import discord
 from discord.ext import commands
-from utils.constants import loa
+from utils.constants import loa, TTSEmojiRegFormat
 from utils.utils import tts_to_file
 import os
 import asyncio
 from collections import defaultdict
+import re
 
 class AutoReply(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -66,13 +67,14 @@ class AutoReply(commands.Cog):
         if message.channel.type == discord.ChannelType.voice: 
             bot_vc = message.guild.voice_client 
             if bot_vc and message.channel == message.guild.voice_client.channel: 
+                match = re.match(TTSEmojiRegFormat, message.content)
                 if message.content.startswith("https://"):
                     message.content = "an image"
                 elif message.content.startswith("<@"):
                     message.content = "pinged someone"
                 elif message.content.startswith("<#"):
                     message.content = "sent a channel"
-                elif message.content.startswith(":"):
+                elif match:
                     message.content = "sent an emoji"
 
                 file = tts_to_file(message.author.display_name, str(message.content)) 
