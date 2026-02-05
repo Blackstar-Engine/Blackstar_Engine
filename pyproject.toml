@@ -31,4 +31,5 @@ dependencies = [
   "uuid>=1.30",
   "ffmpeg>=1.4",
   "gtts>=2.5.4",
+  "asyncio>=4.0.0",
 ]
