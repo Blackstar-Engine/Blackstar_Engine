@@ -68,6 +68,13 @@ class AutoReply(commands.Cog):
             if bot_vc and message.channel == message.guild.voice_client.channel: 
                 if message.content.startswith("https://"):
                     message.content = "an image"
+                elif message.content.startswith("<@"):
+                    message.content = "pinged someone"
+                elif message.content.startswith("<#"):
+                    message.content = "sent a channel"
+                elif message.content.startswith(":"):
+                    message.content = "sent an emoji"
+
                 file = tts_to_file(message.author.display_name, str(message.content)) 
                 queue = self.tts_queues[message.guild.id]
                 await queue.put(file)
