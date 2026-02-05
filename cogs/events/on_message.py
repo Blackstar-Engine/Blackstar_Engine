@@ -33,13 +33,16 @@ class AutoReply(commands.Cog):
 
         # Text to Speech
         if message.channel.type == discord.ChannelType.voice:
-            file = tts_to_file(message.author.display_name, str(message.content))
-            source = discord.FFmpegPCMAudio(file)
+            bot_vc = message.guild.voice_client
 
-            try:
-                message.guild.voice_client.play(source, after = lambda e: os.remove(file))
-            except AttributeError:
-                pass
+            if bot_vc and message.channel == message.guild.voice_client.channel:
+                file = tts_to_file(message.author.display_name, str(message.content))
+                source = discord.FFmpegPCMAudio(file)
+
+                try:
+                    message.guild.voice_client.play(source, after = lambda e: os.remove(file))
+                except AttributeError:
+                    pass
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AutoReply(bot))
