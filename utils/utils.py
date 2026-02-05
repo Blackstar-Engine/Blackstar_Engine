@@ -74,8 +74,9 @@ def fetch_unit_options(profile):
     return options
 
 def tts_to_file(user, text: str) -> str:
-    filename = f"tts_{uuid.uuid4()}.wav"
+    filename = f"tts_{uuid.uuid4()}.mp3"
     text = f"{user} said {text}"
+
     with tts_lock:
         tts = gTTS(text=text, lang="en")
         tts.save(filename)

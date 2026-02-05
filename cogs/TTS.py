@@ -7,10 +7,13 @@ class tts_system_commands(commands.Cog):
     
     @commands.hybrid_command(name="join", description="Have the bot join your current VC.")
     async def join(self, ctx: commands.Context, channel: discord.VoiceChannel = None):
+        if not ctx.author.voice:
+            embed = discord.Embed(title="Whoops....", description="Please make sure you are in a channel!", color=discord.Color.light_grey())
+            return await ctx.send(embed=embed, ephemeral=True)
+        
         if not channel:
             channel = ctx.author.voice.channel
         
-
         if ctx.voice_client is None:
             await channel.connect()
         else:
@@ -25,8 +28,10 @@ class tts_system_commands(commands.Cog):
     @commands.hybrid_command(name="leave", description="Have the bot leave your current VC.")
     async def leave(self, ctx: commands.Context):
         if ctx.voice_client is not None:
-            channel = ctx.voice_client.channel
+            channel: discord.VoiceChannel = ctx.voice_client.channel
+
             await ctx.voice_client.disconnect()
+            
             embed = discord.Embed(title="Disconnected!", description=f"Disconnected from {channel.mention}!", color=discord.Color.green())
             embed.set_footer(text=f"Executed by {ctx.author.name}")
             await ctx.send(embed=embed)

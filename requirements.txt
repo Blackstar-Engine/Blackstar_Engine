@@ -11,3 +11,5 @@ threading
 gtts
 ffmpeg
 discord.py[voice]
+asyncio
+collections
