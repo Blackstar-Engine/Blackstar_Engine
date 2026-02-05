@@ -78,7 +78,7 @@ def tts_to_file(user, text: str) -> str:
     text = f"{user} said {text}"
 
     with tts_lock:
-        tts = gTTS(text=text, lang="en")
+        tts = gTTS(text=text, lang="en", tld="ie")
         tts.save(filename)
 
     return filename
