@@ -34,16 +34,16 @@ class ThreadProfileCreation(commands.Cog):
 
         main_message = str(main_message.content)
 
-        codename_start = main_message.find("Codename:")
-        discord_username = main_message.find("Discord User:")
-        roblox_start = main_message.find("Roblox user:")
+        codename_start = main_message.lower().find("codename:")
+        discord_username = main_message.lower().find("discord user:")
+        roblox_start = main_message.lower().find("roblox user:")
         department_start = main_message.find("Department:")
         unit_start = main_message.find("Unit:")
         reason_start = main_message.find("Reason:")
         timezone_start = main_message.find("Time zone:")
 
         if codename_start == -1 or roblox_start == -1 or timezone_start == -1 or department_start == -1:
-            embed = discord.Embed(title="Enlistment Error", description="Your profile creation message is missing some required fields. Please make sure to include `Codename:`, `Roblox user:`, `Time zone:`, and `Department:`.", color=discord.Color.red())
+            embed = discord.Embed(title="Enlistment Error", description="Please make sure to include the following as listed `Codename:`, `Roblox user:`, `Time zone:`, and `Department:`.", color=discord.Color.red())
             return await thread.send(embed=embed)
         
         codename = main_message[codename_start + 9:discord_username].strip()

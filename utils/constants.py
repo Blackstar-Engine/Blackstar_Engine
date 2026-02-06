@@ -18,7 +18,7 @@ class BlackstarConstants:
 
 constants = BlackstarConstants()
 
-TTSEmojiRegFormat = r"^<a?:[a-zA-Z0-9_~]+:\d+>$"
+TTSEmojiRegFormat = r"<a?:[a-zA-Z0-9_~]+:\d+>"
 LOARegFormat = r"^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?$"
 
 client = motor.motor_asyncio.AsyncIOMotorClient(

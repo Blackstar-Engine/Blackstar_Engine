@@ -5,6 +5,7 @@ import time
 import os
 import sys
 import asyncio
+from collections import defaultdict
 from utils.constants import BlackstarConstants, auto_replys
 
 constants = BlackstarConstants()
@@ -78,6 +79,9 @@ class Bot(commands.Bot):
         for record in records:
             bot.auto_replys.append(record)
         print(f"All {len(bot.auto_replys)} auto-replys loaded")
+
+        bot.tts_queues = defaultdict(asyncio.Queue)
+        bot.tts_tasks = {}
 
         await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
