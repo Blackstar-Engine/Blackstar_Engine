@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 from utils.constants import profile_thread_channel, profiles, departments
 from datetime import datetime
+import re 
+from utils.utils import profile_creation_embed
 
 class ThreadProfileCreation(commands.Cog):
     def __init__(self, bot):
@@ -18,7 +20,12 @@ class ThreadProfileCreation(commands.Cog):
         member = guild.get_member(thread.owner_id)
         join_date = datetime.now().date()
 
-        if not member:
+        main_message = await thread.fetch_message(thread.id)
+        main_message = str(main_message.content)
+
+        is_citizen = main_message.lower().find("Citizenship form")
+
+        if not member or is_citizen != -1:
             return
         
         existing_profile = await profiles.find_one({
@@ -30,23 +37,22 @@ class ThreadProfileCreation(commands.Cog):
             embed = discord.Embed(title="Profile Creation Error", description="You already have a profile created in our system", color=discord.Color.red())
             return await thread.send(embed=embed)
         
-        main_message = await thread.fetch_message(thread.id)
+        patterns = {
+            "Codename": r"code\s*name:\s*(.*)",
+            "Roblox User": r"roblox\s*user:\s*(.*)",
+            "Department": r"department:\s*(.*)",
+            "Time Zone": r"time\s*zone:\s*(.*)"
+        }
 
-        main_message = str(main_message.content)
+        results = {}
 
-        codename_start = main_message.lower().find("codename:")
-        discord_username = main_message.lower().find("discord user:")
-        roblox_start = main_message.lower().find("roblox user:")
-        department_start = main_message.find("Department:")
-        unit_start = main_message.find("Unit:")
-        reason_start = main_message.find("Reason:")
-        timezone_start = main_message.find("Time zone:")
-
-        if codename_start == -1 or roblox_start == -1 or timezone_start == -1 or department_start == -1:
-            embed = discord.Embed(title="Enlistment Error", description="Please make sure to include the following as listed `Codename:`, `Roblox user:`, `Time zone:`, and `Department:`.", color=discord.Color.red())
-            return await thread.send(embed=embed)
-        
-        codename = main_message[codename_start + 9:discord_username].strip()
+        for label, pattern in patterns.items():
+            # re.IGNORECASE handles 'CODENAME' vs 'codename'
+            match = re.search(pattern, main_message, re.IGNORECASE)
+            if match:
+                results[label] = match.group(1).strip()
+            else:
+                results[label] = -1
 
         profanity_list = [
                         "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
@@ -54,15 +60,21 @@ class ThreadProfileCreation(commands.Cog):
                         "cunt", "nigger", "mother fucker", "titties", "titty", "boobs", "cum",
                         "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker"
                         ]
+        
+        codename: str = results.get("Codename")
+        roblox_user: str = results.get("Roblox User")
+        department: str = results.get("Department")
+        timezone: str = results.get("Time Zone")
+
+        if codename == -1 or roblox_user == -1 or department == -1 or timezone == -1:
+            embed = discord.Embed(title="Enlistment Error", description="Please make sure to include the following as listed `Codename:`, `Roblox user:`, `Time zone:`, and `Department:`.", color=discord.Color.red())
+            return await thread.send(embed=embed)
+
         for word in profanity_list:
             result = codename.lower().find(word)
             if result != -1:
                 embed = discord.Embed(title="Profanity Detected", description="We do not allow any type of profanity in codenames. Please reopen another thread and choose a different codename.", color=discord.Color.red())
-                return await thread.send(embed=embed)
-
-        roblox_name = main_message[roblox_start + 13:department_start].strip()
-        department = main_message[department_start + 11:unit_start].strip()
-        timezone = main_message[timezone_start + 10:reason_start].strip()
+                return await thread.send(embed=embed) 
 
         departments_list = department.split("/")
 
@@ -88,7 +100,7 @@ class ThreadProfileCreation(commands.Cog):
                 'user_id': member.id,
                 'guild_id': guild.id,
                 'codename': codename,
-                'roblox_name': roblox_name,
+                'roblox_name': roblox_user,
                 'unit': units,
                 'private_unit': [],
                 'status': 'Active',
@@ -100,43 +112,13 @@ class ThreadProfileCreation(commands.Cog):
 
         embed = discord.Embed(
                                 title="Profile Created!",
-                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_name}\n**Timezone: **{timezone}\n**Departments: ** {", ".join(departments_list)}\n**Current Points: **0\n**Total Points: **0",
+                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_user}\n**Timezone: **{timezone}\n**Departments: ** {", ".join(departments_list)}\n**Current Points: **0\n**Total Points: **0",
                                 color=discord.Color.green()
                                 )
         await thread.send(embed=embed)
 
-        dm_embed=discord.Embed(
-            title="Welcome to Blackstar!",
-            description="This is a quick tutorial on how we run things around these parts!",
-            color=discord.Color.light_grey()
-        )
-
-        dm_embed.add_field(
-            name="-Points Ranking System",
-            value = "> To earn points you need to attend server sessions which are broadcasted ahead of time in [**#👾 sessions**](https://discord.com/channels/1411941814923169826/1434351873518993509), you can also earn points a variety of other ways such as hosting and co-hosting deployments or attending those deployments! Deployments will also be broadcasted in [**#📢 mission-briefing**](https://discord.com/channels/1411941814923169826/1412241044392640654), The best way to keep track of your points is by using the personal roster system to document all your attended events in one place, this can be found in [**#🪪 personal-roster**](https://discord.com/channels/1411941814923169826/1412295943654735952)",
-            inline=False
-        )
-
-        dm_embed.add_field(
-            name="-How to Enlist",
-            value="> To enlist in a department you first need to make an enlistment form in [**#🪪 enlistment**](https://discord.com/channels/1411941814923169826/1433946174791876740), if you want to join another department you will need to enlist under that teams department category.",
-            inline=False
-        )
-
-        dm_embed.add_field(
-            name="-Document Links",
-            value="For more information on a specific topic please see out server documents listed below.\n\n"
-                "> [Stature of Regulation](https://trello.com/b/5LzFYOKb/name-stature-of-regulation)\n"
-                "> [Code of Conduct](https://docs.google.com/document/d/1qUqOgbX8CoB3jzaIrIZxheqBpAeHk5HVLIP252cViac/edit?usp=sharing)\n"
-                "> [Hierarchy & Points System](https://docs.google.com/document/d/1abd4Qq6CanUCLqjdmka5RmYEeD6GTFWGo2Czym0-nyo/edit?usp=sharing)\n"
-                "> [Unit Database](https://docs.google.com/spreadsheets/d/1BLlkDxLW7GqPwVPmDuwpu-XBU98aY5_0ADX9QALXp4w/edit?usp=sharing)\n\n"
-                "**For any other documents please refer to https://discord.com/channels/1411941814923169826/1418081211246575617 or a departments specified documents channel, you may also create a ticket to resolve any query or problem you may have.**\n\n"
-                "**Thank you for being apart of the fun!**",
-                inline=False
-        )
-
-        dm_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
-        dm_embed.set_image(url="https://cdn.discordapp.com/attachments/1450512700034781256/1463307219159220316/Untitled_design_13.gif?ex=697be68b&is=697a950b&hm=53b2c67aedf52d6392e6c41c4d708e1a52b1c4c9bdda5c7c0f304c717e04cf04&")
+        dm_embed = profile_creation_embed()
+        
         try:
             await member.send(embed=dm_embed)
         except discord.Forbidden:
