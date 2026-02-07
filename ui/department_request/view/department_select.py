@@ -25,8 +25,7 @@ class DepartmentsRequestView(View):
         cannot_send_list = []
 
         for value in values:
-            print("value: ", value)
-            if value in self.profile.get("unit"):
+            if value in self.profile.get("unit") and self.profile["unit"][value]["is_active"]:
                 cannot_send_list.append(value)
             else:
                 department = await fetch_department(interaction, value)
@@ -37,7 +36,7 @@ class DepartmentsRequestView(View):
                                     description=f"**Codename: **{self.profile.get("codename")}\n**Roblox Name: ** {self.profile.get("roblox_name")}\n**Status: ** {self.profile.get("status")}\n**Join Date: ** {self.profile.get("join_date")}\n**Time Zone: **{self.profile.get("timezone")}",
                                     color = discord.Color.yellow())
                 
-                view = AcceptDenyButtons(self.bot, self.user, embed, self.profile, department)
+                view = AcceptDenyButtons(self.bot, self.user, embed, department)
                 
                 try:
                     await channel.send(embed=embed, view=view)
@@ -49,6 +48,6 @@ class DepartmentsRequestView(View):
         if len(cannot_send_list) > 0:
             user_embed.add_field(name="Unable to Sent to:", value=", ".join(cannot_send_list))
 
-        await interaction.followup.send(embed=user_embed)
+        await interaction.message.edit(embed=user_embed, view=None)
 
         self.stop()
