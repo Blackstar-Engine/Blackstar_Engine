@@ -25,6 +25,7 @@ class HelpCommand(commands.Cog):
                                             "> `!loa request time(ex. 1w2d) reason` - Send an LOA request\n\n"
                                             "> `!loa manage @User(Optional)` - Manage your own or another users LOA\n\n"
                                             "> `!loa active` - See all active LOAs **(Foundation & Site Command Locked)**\n\n"
+                                            "> `@department_request` - Request to join a department\n\n"
                                             ,
                               color=discord.Color.light_grey())
         embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")

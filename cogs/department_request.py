@@ -10,7 +10,6 @@ class DepartmentRequest(commands.Cog):
         
     @commands.hybrid_command(name="department_request", description="Send a request to join a department")
     async def department_request(self, ctx: commands.Context):
-        # return await ctx.send("This command is still in the works", ephemeral=True)
         profile = await fetch_profile(ctx)
         if not profile:
             return
