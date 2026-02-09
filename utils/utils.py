@@ -117,3 +117,5 @@ def profile_creation_embed():
 
     dm_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
     dm_embed.set_image(url="https://cdn.discordapp.com/attachments/1450512700034781256/1463307219159220316/Untitled_design_13.gif?ex=697be68b&is=697a950b&hm=53b2c67aedf52d6392e6c41c4d708e1a52b1c4c9bdda5c7c0f304c717e04cf04&")
+
+    return dm_embed
