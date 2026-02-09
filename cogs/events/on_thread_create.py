@@ -80,14 +80,25 @@ class ThreadProfileCreation(commands.Cog):
 
         units = {}
 
-        for dept in departments_list:
+        if len(departments_list) > 1:
+            dept = departments_list[0]
 
+            embed = discord.Embed(title="Multiple Departments", description=f"We only allow 1 department upon enlisting, I am taking your first choice (`{dept}`)!", color=discord.Color.yellow())
+            await thread.send(embed=embed)
+        else:
+            dept = departments_list[0]
+
+        if dept in ["RRT", "ISD", "IA", "CI"]:
+            embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
+            await thread.send(embed=embed)
+            dept = ""
+        else:
             department_doc = await departments.find_one({"display_name": dept, "is_private": False})
-            if not department_doc:
-                embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact DSM if this is incorrect!", color=discord.Color.red())
-                await thread.send(embed=embed)
 
-                departments_list.remove(dept)
+            if not department_doc:
+                embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
+                await thread.send(embed=embed)
+                dept = ""
             else:
             
                 first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
@@ -112,7 +123,7 @@ class ThreadProfileCreation(commands.Cog):
 
         embed = discord.Embed(
                                 title="Profile Created!",
-                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_user}\n**Timezone: **{timezone}\n**Departments: ** {", ".join(departments_list)}\n**Current Points: **0\n**Total Points: **0",
+                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_user}\n**Timezone: **{timezone}\n**Departments: ** {dept}\n**Current Points: **0\n**Total Points: **0",
                                 color=discord.Color.green()
                                 )
         await thread.send(embed=embed)
@@ -121,7 +132,7 @@ class ThreadProfileCreation(commands.Cog):
         
         try:
             await member.send(embed=dm_embed)
-        except discord.Forbidden:
+        except Exception:
             return
 
 async def setup(bot):
