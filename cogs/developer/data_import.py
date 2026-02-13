@@ -151,7 +151,7 @@ class DataImport(commands.Cog):
                             'timezone': timezone,
                         }
 
-                        await db.profiles.insert_one(profile)
+                        await db.temp_profiles.insert_one(profile)
                         total_imported += 1
                         print(f"✅ Imported: {discord_username}")
 
