@@ -104,31 +104,34 @@ class DataImport(commands.Cog):
                         unit = "MTF"
                         subunits = [raw_unit]
 
-                    profile = await db.profiles.find_one({
+                    profile = await db.temp_profiles.find_one({
                         'user_id': member.id,
                         'guild_id': ctx.guild.id
                     })
 
                     if profile:
-                        await db.profiles.update_one(
-                            {
-                                'user_id': member.id,
-                                'guild_id': ctx.guild.id
-                            },
-                            {
-                                '$set': {
-                                    f'unit.{unit}': {
-                                        'rank': rank,
-                                        'is_active': True,
-                                        'current_points': cp_float,
-                                        'total_points': tp_float,
-                                        'subunits': subunits
-                                    },
-                                    'status': status
+                        if profile.get('unit', {}).get(unit):
+                            print(f"⚠️ Unit already exists for {discord_username}, skipping unit update.")
+                        else:
+                            await db.temp_profiles.update_one(
+                                {
+                                    'user_id': member.id,
+                                    'guild_id': ctx.guild.id
+                                },
+                                {
+                                    '$set': {
+                                        f'unit.{unit}': {
+                                            'rank': rank,
+                                            'is_active': True,
+                                            'current_points': cp_float,
+                                            'total_points': tp_float,
+                                            'subunits': subunits
+                                        },
+                                        'status': status
+                                    }
                                 }
-                            }
-                        )
-                        print(f"✅ Updated: {discord_username}")
+                            )
+                            print(f"✅ Updated: {discord_username}")
 
                     else:
                         profile = {
