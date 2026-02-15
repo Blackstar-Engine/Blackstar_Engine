@@ -118,6 +118,13 @@ class DataImport(commands.Cog):
 
                     if profile:
                         if profile.get('unit', {}).get(unit):
+                            if profile.get('unit', {}).get(unit) == "MTF":
+                                subunits = list(set(profile['unit'][unit].get('subunits', [])) | set(subunits))
+                                rank = profile['unit'][unit].get('rank', rank)
+                                cp_float = max(profile['unit'][unit].get('current_points', 0), cp_float)
+                                tp_float = max(profile['unit'][unit].get('total_points', 0), tp_float)
+
+                                
                             await db.temp_profiles.update_one(
                                 {
                                     'user_id': member.id,
@@ -130,7 +137,6 @@ class DataImport(commands.Cog):
                                         f'unit.{unit}.current_points': cp_float,
                                         f'unit.{unit}.total_points': tp_float,
                                         f'unit.{unit}.subunits': subunits,
-                                        'status': status
                                     }
                                 }
                             )
@@ -151,7 +157,6 @@ class DataImport(commands.Cog):
                                             'total_points': tp_float,
                                             'subunits': subunits
                                         },
-                                        'status': status
                                     }
                                 }
                             )
