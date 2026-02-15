@@ -30,7 +30,7 @@ class DepartmentsRequestView(View):
             else:
                 department = await fetch_department(interaction, value)
 
-                channel = await interaction.guild.fetch_channel(department.get("promo_request_channel"))
+                channel = await interaction.guild.fetch_channel(department.get("request_channel"))
 
                 embed = discord.Embed(title="Enlistment Request",
                                     description=f"**Codename: **{self.profile.get("codename")}\n**Roblox Name: ** {self.profile.get("roblox_name")}\n**Status: ** {self.profile.get("status")}\n**Join Date: ** {self.profile.get("join_date")}\n**Time Zone: **{self.profile.get("timezone")}",
