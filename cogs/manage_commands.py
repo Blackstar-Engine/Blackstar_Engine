@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ui import Button
-from utils.constants import profiles, foundation_command, site_command
+from utils.constants import profiles, foundation_command, site_command, high_command
 from ui.paginator import PaginatorView
 from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
@@ -143,9 +143,10 @@ class ManageCommands(commands.Cog):
         # User must be in foundation or site command to run this command
         foundation_role = await ctx.guild.fetch_role(foundation_command)
         site_role = await ctx.guild.fetch_role(site_command)
+        high_role = await ctx.guild.fetch_role(high_command)
 
-        if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
-            return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+        if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles and high_role not in ctx.author.roles:
+            return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
 
         # check to see if they have a profile
         profile = await fetch_profile(ctx)

@@ -21,9 +21,13 @@ class DepartmentRequest(commands.Cog):
         dept_map = {d["display_name"]: d for d in all_departments}
 
         options = []
+        restricted_departments = ["ISD", "CI", "IA", "ScD", "RRT"]
 
         for dept in dept_map:
-            options.append(discord.SelectOption(label=dept))
+            if dept in restricted_departments:
+                continue
+            else:
+                options.append(discord.SelectOption(label=dept))
 
         embed = discord.Embed(title="Department Selection", description="Please select all departments you would like to enlist to!", color=discord.Color.green())
         
