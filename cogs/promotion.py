@@ -72,13 +72,13 @@ class Promotion(commands.Cog):
 
         embed = discord.Embed(
             title="Promotion Request",
+            description=f"**{current_rank_name}** ⟶ **{next_rank["name"]}**\n> **Department: ** {dept_name}\n> **Proof: **{proof}",
             color=discord.Color.light_grey()
         )
-        embed.add_field(name="Member", value=ctx.author.mention, inline=False)
-        embed.add_field(name="Department", value=dept_name, inline=True)
-        embed.add_field(name="Current Rank", value=current_rank_name, inline=True)
-        embed.add_field(name="Requested Rank", value=next_rank["name"], inline=True)
-        embed.add_field(name="Proof", value=proof, inline=False)
+        embed.add_field(name="Member Information",
+                        value=f"> **User: **{ctx.author.mention}\n> **Codename: **{profile.get('codename')}\n> **Status: **{profile.get('status')}\n> **Join Date: ** {profile.get('join_date')}\n> **Current Points: **{profile['unit'][dept_name].get('current_points', 'N/A')}\n> **Total Points: **{profile['unit'][dept_name].get('total_points', 'N/A')}",
+                        inline=False)
+        
 
         view = PromotionRequestView(
             self.bot,
