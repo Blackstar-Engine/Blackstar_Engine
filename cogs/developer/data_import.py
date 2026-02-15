@@ -21,21 +21,28 @@ class DataImport(commands.Cog):
         member_map = {member.name: member for member in guild.members}
 
         gids = [
-            0, 500760323, 1553834578, 1687070402, 1486703883,
-            1878972695, 1149971704, 920770931, 1563353687,
-            983100165, 408975112, 1709565496
+            0, # SD
+            500760323, #E-11
+            1553834578, #NU-7
+            1486703883, #B-7
+            1687070402, #A-1
+            1878972695, #RRT
+            1149971704, #SCD
+            920770931, #MD
+            1563353687, #IA
+            983100165, #ISD
+            408975112, #CI
+            1709565496, #CD
         ]
 
         gs = GSheet()
         total_imported = 0
 
         MTF_SUBUNITS = {
-            "Epsilon-11",
-            "Omega-1",
-            "Nu-7",
-            "Alpha-1",
-            "Resh-1",
-            "Beta-7"
+            500760323, #E-11
+            1553834578, #NU-7
+            1486703883, #B-7
+            1687070402, #A-1
         }
 
         for gid in gids:
@@ -100,7 +107,7 @@ class DataImport(commands.Cog):
                     unit = raw_unit
                     subunits = []
 
-                    if raw_unit in MTF_SUBUNITS:
+                    if gid in MTF_SUBUNITS:
                         unit = "MTF"
                         subunits = [raw_unit]
 
@@ -111,7 +118,24 @@ class DataImport(commands.Cog):
 
                     if profile:
                         if profile.get('unit', {}).get(unit):
-                            print(f"⚠️ Unit already exists for {discord_username}, skipping unit update.")
+                            await db.temp_profiles.update_one(
+                                {
+                                    'user_id': member.id,
+                                    'guild_id': ctx.guild.id
+                                },
+                                {
+                                    '$set': {
+                                        f'unit.{unit}.rank': rank,
+                                        f'unit.{unit}.is_active': True,
+                                        f'unit.{unit}.current_points': cp_float,
+                                        f'unit.{unit}.total_points': tp_float,
+                                        f'unit.{unit}.subunits': subunits,
+                                        'status': status
+                                    }
+                                }
+                            )
+                            print(f"🔄 Overwrote unit: {discord_username} - {unit}")
+                                
                         else:
                             await db.temp_profiles.update_one(
                                 {
