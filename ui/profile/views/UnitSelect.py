@@ -29,7 +29,7 @@ class UnitSelectView(discord.ui.View):
 
         embed = discord.Embed(
             title="Unit Information",
-            description=f"**Unit Name: ** {value}\n**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}",
+            description=f"**Unit Name: ** {value}\n**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}\n**Subunits: ** {', '.join(department.get('subunits', [])) if department.get('subunits') else 'None'}",
             color=discord.Color.light_grey()
         )
 

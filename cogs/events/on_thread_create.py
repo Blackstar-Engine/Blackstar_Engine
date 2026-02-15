@@ -40,9 +40,9 @@ class ThreadProfileCreation(commands.Cog):
         patterns = {
             "Codename": r"code\s*name:\s*(.*)",
             "Roblox User": r"roblox\s*user:\s*(.*)",
-            "Department": r"department:\s*(.*)",
+            "Department": r"department:\s*([^\n/]+(?:\s*/\s*[^\n/]+)*)",
             "Time Zone": r"time\s*zone:\s*(.*)",
-            "Unit": r"unit:\s*(.*)"
+            "Unit": r"unit:\s*([^\n/]+(?:\s*/\s*[^\n/]+)*)"
         }
 
         results = {}
@@ -81,37 +81,34 @@ class ThreadProfileCreation(commands.Cog):
         departments_list = department.split("/")
 
         units = {}
-
-        # if len(departments_list) > 1:
-        #     dept = departments_list[0]
-
-        #     embed = discord.Embed(title="Multiple Departments", description=f"We only allow 1 department upon enlisting, I am taking your first choice (`{dept}`)!", color=discord.Color.yellow())
-        #     await thread.send(embed=embed)
-        # else:
-        #     dept = departments_list[0]
+        mtf_subunits = []
 
         for dept in departments_list:
-            if dept in ["RRT", "ISD", "IA", "CI"]:
+            if dept in ["RRT", "ISD", "IA", "CI", "ScD", "SCD"]:
                 embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
                 await thread.send(embed=embed)
-                dept = ""
+                departments_list.remove(dept)
             else:
                 department_doc = await departments.find_one({"display_name": dept, "is_private": False})
-                subunit = subunit.split("/")
-                if subunit in ["N/A", "None", "N/A", "NA"]:
-                    subunit = []
+
+                subunit_list = subunit.split("/")
+
+                if dept == "MTF":
+                    subunit_list = [s.strip() for s in subunit_list]
+                    mtf_subunits = subunit_list.copy()
                 else:
-                    subunit = [s.strip() for s in subunit]
+                    subunit_list = []
+                
 
                 if not department_doc:
                     embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
                     await thread.send(embed=embed)
-                    dept = ""
+                    departments_list.remove(dept)
                 else:
                 
                     first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
 
-                    unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0, 'subunits': subunit}}
+                    unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0, 'subunits': subunit_list}}
 
                     units.update(unit_doc)
 
@@ -131,7 +128,7 @@ class ThreadProfileCreation(commands.Cog):
 
         embed = discord.Embed(
                                 title="Profile Created!",
-                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_user}\n**Timezone: **{timezone}\n**Departments: ** {dept}\n**Current Points: **0\n**Total Points: **0",
+                                description=f"Your profile has been created!\n\n**Codename: **{codename}\n**Roblox Name: **{roblox_user}\n**Timezone: **{timezone}\n**Departments: ** {", ".join(departments_list)}\n**Subunits: ** {", ".join(mtf_subunits)}\n**Current Points: **0\n**Total Points: **0",
                                 color=discord.Color.green()
                                 )
         await thread.send(embed=embed)

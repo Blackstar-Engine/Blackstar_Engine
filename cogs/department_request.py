@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.constants import foundation_command, site_command, departments, profiles
+from utils.constants import departments
 from utils.utils import fetch_profile
 from ui.department_request.view.department_select import DepartmentsRequestView
 
@@ -21,7 +21,7 @@ class DepartmentRequest(commands.Cog):
         dept_map = {d["display_name"]: d for d in all_departments}
 
         options = []
-        restricted_departments = ["ISD", "CI", "IA", "ScD", "RRT"]
+        restricted_departments = ["ISD", "CI", "IA", "ScD", "RRT", "SCD"]
 
         for dept in dept_map:
             if dept in restricted_departments:
