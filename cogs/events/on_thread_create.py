@@ -91,7 +91,7 @@ class ThreadProfileCreation(commands.Cog):
             else:
                 if dept == "MTF":
                     mtf_subunits = subunit.split("/")
-                    print(mtf_subunits)
+                    
                     for unit in mtf_subunits:
                         subunit = f"MTF:{unit.strip()}"
                         department_doc = await departments.find_one({"display_name": subunit, "is_private": False})
