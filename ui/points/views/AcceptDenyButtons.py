@@ -75,6 +75,7 @@ class AcceptDenyButtons(discord.ui.View):
 
         self.embed.color = discord.Color.green()
         self.embed.title = "Points Accepted"
+        self.embed.add_field(name="Moderator", value=f"{interaction.user.mention}", inline=False)
 
         await self.user.send(
             f"Your points request for **{self.points}** "
@@ -92,6 +93,7 @@ class AcceptDenyButtons(discord.ui.View):
         
         self.embed.color = discord.Color.red()
         self.embed.title = "Points Denied"
+        self.embed.add_field(name="Moderator", value=f"{interaction.user.mention}", inline=False)
         
         await self.user.send(f"Your points request for **{self.points}** in **{interaction.guild.name}** has been **DENIED**!")
         await interaction.response.edit_message(content=None, view=None, embed=self.embed)
