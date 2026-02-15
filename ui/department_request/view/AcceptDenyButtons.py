@@ -64,9 +64,10 @@ class AcceptDenyButtons(discord.ui.View):
 
         self.embed.color = discord.Color.green()
         self.embed.title = "Enlistment Accepted"
+        self.embed.description = f"**Codename: **{profile.get('codename')}\n**Roblox Name: ** {profile.get('roblox_name')}\n**Status: ** {profile.get('status')}\n**Join Date: ** {profile.get('join_date')}\n**Time Zone: **{profile.get('timezone')}\n**Moderator: ** {interaction.user.mention}"
 
         await self.user.send(
-            f"Your department request for **{self.department["display_name"]}** "
+            f"Your department request for **{self.department['display_name']}** "
             f"in **{interaction.guild.name}** has been **ACCEPTED**!"
         )
 
@@ -90,6 +91,8 @@ class AcceptDenyButtons(discord.ui.View):
         
         self.embed.color = discord.Color.red()
         self.embed.title = "Enlistment Denied"
+        profile = await profiles.find_one({"guild_id": interaction.guild.id, "user_id": self.user.id})
+        self.embed.description = f"**Codename: **{profile.get('codename')}\n**Roblox Name: ** {profile.get('roblox_name')}\n**Status: ** {profile.get('status')}\n**Join Date: ** {profile.get('join_date')}\n**Time Zone: **{profile.get('timezone')}\n**Moderator: ** {interaction.user.mention}"
         
         await self.user.send(f"Your department request for **{self.department["display_name"]}** in **{interaction.guild.name}** has been **DENIED**!")
         await interaction.response.edit_message(content=None, view=None, embed=self.embed)
