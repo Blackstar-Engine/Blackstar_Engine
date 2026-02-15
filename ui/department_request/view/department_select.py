@@ -33,7 +33,7 @@ class DepartmentsRequestView(View):
                 channel = await interaction.guild.fetch_channel(department.get("request_channel"))
 
                 embed = discord.Embed(title="Enlistment Request",
-                                    description=f"**Codename: **{self.profile.get("codename")}\n**Roblox Name: ** {self.profile.get("roblox_name")}\n**Status: ** {self.profile.get("status")}\n**Join Date: ** {self.profile.get("join_date")}\n**Time Zone: **{self.profile.get("timezone")}",
+                                    description=f"**Department: **{value}\n**Codename: **{self.profile.get("codename")}\n**Roblox Name: ** {self.profile.get("roblox_name")}\n**Status: ** {self.profile.get("status")}\n**Join Date: ** {self.profile.get("join_date")}\n**Time Zone: **{self.profile.get("timezone")}",
                                     color = discord.Color.yellow())
                 
                 view = AcceptDenyButtons(self.bot, self.user, embed, department)

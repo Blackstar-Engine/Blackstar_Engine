@@ -38,13 +38,6 @@ class DataImport(commands.Cog):
         gs = GSheet()
         total_imported = 0
 
-        MTF_SUBUNITS = {
-            500760323, #E-11
-            1553834578, #NU-7
-            1486703883, #B-7
-            1687070402, #A-1
-        }
-
         for gid in gids:
             try:
                 # 3. Fetch data
@@ -105,11 +98,15 @@ class DataImport(commands.Cog):
 
                     # ⬇️ Subunit detection (MTF only)
                     unit = raw_unit
-                    subunits = []
 
-                    if gid in MTF_SUBUNITS:
-                        unit = "MTF"
-                        subunits = [raw_unit]
+                    if gid == 500760323:
+                        unit = "MTF:E-11"
+                    elif gid == 1553834578:
+                        unit = "MTF:NU-7"
+                    elif gid == 1486703883:
+                        unit = "MTF:B-7"   
+                    elif gid == 1687070402:
+                        unit = "MTF:A-1"
 
                     profile = await db.temp_profiles.find_one({
                         'user_id': member.id,
@@ -117,51 +114,49 @@ class DataImport(commands.Cog):
                     })
 
                     if profile:
-                        if profile.get('unit', {}).get(unit):
-                            if profile.get('unit', {}).get(unit) == "MTF":
-                                current_profile_subunits: list = profile['unit'][unit].get('subunits', [])
-                                subunits = list(set(current_profile_subunits + subunits))
-                                rank = profile['unit'][unit].get('rank', rank)
-                                cp_float = profile['unit'][unit].get('current_points', 0.0)
-                                tp_float = profile['unit'][unit].get('total_points', 0.0)
+                        # if profile.get('unit', {}).get(unit):
+                        #     if profile.get('unit', {}).get(unit) == "MTF":
+                        #         current_profile_subunits: list = profile['unit'][unit].get('subunits', [])
+                        #         subunits = list(set(current_profile_subunits + subunits))
+                        #         rank = profile['unit'][unit].get('rank', rank)
+                        #         cp_float = profile['unit'][unit].get('current_points', 0.0)
+                        #         tp_float = profile['unit'][unit].get('total_points', 0.0)
 
                                 
-                            await db.temp_profiles.update_one(
-                                {
-                                    'user_id': member.id,
-                                    'guild_id': ctx.guild.id
-                                },
-                                {
-                                    '$set': {
-                                        f'unit.{unit}.rank': rank,
-                                        f'unit.{unit}.is_active': True,
-                                        f'unit.{unit}.current_points': cp_float,
-                                        f'unit.{unit}.total_points': tp_float,
-                                        f'unit.{unit}.subunits': subunits,
-                                    }
-                                }
-                            )
-                            print(f"🔄 Overwrote unit: {discord_username} - {unit}")
+                        #     await db.temp_profiles.update_one(
+                        #         {
+                        #             'user_id': member.id,
+                        #             'guild_id': ctx.guild.id
+                        #         },
+                        #         {
+                        #             '$set': {
+                        #                 f'unit.{unit}.rank': rank,
+                        #                 f'unit.{unit}.is_active': True,
+                        #                 f'unit.{unit}.current_points': cp_float,
+                        #                 f'unit.{unit}.total_points': tp_float,
+                        #             }
+                        #         }
+                        #     )
+                        #     print(f"🔄 Overwrote unit: {discord_username} - {unit}")
                                 
-                        else:
-                            await db.temp_profiles.update_one(
-                                {
-                                    'user_id': member.id,
-                                    'guild_id': ctx.guild.id
-                                },
-                                {
-                                    '$set': {
-                                        f'unit.{unit}': {
-                                            'rank': rank,
-                                            'is_active': True,
-                                            'current_points': cp_float,
-                                            'total_points': tp_float,
-                                            'subunits': subunits
-                                        },
-                                    }
+                        # else:
+                        await db.temp_profiles.update_one(
+                            {
+                                'user_id': member.id,
+                                'guild_id': ctx.guild.id
+                            },
+                            {
+                                '$set': {
+                                    f'unit.{unit}': {
+                                        'rank': rank,
+                                        'is_active': True,
+                                        'current_points': cp_float,
+                                        'total_points': tp_float,
+                                    },
                                 }
-                            )
-                            print(f"✅ Updated: {discord_username}")
+                            }
+                        )
+                        print(f"✅ Updated: {discord_username}")
 
                     else:
                         profile = {
@@ -175,7 +170,6 @@ class DataImport(commands.Cog):
                                     'is_active': True,
                                     'current_points': cp_float,
                                     'total_points': tp_float,
-                                    'subunits': subunits
                                 }
                             },
                             'private_unit': [],
