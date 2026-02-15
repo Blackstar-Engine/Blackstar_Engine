@@ -119,7 +119,7 @@ class DataImport(commands.Cog):
                     if profile:
                         if profile.get('unit', {}).get(unit):
                             if profile.get('unit', {}).get(unit) == "MTF":
-                                subunits = list(set(profile['unit'][unit].get('subunits', [])) | set(subunits))
+                                subunits = profile['unit'][unit].get('subunits', subunits).append(subunits[0])
                                 rank = profile['unit'][unit].get('rank', rank)
                                 cp_float = max(profile['unit'][unit].get('current_points', 0), cp_float)
                                 tp_float = max(profile['unit'][unit].get('total_points', 0), tp_float)
