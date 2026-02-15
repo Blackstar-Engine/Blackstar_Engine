@@ -19,7 +19,7 @@ tts_lock = threading.Lock()
 
 async def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
-        raise discord.errors.InvalidData("Sorry but you can't use this button.")
+        raise commands.CommandError("Sorry but you can't use this button.")
 
 def has_approval_perms(member: discord.Member) -> bool:
     allowed_roles = {

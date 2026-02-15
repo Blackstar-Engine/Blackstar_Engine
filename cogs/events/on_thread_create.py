@@ -89,28 +89,38 @@ class ThreadProfileCreation(commands.Cog):
                 await thread.send(embed=embed)
                 departments_list.remove(dept)
             else:
-                department_doc = await departments.find_one({"display_name": dept, "is_private": False})
-
-                subunit_list = subunit.split("/")
-
                 if dept == "MTF":
-                    subunit_list = [s.strip() for s in subunit_list]
-                    mtf_subunits = subunit_list.copy()
+                    mtf_subunits = subunit.split("/")
+                    print(mtf_subunits)
+                    for unit in mtf_subunits:
+                        subunit = f"MTF:{unit.strip()}"
+                        department_doc = await departments.find_one({"display_name": subunit, "is_private": False})
+
+                        if not department_doc:
+                            embed = discord.Embed(title="Department Error", description=f"`{subunit}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
+                            await thread.send(embed=embed)
+                            mtf_subunits.remove(unit)
+                        else:
+                        
+                            first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
+
+                            unit_doc = {subunit: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0}}
+
+                            units.update(unit_doc)
                 else:
-                    subunit_list = []
+                    department_doc = await departments.find_one({"display_name": dept, "is_private": False})
                 
+                    if not department_doc:
+                        embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
+                        await thread.send(embed=embed)
+                        departments_list.remove(dept)
+                    else:
+                    
+                        first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
 
-                if not department_doc:
-                    embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
-                    await thread.send(embed=embed)
-                    departments_list.remove(dept)
-                else:
-                
-                    first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
+                        unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0}}
 
-                    unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0, 'subunits': subunit_list}}
-
-                    units.update(unit_doc)
+                        units.update(unit_doc)
 
         profile = {
                 'user_id': member.id,
