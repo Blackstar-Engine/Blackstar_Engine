@@ -41,7 +41,8 @@ class ThreadProfileCreation(commands.Cog):
             "Codename": r"code\s*name:\s*(.*)",
             "Roblox User": r"roblox\s*user:\s*(.*)",
             "Department": r"department:\s*(.*)",
-            "Time Zone": r"time\s*zone:\s*(.*)"
+            "Time Zone": r"time\s*zone:\s*(.*)",
+            "Unit": r"unit:\s*(.*)"
         }
 
         results = {}
@@ -65,6 +66,7 @@ class ThreadProfileCreation(commands.Cog):
         roblox_user: str = results.get("Roblox User")
         department: str = results.get("Department")
         timezone: str = results.get("Time Zone")
+        subunit: str = results.get("Unit")
 
         if codename == -1 or roblox_user == -1 or department == -1 or timezone == -1:
             embed = discord.Embed(title="Enlistment Error", description="Please make sure to include the following as listed `Codename:`, `Roblox user:`, `Time zone:`, and `Department:`.", color=discord.Color.red())
@@ -80,32 +82,38 @@ class ThreadProfileCreation(commands.Cog):
 
         units = {}
 
-        if len(departments_list) > 1:
-            dept = departments_list[0]
+        # if len(departments_list) > 1:
+        #     dept = departments_list[0]
 
-            embed = discord.Embed(title="Multiple Departments", description=f"We only allow 1 department upon enlisting, I am taking your first choice (`{dept}`)!", color=discord.Color.yellow())
-            await thread.send(embed=embed)
-        else:
-            dept = departments_list[0]
+        #     embed = discord.Embed(title="Multiple Departments", description=f"We only allow 1 department upon enlisting, I am taking your first choice (`{dept}`)!", color=discord.Color.yellow())
+        #     await thread.send(embed=embed)
+        # else:
+        #     dept = departments_list[0]
 
-        if dept in ["RRT", "ISD", "IA", "CI"]:
-            embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
-            await thread.send(embed=embed)
-            dept = ""
-        else:
-            department_doc = await departments.find_one({"display_name": dept, "is_private": False})
-
-            if not department_doc:
-                embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
+        for dept in departments_list:
+            if dept in ["RRT", "ISD", "IA", "CI"]:
+                embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
                 await thread.send(embed=embed)
                 dept = ""
             else:
-            
-                first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
+                department_doc = await departments.find_one({"display_name": dept, "is_private": False})
+                subunit = subunit.split("/")
+                if subunit in ["N/A", "None", "N/A", "NA"]:
+                    subunit = []
+                else:
+                    subunit = [s.strip() for s in subunit]
 
-                unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0, 'subunits': []}}
+                if not department_doc:
+                    embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
+                    await thread.send(embed=embed)
+                    dept = ""
+                else:
+                
+                    first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
 
-                units.update(unit_doc)
+                    unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0, 'subunits': subunit}}
+
+                    units.update(unit_doc)
 
         profile = {
                 'user_id': member.id,

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.constants import site_command, foundation_command, profiles
+from utils.constants import site_command, foundation_command, profiles, central_command, high_command
 
 class AcceptDenyButtons(discord.ui.View):
     def __init__(self, bot, user, embed, department):
@@ -18,9 +18,11 @@ class AcceptDenyButtons(discord.ui.View):
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
         site_role = interaction.guild.get_role(site_command)
         foundation_role = interaction.guild.get_role(foundation_command)
+        central_role = interaction.guild.get_role(central_command)
+        high_role = interaction.guild.get_role(high_command)
 
-        if foundation_role not in interaction.user.roles and site_role not in interaction.user.roles:
-            return await interaction.response.send_message("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+        if foundation_role not in interaction.user.roles and site_role not in interaction.user.roles and central_role not in interaction.user.roles and high_role not in interaction.user.roles:
+            return await interaction.response.send_message("You need to be apart of either foundation, site, central, or high command to manage another user", ephemeral=True)
         
         profile = await profiles.find_one({"guild_id": interaction.guild.id, "user_id": self.user.id})
         if profile.get("unit") == []:
@@ -80,9 +82,11 @@ class AcceptDenyButtons(discord.ui.View):
     async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
         site_role = interaction.guild.get_role(site_command)
         foundation_role = interaction.guild.get_role(foundation_command)
+        central_role = interaction.guild.get_role(central_command)
+        high_role = interaction.guild.get_role(high_command)
 
-        if foundation_role not in interaction.user.roles and site_role not in interaction.user.roles:
-            return await interaction.response.send_message("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+        if foundation_role not in interaction.user.roles and site_role not in interaction.user.roles and central_role not in interaction.user.roles and high_role not in interaction.user.roles:
+            return await interaction.response.send_message("You need to be apart of either foundation, site, central, or high command to manage another user", ephemeral=True)
         
         self.embed.color = discord.Color.red()
         self.embed.title = "Enlistment Denied"
