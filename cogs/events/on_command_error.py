@@ -2,15 +2,17 @@ import discord
 from discord.ext import commands
 from utils.constants import logger
 
-def create_dev_embed(error, guild, user, source, is_interaction):
+def create_dev_embed(error, ctx: commands.Context):
+    is_interaction = isinstance(ctx, discord.Interaction)
+    user = ctx.user if is_interaction else ctx.author
+    
     dev_embed = discord.Embed(title='Error', description=f'{error}', color=discord.Color.red())
     dev_embed.add_field(name="User", value=f"{user.mention} `{user.id}`", inline=False)
 
-    if guild:
-        dev_embed.add_field(name="guild", value=f"{guild.name} `{guild.id}`", inline=False)
+    dev_embed.add_field(name="Guild", value=f"{ctx.guild.name} `{ctx.guild.id}`", inline=False)
 
-    if not is_interaction and hasattr(source, "command"):
-        dev_embed.add_field(name="Command", value=f"{source.command}", inline=False)
+    
+    dev_embed.add_field(name="Command", value=f"{ctx.command}", inline=False)
     
     return dev_embed
 
@@ -20,9 +22,9 @@ async def send_error(ctx: commands.Context, embed: discord.Embed):
     except discord.Forbidden:
         pass
 
-async def send_dev_error(bot, error, guild, user, source, is_interaction):
+async def send_dev_error(bot: commands.Bot, ctx, error):
 
-    dev_embed = create_dev_embed(error, guild, user, source, is_interaction)
+    dev_embed = create_dev_embed(error, ctx)
 
    
     channel = await bot.fetch_channel(1464811075760427008)
@@ -36,10 +38,6 @@ class OnCommandError(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
         embed = discord.Embed(title='Error!', description=' ', color=discord.Color.red())
-
-        is_interaction = isinstance(ctx, discord.Interaction)
-        user = ctx.user if is_interaction else ctx.author
-        guild = ctx.guild
 
         if isinstance(error, commands.MissingRequiredArgument):
             embed.description = f"❌ Missing argument: `{error.param.name}`."
@@ -71,7 +69,7 @@ class OnCommandError(commands.Cog):
             embed.description = "❌ Uh oh! An unexpected error occurred."
             logger.error(f'An unexpected error has occurred: {error}')
 
-            await send_dev_error(self.bot, error, guild, user, error, is_interaction)
+            await send_dev_error(self.bot, ctx, error)
         
         await send_error(ctx, embed)
                 
