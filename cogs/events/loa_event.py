@@ -16,6 +16,9 @@ class LOAEvent(commands.Cog):
         self.check_loa_end_date.start()
         if self.check_loa_end_date.is_running():
             print("LOA End Date Checker is running.")
+    
+    def cog_unload(self):
+        self.check_loa_end_date.cancel()
 
     @tasks.loop(minutes=1)
     async def check_loa_end_date(self):
@@ -32,33 +35,15 @@ class LOAEvent(commands.Cog):
                 await self._cleanup_record(record)
                 continue
 
-            # Channel (cached first)
-            channel = guild.get_channel(loa_channel)
-            if not channel:
-                try:
-                    channel = await guild.fetch_channel(loa_channel)
-                except discord.NotFound:
-                    await self._cleanup_record(record)
-                    continue
-
-            member = guild.get_member(record["user_id"])
-            user = member or self.bot.get_user(record["user_id"])
-
-            if not user:
-                try:
-                    user = await self.bot.fetch_user(record["user_id"])
-                except discord.NotFound:
-                    await self._cleanup_record(record)
-                    continue
+            # Get channel and member
+            channel = await self._fetch_channel(guild)
+            member = await self._fetch_member(guild, record.get("user_id"))
 
             # Remove LOA role
             role = guild.get_role(loa_role)
-            if role and member:
+            if role and isinstance(member, discord.Member):
                 try:
-                    await member.remove_roles(
-                        role,
-                        reason="LOA expired"
-                    )
+                    await member.remove_roles(role, reason="LOA expired")
                 except discord.Forbidden:
                     pass
 
@@ -66,7 +51,7 @@ class LOAEvent(commands.Cog):
             embed = discord.Embed(
                 title="LOA Ended",
                 description=(
-                    f"**User:** {user.mention}\n"
+                    f"**User:** {member.mention}\n"
                     f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
                     f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
                     f"**End Reason:** Auto Ended"
@@ -74,17 +59,37 @@ class LOAEvent(commands.Cog):
                 color=discord.Color.light_grey()
             )
 
-            await channel.send(embed=embed)
-
-            # DM user
+            # Send Embed
             try:
-                await user.send(
-                    f"Your LOA in **{guild.name}** has **ENDED**!"
-                )
+                await channel.send(embed=embed)
+            except discord.Forbidden:
+                pass
+            
+            # Notify User
+            try:
+                await member.send(f"Your LOA in **{guild.name}** has **ENDED**!")
             except discord.Forbidden:
                 pass
 
             await self._cleanup_record(record)
+
+    async def _fetch_channel(self, guild: discord.Guild):
+        channel = guild.get_channel(loa_channel)
+        if not channel:
+            try:
+                channel = await guild.fetch_channel(loa_channel)
+            except (discord.NotFound, discord.Forbidden):
+                return None
+        return channel
+    
+    async def _fetch_member(self, guild: discord.Guild, user_id: int):
+        member = guild.get_member(user_id)
+        if not member:
+            try:
+                member = await self.bot.fetch_user(user_id)
+            except (discord.NotFound, discord.Forbidden):
+                return None
+        return member
 
     async def _cleanup_record(self, record: dict):
         """Archive and delete an LOA record safely."""

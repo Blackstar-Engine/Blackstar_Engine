@@ -43,7 +43,7 @@ class ProfileManageUnitsView(discord.ui.View):
         interaction: discord.Interaction,
         select: discord.ui.Select
     ):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
         self.normal_units_interacted = True
         await interaction.response.defer(ephemeral=True)
 
@@ -55,7 +55,7 @@ class ProfileManageUnitsView(discord.ui.View):
         interaction: discord.Interaction,
         select: discord.ui.Select
     ):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
         self.private_units_interacted = True
         await interaction.response.defer(ephemeral=True)
 
@@ -67,7 +67,7 @@ class ProfileManageUnitsView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button
     ):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
 
         # ───── NORMAL UNITS SELECTION ─────
 

@@ -18,7 +18,7 @@ class DepartmentsRequestView(View):
 
     @discord.ui.select(placeholder="Select the departments", min_values=1, options=[])
     async def department_request_select(self, interaction: discord.Interaction, select: Select):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
         await interaction.response.defer(ephemeral=True)
 
         values = select.values

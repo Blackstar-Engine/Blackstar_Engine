@@ -4,6 +4,9 @@ import uuid
 from gtts import gTTS
 import threading
 from datetime import datetime
+import re
+import os
+import asyncio
 
 from utils.constants import (
     foundation_command,
@@ -12,12 +15,13 @@ from utils.constants import (
     central_command,
     wolf_id,
     profiles,
-    departments
+    departments,
+    TTSEmojiRegFormat
 )
 
 tts_lock = threading.Lock()
 
-async def interaction_check(invoked: discord.User, interacted: discord.User):
+def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
         raise commands.CommandError("Sorry but you can't use this button.")
 
@@ -119,3 +123,43 @@ def profile_creation_embed():
     dm_embed.set_image(url="https://cdn.discordapp.com/attachments/1450512700034781256/1463307219159220316/Untitled_design_13.gif?ex=697be68b&is=697a950b&hm=53b2c67aedf52d6392e6c41c4d708e1a52b1c4c9bdda5c7c0f304c717e04cf04&")
 
     return dm_embed
+
+def tts_match_object(message: discord.Message):
+    match = re.sub(TTSEmojiRegFormat, "emoji", message.content)
+    if match:
+        message.content = match
+    if message.content.startswith("https://"):
+        message.content = "an image"
+    elif message.content.startswith("<@"):
+        message.content = "pinged someone"
+    elif message.content.startswith("<#"):
+        message.content = "sent a channel"
+    
+    return message.content
+
+def tts_logic(queue: asyncio.Queue, vc: discord.VoiceClient, file):
+    # File was deleted by clear() — skip it
+    if not os.path.exists(file):
+        queue.task_done()
+        return None
+
+    if not vc or not vc.is_connected():
+        try:
+            os.remove(file)
+        except FileNotFoundError:
+            pass
+        queue.task_done()
+        return None
+
+    try:
+        source = discord.FFmpegPCMAudio(file)
+        return source
+
+    except Exception as e:
+        print(f"FFmpeg failed to open {file}: {e}")
+        try:
+            os.remove(file)
+        except FileNotFoundError:
+            pass
+        queue.task_done()
+        return None

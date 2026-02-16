@@ -13,12 +13,12 @@ class ManageExtendButton(discord.ui.View):
 
     @discord.ui.button(label="Extend", style=discord.ButtonStyle.green)
     async def manage_entend_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
         modal = AddTimeModal(self.bot, self.document, self.user, self.member)
         await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="End", style=discord.ButtonStyle.red)
     async def manage_end_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
         loa_end_modal = EndLOAModal(self.bot, self.user, self.member, self.document)
         await interaction.response.send_modal(loa_end_modal)
