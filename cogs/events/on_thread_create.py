@@ -59,7 +59,8 @@ class ThreadProfileCreation(commands.Cog):
                         "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
                         "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
                         "cunt", "nigger", "mother fucker", "titties", "titty", "boobs", "cum",
-                        "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker"
+                        "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker",
+                        "fucking", "fucker", "fucked", "fucks", "fuk"
                         ]
         
         codename: str = results.get("Codename")
@@ -77,6 +78,11 @@ class ThreadProfileCreation(commands.Cog):
             if result != -1:
                 embed = discord.Embed(title="Profanity Detected", description="We do not allow any type of profanity in codenames. Please reopen another thread and choose a different codename.", color=discord.Color.red())
                 return await thread.send(embed=embed) 
+        
+        profile_check = await profiles.find_one({"guild_id": guild.id, "codename": codename})
+        if profile_check:
+            embed = discord.Embed(title="Codename Taken", description="Sorry but that codename is already taken! Please reopen another thread and choose a different codename.", color=discord.Color.red())
+            return await thread.send(embed=embed)
 
         departments_list = department.split("/")
 
@@ -91,7 +97,7 @@ class ThreadProfileCreation(commands.Cog):
             else:
                 if dept == "MTF":
                     mtf_subunits = subunit.split("/")
-                    
+
                     for unit in mtf_subunits:
                         subunit = f"MTF:{unit.strip()}"
                         department_doc = await departments.find_one({"display_name": subunit, "is_private": False})
