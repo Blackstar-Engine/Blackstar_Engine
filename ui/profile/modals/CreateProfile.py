@@ -44,6 +44,24 @@ class CreateProfileModal(discord.ui.Modal):
         timezone = self.timezone.value
         codename = self.codename.value
 
+        profanity_list = [
+                        "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
+                        "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
+                        "cunt", "nigger", "mother fucker", "titties", "titty", "boobs", "cum",
+                        "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker",
+                        "fucking", "fucker", "fucked", "fucks", "fuk"
+                        ]
+        for word in profanity_list:
+            result = codename.lower().find(word)
+            if result != -1:
+                embed = discord.Embed(title="Profanity Detected", description="We do not allow any type of profanity in codenames.", color=discord.Color.red())
+                return await interaction.response.send_message(embed=embed, ephemeral=True) 
+
+        profile_check = await profiles.find_one({"guild_id": guild, "codename": codename})
+        if profile_check:
+            await interaction.response.send_message("Sorry but that codename is already taken! Please try again with a different codename.", ephemeral=True)
+            return
+
         profile = {
                 'user_id': user,
                 'guild_id': guild,
