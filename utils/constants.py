@@ -20,6 +20,13 @@ constants = BlackstarConstants()
 
 TTSEmojiRegFormat = r"<a?:[a-zA-Z0-9_~]+:\d+>"
 LOARegFormat = r"^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?$"
+profanity_list = [
+                    "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
+                    "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
+                    "cunt", "nigger", "mother fucker", "titties", "titty", "boobs", "cum",
+                    "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker",
+                    "fucking", "fucker", "fucked", "fucks", "fuk"
+                ]
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     constants.MONGO_URI,

@@ -46,7 +46,7 @@ class ManageProfileButtons(discord.ui.View):
 
     @discord.ui.button(label="Edit", style=discord.ButtonStyle.gray, row=2)
     async def manage_profile_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
 
         modal = EditProfileModal(self.bot, self.profile, self.embed)
         await interaction.response.send_modal(modal)
@@ -59,7 +59,7 @@ class ManageProfileButtons(discord.ui.View):
 
     @discord.ui.button(label="Manage Units", style=discord.ButtonStyle.gray, row=2)
     async def manage_profile_units(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
 
         self.profile = await profiles.find_one({"_id": self.profile["_id"]})
 
@@ -133,7 +133,7 @@ class ManageProfileButtons(discord.ui.View):
 
     @discord.ui.button(label="Demote", style=discord.ButtonStyle.blurple, row=2)
     async def demote_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
 
         embed = discord.Embed(title="", description="Please select what department you want to demote them from!", color=discord.Color.dark_embed())
         view = DemoteUnitView(self.profile)
@@ -142,7 +142,7 @@ class ManageProfileButtons(discord.ui.View):
 
     @discord.ui.button(label="Delete", style=discord.ButtonStyle.red, row=3)
     async def manage_profile_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
 
         result = ConfirmRemovalView(self.bot, self.profile, 0)
         embed = discord.Embed(

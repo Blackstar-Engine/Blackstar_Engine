@@ -83,7 +83,7 @@ class PaginatorView(View):
         return embed
 
     async def previous_record(self, interaction: discord.Interaction):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
         
         if self.current_index > 0:
             self.current_index -= 1
@@ -92,7 +92,7 @@ class PaginatorView(View):
             await interaction.response.edit_message(embed=embed, view=self)
 
     async def next_record(self, interaction: discord.Interaction):
-        await interaction_check(self.user, interaction.user)
+        interaction_check(self.user, interaction.user)
         
         if self.current_index < len(self.items) - 1:
             self.current_index += 1
