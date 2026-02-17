@@ -11,14 +11,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd -g 1000 botuser && \
     useradd -u 1000 -g botuser -m -s /bin/bash botuser
 
-# Install system dependencies INCLUDING GIT
+# Install system dependencies (single layer, minimal packages)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y ffmpeg &&\
     apt-get install -y --no-install-recommends \
+    ffmpeg \
     ca-certificates \
-    build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
@@ -28,17 +27,16 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies (without the project itself)
+# Install dependencies (cache-friendly)
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
-# Copy application code
-COPY . .
+# Copy application code with correct ownership (avoids chown layer)
+COPY --chown=botuser:botuser . .
 
-# Install the project and set ownership
+# Install project
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev && \
-    chown -R botuser:botuser /app
+    uv sync --frozen --no-dev
 
 # Switch to non-root user
 USER botuser
