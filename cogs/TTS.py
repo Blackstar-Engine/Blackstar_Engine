@@ -30,21 +30,15 @@ class tts_system_commands(commands.Cog):
     @commands.hybrid_command(name="leave", description="Have the bot leave your current VC.")
     async def leave(self, ctx: commands.Context):
         if ctx.voice_client is not None:
+            guild_id = ctx.guild.id
+            queue = self.bot.tts_queues[guild_id]
             channel: discord.VoiceChannel = ctx.voice_client.channel
 
             await ctx.guild.voice_client.disconnect()
-            self.bot.tts_queues.clear()
 
-            try:
-                
-                for entry in os.scandir("."):
-                    if entry.is_file() and entry.name.startswith("tts_") and entry.name.endswith(".mp3"):
-                        try:
-                            os.remove(entry.path)
-                        except OSError:
-                            pass
-            except Exception as e:
-                print("Failed to remove TTS files: ", e)
+            self._drain_queue(queue)
+            await self._cancel_tts_task(guild_id)
+            self._cleanup_mp3_files()
             
             embed = discord.Embed(title="Disconnected!", description=f"Disconnected from {channel.mention}!", color=discord.Color.green())
             embed.set_footer(text=f"Executed by {ctx.author.name}")
@@ -53,52 +47,54 @@ class tts_system_commands(commands.Cog):
             embed = discord.Embed(title="Whoops....", description="I need be in a channel to leave!", color=discord.Color.light_grey())
             await ctx.send(embed=embed, ephemeral=True)
     
-    @commands.hybrid_command(name="clear", description="Clear the TTS queue.")
-    async def clear(self, ctx: commands.Context):
-        guild_id = ctx.guild.id
-
-        # 1. Stop voice playback
-        vc = ctx.guild.voice_client
-        queue = self.bot.tts_queues[guild_id]
-
-        if vc and vc.is_playing():
-            vc.stop()
-        elif vc is None or queue.empty():
-            return await ctx.send("There is nothing to clear!", ephemeral=True)
-
-        # 2. Drain the queue
-        
-
+    def _drain_queue(self, queue):
+        """Drain the queue and delete files."""
         while not queue.empty():
             try:
                 file = queue.get_nowait()
                 queue.task_done()
-
-                # delete queued file immediately
                 if os.path.exists(file):
                     os.remove(file)
-
             except asyncio.QueueEmpty:
                 break
 
-        # 3. Cancel TTS worker
+    async def _cancel_tts_task(self, guild_id):
+        """Cancel the TTS worker task."""
         task = self.bot.tts_tasks.get(guild_id)
-        if task:
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
-            finally:
-                del self.bot.tts_tasks[guild_id]
+        if not task:
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        finally:
+            del self.bot.tts_tasks[guild_id]
 
-        # 4. Delete stray mp3 files
+    def _cleanup_mp3_files(self):
+        """Delete stray mp3 files."""
         for entry in os.scandir("."):
             if entry.is_file() and entry.name.startswith("tts_") and entry.name.endswith(".mp3"):
                 try:
                     os.remove(entry.path)
                 except OSError:
                     pass
+
+    @commands.hybrid_command(name="clear", description="Clear the TTS queue.")
+    async def clear(self, ctx: commands.Context):
+        guild_id = ctx.guild.id
+        vc = ctx.guild.voice_client
+        queue = self.bot.tts_queues[guild_id]
+
+        if not vc or queue.empty():
+            return await ctx.send("There is nothing to clear!", ephemeral=True)
+
+        if vc.is_playing():
+            vc.stop()
+
+        self._drain_queue(queue)
+        await self._cancel_tts_task(guild_id)
+        self._cleanup_mp3_files()
 
         embed = discord.Embed(title="Queue Cleared!", description="All records have been cleared", color=discord.Color.green())
         embed.set_footer(text=f"Executed by {ctx.author.name}")

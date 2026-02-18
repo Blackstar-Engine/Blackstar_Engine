@@ -1,54 +1,45 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.7
+
 FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
 
-# Environment variables
+# ---------- Environment ----------
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    DEBIAN_FRONTEND=noninteractive
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1
 
-# Create non-root user
-RUN groupadd -g 1000 botuser && \
-    useradd -u 1000 -g botuser -m -s /bin/bash botuser
-
-# Install system dependencies INCLUDING GIT
+# ---------- System dependencies ----------
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y ffmpeg &&\
     apt-get install -y --no-install-recommends \
+    ffmpeg \
     ca-certificates \
-    build-essential \
-    git \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# ---------- Non-root runtime ----------
+RUN useradd -m -u 1000 botuser
 WORKDIR /app
+RUN chown botuser:botuser /app
 
-# Copy dependency files
+# ---------- Dependency layer (for fast rebuilds) ----------
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies (without the project itself)
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
-# Copy application code
-COPY . .
+# ---------- Application layer ----------
+COPY --chown=botuser:botuser . .
 
-# Install the project and set ownership
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev && \
-    chown -R botuser:botuser /app
+    uv sync --frozen --no-dev
 
-# Switch to non-root user
+# ---------- Runtime ----------
 USER botuser
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
-# Set default credentials path
-ENV GOOGLE_APPLICATION_CREDENTIALS=/home/botuser/home/credentials.json
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-    CMD ["uv", "run", "python", "-c", "import sys; sys.exit(0)"]
-
-# Run the bot
 CMD ["uv", "run", "python", "-m", "main"]
