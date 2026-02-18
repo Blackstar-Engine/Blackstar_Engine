@@ -16,7 +16,11 @@ from utils.constants import (
     wolf_id,
     profiles,
     departments,
-    TTSEmojiRegFormat
+    URL_RE,
+    ROLE_RE,
+    USER_RE,
+    CHANNEL_RE,
+    EMOJI_RE,
 )
 
 tts_lock = threading.Lock()
@@ -125,17 +129,25 @@ def profile_creation_embed():
     return dm_embed
 
 def tts_match_object(message: discord.Message):
-    match = re.sub(TTSEmojiRegFormat, "emoji", message.content)
-    if match:
-        message.content = match
-    if message.content.startswith("https://"):
-        message.content = "an image"
-    elif message.content.startswith("<@"):
-        message.content = "pinged someone"
-    elif message.content.startswith("<#"):
-        message.content = "sent a channel"
-    
-    return message.content
+    text = message.content
+
+    # Replace discord formatted things
+    text = EMOJI_RE.sub("emoji", text)
+    text = CHANNEL_RE.sub("channel", text)
+    text = USER_RE.sub("user", text)
+    text = ROLE_RE.sub("role", text)
+
+    # Replace links anywhere in message
+    text = URL_RE.sub("link", text)
+
+    # Replace attachments (images, files, etc.)
+    if message.attachments:
+        if text:
+            text += " with an attachment"
+        else:
+            text = "an attachment"
+
+    return text.strip()
 
 def tts_logic(queue: asyncio.Queue, vc: discord.VoiceClient, file):
     # File was deleted by clear() — skip it

@@ -4,6 +4,7 @@ from typing import Final
 import logging
 import sys
 import motor.motor_asyncio
+import re
 
 load_dotenv()
 
@@ -18,8 +19,12 @@ class BlackstarConstants:
 
 constants = BlackstarConstants()
 
-TTSEmojiRegFormat = r"<a?:[a-zA-Z0-9_~]+:\d+>"
 LOARegFormat = r"^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?$"
+EMOJI_RE = re.compile(r"<a?:\w+:\d{17,20}>")
+CHANNEL_RE = re.compile(r"<#\d{17,20}>")
+USER_RE = re.compile(r"<@!?\d{17,20}>")
+ROLE_RE = re.compile(r"<@&\d{17,20}>")
+URL_RE = re.compile(r"https?://\S+")
 profanity_list = [
                     "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
                     "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
