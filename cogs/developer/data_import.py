@@ -100,7 +100,7 @@ class DataImport(commands.Cog):
                         unit = "MTF:A-1"
 
                     # 🔥 SINGLE UPSERT = create or merge department
-                    result = await db.temp_profiles.update_one(
+                    result = await profiles.update_one(
                         {
                             'user_id': member.id,
                             'guild_id': ctx.guild.id
