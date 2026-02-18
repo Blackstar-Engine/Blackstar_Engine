@@ -54,7 +54,7 @@ class GSheet:
         """Connects to the spreadsheet and finds the specific tab by GID."""
         try:
             client = await self.agcm.authorize()
-            spreadsheet = await client.open_by_key("1DnB_gri9nkZFXAe96KNCtbV2gnrYI4IxFgFR26V4yo0")
+            spreadsheet = await client.open_by_key("1BLlkDxLW7GqPwVPmDuwpu-XBU98aY5_0ADX9QALXp4w")
             
             worksheets = await spreadsheet.worksheets()
             found = False
