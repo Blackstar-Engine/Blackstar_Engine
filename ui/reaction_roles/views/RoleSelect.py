@@ -12,15 +12,15 @@ class RoleSelect(discord.ui.View):
         min_values=1,
         max_values=1,
         options=[
-            discord.SelectOption(label="Annoucements Ping", value=annoucement_role_id, emoji='<:BlackStar_Announcement:1467561153499631738>'),
-            discord.SelectOption(label="D.P.R Display Ping", value=dpr_display_role_id), #, emoji=''
-            discord.SelectOption(label="MISC Ping", value=misc_role_id, emoji='<:BlackStar_Miscellaneous:1467561252120166533>'),
-            discord.SelectOption(label="Game Night Ping", value=game_night_role_id, emoji='<:BlackStar_Gamenight:1467561216720240831>'),
-            discord.SelectOption(label="Question Ping", value=question_role_id, emoji='<:BlackStar_QOTD:1467561311398268938>'),
-            discord.SelectOption(label="Vote Ping", value=vote_role_id, emoji='<:BlackStar_Vote:1467561338321502348>'),
-            discord.SelectOption(label="Chat Revive Ping", value=chat_revive_role_id, emoji='<:BlackStar_ChatRevive:1467561189612716205>'),
-            discord.SelectOption(label="Raid Ping", value=raid_role_id), #, emoji=''
-            discord.SelectOption(label="Session Ping", value=session_role_id) #, emoji=''
+            discord.SelectOption(label="Annoucements Ping", value=int(annoucement_role_id), emoji='<:BlackStar_Announcement:1467561153499631738>'),
+            discord.SelectOption(label="D.P.R Display Ping", value=int(dpr_display_role_id), emoji='<:BlackStar_DPR:1474396677686300702>'),
+            discord.SelectOption(label="MISC Ping", value=int(misc_role_id), emoji='<:BlackStar_Miscellaneous:1467561252120166533>'),
+            discord.SelectOption(label="Game Night Ping", value=int(game_night_role_id), emoji='<:BlackStar_Gamenight:1467561216720240831>'),
+            discord.SelectOption(label="Question Ping", value=int(question_role_id), emoji='<:BlackStar_QOTD:1467561311398268938>'),
+            discord.SelectOption(label="Vote Ping", value=int(vote_role_id), emoji='<:BlackStar_Vote:1467561338321502348>'),
+            discord.SelectOption(label="Chat Revive Ping", value=int(chat_revive_role_id), emoji='<:BlackStar_ChatRevive:1467561189612716205>'),
+            discord.SelectOption(label="Raid Ping", value=int(raid_role_id), emoji='<:BlackStar_Raid:1474396707780431882>'),
+            discord.SelectOption(label="Session Ping", value=int(session_role_id), emoji='<:BlackStar_Session:1474396734909190201>')
         ]
     )
     async def role_selection_menu(self, interaction: discord.Interaction, select: discord.ui.Select):
