@@ -16,6 +16,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     ffmpeg \
     ca-certificates \
     tini \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------- Non-root runtime ----------
