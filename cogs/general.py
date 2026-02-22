@@ -9,10 +9,8 @@ class General(commands.Cog):
 
     @commands.hybrid_command(name="execute", description="Execute the user")
     async def execute_user(self, ctx: commands.Context, user: discord.Member):
-        foundation_role = await ctx.guild.fetch_role(foundation_command)
-
-        if foundation_role not in ctx.author.roles:
-            return await ctx.send("You need to be apart of foundation to use this command!", ephemeral=True)
+        if ctx.author.id != wolf_id:
+            return await ctx.send("You are not allowed to use this command!", ephemeral=True)
 
         duration = timedelta(seconds=10)
         try:
