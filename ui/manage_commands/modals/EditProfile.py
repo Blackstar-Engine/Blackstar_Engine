@@ -2,10 +2,9 @@ import discord
 from utils.constants import profiles
 
 class EditProfileModal(discord.ui.Modal):
-    def __init__(self, bot, profile: dict, embed: discord.Embed):
+    def __init__(self, bot, profile: dict):
         self.bot = bot
         self.profile = profile
-        self.embed = embed
 
         super().__init__(title="Edit Your Profile")
 
@@ -67,8 +66,5 @@ class EditProfileModal(discord.ui.Modal):
                                 description=f"Your profile has been edited!\n\n**Codename: **{codename}\n**Roblox Name: **{r_name}\n**Timezone: **{timezone}\n**Status: ** {status.title()}",
                                 color=discord.Color.green()
                                 )
-        
-        self.embed.description = f"**Codename: **{codename}\n**Roblox Name: **{r_name}\n**Timezone: **{timezone}\n**Rank: ** {self.profile.get('rank')}\n**Unit(s): **{', '.join(self.profile.get('unit', []))}\n**Private Unit(s): **{', '.join(self.profile.get('private_unit', []))}\n**Join Date: ** {self.profile.get('join_date')}\n**Status: ** {status.title()}"
 
-        await interaction.response.edit_message(embed=self.embed)
-        await interaction.followup.send(embed=edit_embed, ephemeral=True)
+        await interaction.response.send_message(embed=edit_embed, ephemeral=True)

@@ -4,6 +4,7 @@ from utils.constants import profile_thread_channel, profiles, departments, profa
 from datetime import datetime
 import re 
 from utils.utils import profile_creation_embed
+import asyncio
 
 class ThreadProfileCreation(commands.Cog):
     def __init__(self, bot):
@@ -39,7 +40,7 @@ class ThreadProfileCreation(commands.Cog):
             # re.IGNORECASE handles 'CODENAME' vs 'codename'
             match = re.search(pattern, main_message, re.IGNORECASE)
             if match:
-                results[label] = match.group(1).strip()
+                results[label] = match.group(1).strip(" `*~_.")
             else:
                 results[label] = -1
         
@@ -117,7 +118,18 @@ class ThreadProfileCreation(commands.Cog):
         member = guild.get_member(thread.owner_id)
         join_date = datetime.now().date()
 
-        main_message = await thread.fetch_message(thread.id)
+        main_message = None
+
+        for _ in range(5):
+            try:
+                main_message = await thread.fetch_message(thread.id)
+                break
+            except discord.NotFound:
+                await asyncio.sleep(1)
+
+        if not main_message:
+            return
+
         main_message = str(main_message.content)
 
         # Preliminary Checks
