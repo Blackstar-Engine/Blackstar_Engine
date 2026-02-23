@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from utils.constants import departments
 from utils.utils import fetch_profile
-from ui.department_request.view.department_select import DepartmentsRequestView
+from ui.department_request.view.DepartmentsRequestSelect import DepartmentsRequestView
 
 class DepartmentRequest(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -28,12 +28,10 @@ class DepartmentRequest(commands.Cog):
                 continue
             else:
                 options.append(discord.SelectOption(label=dept))
-
-        embed = discord.Embed(title="Department Selection", description="Please select all departments you would like to enlist to!", color=discord.Color.green())
         
         view = DepartmentsRequestView(self.bot, ctx.author, options, profile)
 
-        await ctx.send(embed=embed, view=view)
+        await ctx.send(view=view, ephemeral=True)
 
 
 async def setup(bot: commands.Bot):

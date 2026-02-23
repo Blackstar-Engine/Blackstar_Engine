@@ -71,6 +71,7 @@ if constants.ENVIRONMENT == "PRODUCTION":
     wolf_id = 1371489554279825439
     overall_promotion_channel = 1412244417380618320
     profile_thread_channel = 1433946174791876740
+    drm_id = 1428178727824658502
 
     annoucement_role_id = 1413199178934259844
     misc_role_id = 1413199348753498222
@@ -81,6 +82,9 @@ if constants.ENVIRONMENT == "PRODUCTION":
     dpr_display_role_id = 1460112895252758569
     raid_role_id = 1457222250817392661
     session_role_id = 1456018515050893425
+
+    mtf_overall_role_id = 1413195090096034015
+
 else:
     loa_channel = 1454232138571448524
     loa_role = 1454233756545323200
@@ -93,6 +97,7 @@ else:
     wolf_id = 1371489554279825439
     overall_promotion_channel = 1450298055336136716
     profile_thread_channel = 1450298068162576525
+    drm_id = 1450297796174286900
 
     annoucement_role_id = 1450297860846387312
     dpr_display_role_id = 1450297861836247050
@@ -103,6 +108,8 @@ else:
     chat_revive_role_id = 1450297899811475558
     raid_role_id = 1470978604883116245
     session_role_id = 1470978602324590789
+
+    mtf_overall_role_id = 1450297782983327795
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console
