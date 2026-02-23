@@ -27,21 +27,9 @@ class Profile(commands.Cog):
             # Fetch current department options
             options = fetch_unit_options(profile)
 
-            private_unit = ", ".join(profile.get('private_unit', []))
-
-            # Create the embed, view, and send to the channel
-            embed = discord.Embed(
-                title="",
-                description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
-                color=discord.Color.light_grey()
-            )
-
-            embed.set_author(name=f"{profile.get('codename')}'s Profile Information", icon_url=ctx.author.display_avatar.url)
-            embed.set_thumbnail(url=ctx.author.display_avatar.url)
-
             view = UnitSelectView(self.bot, options, profile)
 
-            await ctx.send(embed=embed, view=view, ephemeral=True)
+            await ctx.send(view=view, ephemeral=True)
 
 
 
