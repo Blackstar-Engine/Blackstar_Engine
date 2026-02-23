@@ -5,60 +5,93 @@ from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
 from ui.manage_commands.views.DemoteUnit import DemoteUnitView
 from utils.utils import interaction_check, fetch_unit_options
-
-class ManageProfileButtons(discord.ui.View):
-    def __init__(self, bot, user, profile, embed, options):
-        super().__init__(timeout=None)
-        self.bot = bot
+from discord import ui
+import asyncio
+class SelectAction(ui.ActionRow):
+    def __init__(self, bot, user, options, profile):
+        super().__init__()
         self.profile = profile
+        self.bot = bot
         self.user = user
-        self.embed: discord.Embed = embed
-        self.main_message: discord.Message = None
 
-        self.dept_role_select.options = options
-    
-    @discord.ui.select(
-        placeholder="Select a Role",
-        min_values=1,
-        max_values=1,
-        options=[]
-    )
-    async def dept_role_select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        await interaction.response.defer(ephemeral=True)
-        value = select.values[0]
+        self.role_select = ui.Select(
+            placeholder="Select a Role",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
 
-        select.values.clear()
+        self.role_select.callback = self.dept_role_select
 
-        await interaction.edit_original_response(view=self)
+        self.add_item(self.role_select)
+
+    async def dept_role_select(self, interaction: discord.Interaction):
+        value = self.role_select.values[0]
+
+        self.role_select.values.clear()
+
+        options = fetch_unit_options(self.profile)
+
+        view = ManageProfileButtons(self.bot, self.user, self.profile, options)
+
+        await interaction.response.edit_message(view=view)
 
         if value == "no_units":
             return
         
         department = self.profile["unit"][value]
 
-        embed = discord.Embed(
-            title="Unit Information",
-            description=f"**Unit Name: ** {value}\n**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}",
-            color=discord.Color.light_grey()
+        view = ui.LayoutView()
+
+        container = ui.Container(
+            ui.TextDisplay(f"## {value} Information"),
+            ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
+            accent_color=discord.Color.light_grey()
         )
 
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        view.add_item(container)
 
-    @discord.ui.button(label="Edit", style=discord.ButtonStyle.gray, row=2)
-    async def manage_profile_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.followup.send(view=view, ephemeral=True)
+
+class ButtonsAction1(ui.ActionRow):
+    def __init__(self, bot, user, profile):
+        super().__init__()
+        self.bot = bot
+        self.profile = profile
+        self.user = user
+
+        edit_button = ui.Button(label="Edit", style=discord.ButtonStyle.gray, row=1)
+        manage_units_button = ui.Button(label="Manage Units", style=discord.ButtonStyle.gray, row=1)
+
+        edit_button.callback = self.manage_profile_edit
+        manage_units_button.callback = self.manage_profile_units
+
+        self.add_item(edit_button)
+        self.add_item(manage_units_button)
+    
+    async def manage_profile_edit(self, interaction: discord.Interaction):
         interaction_check(self.user, interaction.user)
 
-        modal = EditProfileModal(self.bot, self.profile, self.embed)
+        modal = EditProfileModal(self.bot, self.profile)
         await interaction.response.send_modal(modal)
         await modal.wait()
 
-        self.profile["roblox_name"] = modal.roblox_name.value
-        self.profile["timezone"] = modal.timezone.value
-        self.profile["codename"] = modal.codename.value
-        self.profile["status"] = modal.status.value
+        roblox_name = modal.roblox_name.value
+        timezone = modal.timezone.value
+        codename = modal.codename.value
+        status = modal.status.value
 
-    @discord.ui.button(label="Manage Units", style=discord.ButtonStyle.gray, row=2)
-    async def manage_profile_units(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.profile["roblox_name"] = roblox_name
+        self.profile["timezone"] = timezone
+        self.profile["codename"] = codename
+        self.profile["status"] = status.title()
+
+        options = fetch_unit_options(self.profile)
+        view = ManageProfileButtons(self.bot, self.user, self.profile, options)
+
+        await interaction.edit_original_response(view=view)
+    
+    async def manage_profile_units(self, interaction: discord.Interaction):
         interaction_check(self.user, interaction.user)
 
         self.profile = await profiles.find_one({"_id": self.profile["_id"]})
@@ -92,69 +125,98 @@ class ManageProfileButtons(discord.ui.View):
                     option.default = True
                 normal_unit_results.append(option)
 
-        view = ProfileManageUnitsView(
-            self.bot,
-            self.profile,
-            self.user,
-            normal_unit_results,
-            private_unit_results
-        )
+        view = ProfileManageUnitsView(self.bot, self.profile, normal_unit_results, private_unit_results)
 
-        embed = discord.Embed(
-            title="Units Selection",
-            description="Please select all units you want this user to be a part of",
-            color=discord.Color.light_grey()
-        )
-
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.response.send_message(view=view, ephemeral=True)
         await view.wait()
 
         # 🔄 Reload profile after submit
         self.profile = await profiles.find_one({"_id": self.profile["_id"]})
 
-        private_units = ", ".join(self.profile.get("private_unit", [])) or ""
-
-        self.embed.description = (
-            f"**Codename:** {self.profile.get('codename')}\n"
-            f"**Roblox Name:** {self.profile.get('r_name')}\n"
-            f"**Timezone:** {self.profile.get('timezone')}\n"
-            f"**Private Unit(s):** {private_units}\n"
-            f"**Join Date:** {self.profile.get('join_date')}\n"
-            f"**Status:** {self.profile.get('status').title()}"
-        )
-
         options = fetch_unit_options(self.profile)
+        manage_profile_view = ManageProfileButtons(self.bot, self.user, self.profile, options)
 
-        manage_profile_view = ManageProfileButtons(self.bot, self.user, self.profile, self.embed, options)
+        await interaction.edit_original_response(view=manage_profile_view)
 
-        message = await self.main_message.edit(embed=self.embed, view=manage_profile_view)
+class ButtonsAction2(ui.ActionRow):
+    def __init__(self, bot, user, profile):
+        super().__init__()
+        self.bot = bot
+        self.profile = profile
+        self.user = user
 
-        manage_profile_view.main_message = message
+        demote_button = ui.Button(label="Demote", style=discord.ButtonStyle.blurple, row=1)
+        delete_button = ui.Button(label="Delete", style=discord.ButtonStyle.red, row=1)
 
-    @discord.ui.button(label="Demote", style=discord.ButtonStyle.blurple, row=2)
-    async def demote_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        demote_button.callback = self.demote_user_button
+        delete_button.callback = self.manage_profile_delete
+
+        self.add_item(demote_button)
+        self.add_item(delete_button)
+    
+    async def demote_user_button(self, interaction: discord.Interaction):
         interaction_check(self.user, interaction.user)
 
-        embed = discord.Embed(title="", description="Please select what department you want to demote them from!", color=discord.Color.dark_embed())
-        view = DemoteUnitView(self.profile)
+        view = ui.LayoutView()
+        container = ui.Container(
+            ui.TextDisplay('## Warning!'),
+            ui.TextDisplay('This action is permanent and will demote the user from the selected department.'),
+            ui.TextDisplay('Please select a department to demote this user from.'),
+            DemoteUnitView(self.profile),
+            accent_color=discord.Color.yellow()
+        )
+        view.add_item(container)
+        
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-
-    @discord.ui.button(label="Delete", style=discord.ButtonStyle.red, row=3)
-    async def manage_profile_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(view=view, ephemeral=True)
+    
+    async def manage_profile_delete(self, interaction: discord.Interaction):
         interaction_check(self.user, interaction.user)
 
-        result = ConfirmRemovalView(self.bot, self.profile, 0)
-        embed = discord.Embed(
-            title="Confirm Deletion",
-            description="Are you sure you would like to remove this profile?",
-            color=discord.Color.yellow()
+        confirm_buttons = ConfirmRemovalView(self.bot, self.profile, 0)
+        view = ui.LayoutView()
+        container = ui.Container(
+            ui.TextDisplay('## Warning!'),
+            ui.TextDisplay('This action is irreversible and will delete all data associated with this profile.'),
+            ui.TextDisplay('Please confirm that you want to proceed with this action.'),
+            ui.Separator(),
+            confirm_buttons,
+            accent_color=discord.Color.yellow()
+        )
+        view.add_item(container)
+        await interaction.response.send_message(view=view, ephemeral=True)
+        await view.wait()
+
+        if confirm_buttons.status == 1:
+            await asyncio.sleep(1)
+            await profiles.delete_one(self.profile)
+
+            view = ui.LayoutView()
+            container = ui.Container(
+                ui.TextDisplay('Profile Has Been Deleted.'),
+                accent_color=discord.Color.green()
+            )
+            view.add_item(container)
+            await interaction.edit_original_response(view=view)
+            view.stop()
+
+class ManageProfileButtons(ui.LayoutView):
+    def __init__(self, bot, user, profile, options):
+        super().__init__(timeout=300)
+
+        private_unit = ", ".join(profile.get('private_unit', []))
+
+        container = ui.Container(
+            ui.TextDisplay('## Manage Profile'),
+            SelectAction(bot, user, options, profile),
+            ui.Separator(),
+            ui.TextDisplay('### Profile Information'),
+            ui.TextDisplay(f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}"),
+            ui.Separator(),
+            ButtonsAction1(bot, user, profile),
+            ui.Separator(),
+            ButtonsAction2(bot, user, profile),
+            accent_color=discord.Color.light_grey()
         )
 
-        await interaction.response.send_message(embed=embed, view=result, ephemeral=True)
-        await result.wait()
-
-        if result.status == 1:
-            await profiles.delete_one(self.profile)
-            await self.main_message.edit(content="Profile was deleted", embed=None, view=None)
-            self.stop()
+        self.add_item(container)

@@ -156,25 +156,10 @@ class ManageCommands(commands.Cog):
             # Fetch active departments
             options = fetch_unit_options(profile)
 
-            private_unit = ", ".join(profile.get('private_unit', []))
-
-            # Create the embed and view
-            embed = discord.Embed(
-                title="",
-                description=f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}",
-                color=discord.Color.light_grey()
-            )
-
-            embed.set_author(name=f"{profile.get('codename')}'s Profile Information", icon_url=user.display_avatar.url)
-            embed.set_thumbnail(url=user.display_avatar.url)
-
-            view = ManageProfileButtons(self.bot, ctx.author, profile, embed, options)
+            view = ManageProfileButtons(self.bot, ctx.author, profile, options)
 
             # Send to the user
-            message = await ctx.send(embed=embed, view=view, ephemeral=True)
-
-            # Add the message Object to the view
-            view.main_message = message
+            await ctx.send(view=view, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ManageCommands(bot))

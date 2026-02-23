@@ -1,35 +1,47 @@
 import discord
 from discord.ui import View, Button
 
-class ConfirmRemovalView(View):
+class ConfirmRemovalView(discord.ui.ActionRow):
     def __init__(self, bot, record, index):
         super().__init__()
         self.bot = bot
         self.record = record
         self.index = index
-
         self.status = None
 
-    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
-    async def confirm(self, interaction: discord.Interaction, button: Button):
+        confirm_button = Button(label="Confirm", style=discord.ButtonStyle.green)
+        cancel_button = Button(label="Cancel", style=discord.ButtonStyle.red)
+
+        confirm_button.callback = self.confirm
+        cancel_button.callback = self.cancel
+
+        self.add_item(confirm_button)
+        self.add_item(cancel_button)
+
+    async def confirm(self, interaction: discord.Interaction):
         self.status = 1
 
-        embed = discord.Embed(
-            title="Record Removed",
-            description="The fire record has been successfully removed.",
-            color=discord.Color.green()
+        view = discord.ui.LayoutView()
+        container = discord.ui.Container(
+            discord.ui.TextDisplay('Deleting Profile...'),
+            accent_color=discord.Color.green()
         )
-        await interaction.response.edit_message(embed=embed, view=None)
+        view.add_item(container)
 
-        self.stop()
+        await interaction.response.edit_message(view=view)
+        view.stop()
+        self.view.stop()
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
-    async def cancel(self, interaction: discord.Interaction, button: Button):
+    async def cancel(self, interaction: discord.Interaction):
         self.status = 0
-        embed = discord.Embed(
-            title="Removal Cancelled",
-            description="The removal of the fire record has been cancelled.",
-            color=discord.Color.red()
+
+        view = discord.ui.LayoutView()
+        container = discord.ui.Container(
+            discord.ui.TextDisplay('Deletion Cancelled.'),
+            accent_color=discord.Color.red()
         )
-        await interaction.response.edit_message(embed=embed, view=None)
-        self.stop()
+        view.add_item(container)
+
+        await interaction.response.edit_message(view=view)
+        view.stop()
+        self.view.stop()

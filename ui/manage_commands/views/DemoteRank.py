@@ -1,9 +1,9 @@
 import discord
 from utils.constants import profiles
 
-class DemoteRankView(discord.ui.View):
+class DemoteRankView(discord.ui.ActionRow):
     def __init__(self, profile, unit, ranks, current_rank):
-        super().__init__(timeout=120)
+        super().__init__()
 
         self.profile = profile
         self.unit = unit
@@ -28,11 +28,17 @@ class DemoteRankView(discord.ui.View):
             for r in self.valid_ranks
         ]
 
-        self.rank_select.options = options
+        self.rank_select = discord.ui.Select(
+            placeholder="Select rank to demote to",
+            options=options,
+            min_values=1,
+            max_values=1
+        )
+        self.rank_select.callback = self.rank_select_callback
+        self.add_item(self.rank_select)
 
-    @discord.ui.select(placeholder="Select rank to demote to", options=[])
-    async def rank_select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        new_rank = select.values[0]
+    async def rank_select_callback(self, interaction: discord.Interaction):
+        new_rank = self.rank_select.values[0]
 
         await profiles.update_one(
             {"_id": self.profile["_id"]},
@@ -40,8 +46,11 @@ class DemoteRankView(discord.ui.View):
                 f"unit.{self.unit}.rank": new_rank
             }}
         )
-
-        await interaction.response.send_message(
-            f"✅ {self.unit} rank updated to **{new_rank}**",
-            ephemeral=True
+        
+        view = discord.ui.LayoutView()
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(f"✅ {self.unit} rank updated to **{new_rank}**"),
+            accent_color=discord.Color.green()
         )
+        view.add_item(container)
+        await interaction.response.edit_message(view=view)
