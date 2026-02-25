@@ -1,5 +1,4 @@
 import discord
-from utils.constants import profiles
 
 class PointsRemovalModal(discord.ui.Modal):
     def __init__(self, profile):

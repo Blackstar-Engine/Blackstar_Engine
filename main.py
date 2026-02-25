@@ -1,12 +1,14 @@
 import discord 
 from discord.ext import commands
 from cogwatch import watch
-import time
 import os
 import sys
 import asyncio
 from collections import defaultdict
-from utils.constants import BlackstarConstants, auto_replys
+from utils.constants import BlackstarConstants, auto_replys, enlistment_requests, point_requests, promotion_requests
+from ui.promotion.views.PromotionRequest import PromotionRequestView
+from ui.points.views.AcceptDenyButtons import PointsRequestView
+from ui.enlistment_request.views.EnlistmentRequestView import EnlistmentRequestView
 
 constants = BlackstarConstants()
 
@@ -41,7 +43,11 @@ class Bot(commands.Bot):
         return user.id in bypassed_users
 
     async def setup_hook(self):
-        count = 0
+        cog_counter = 0
+        enlistment_counter = 0
+        points_counter = 0
+        promotion_counter = 0
+
         for root, _, files in os.walk("./cogs"):
             for file in files:
                 if file.endswith(".py"):
@@ -50,12 +56,33 @@ class Bot(commands.Bot):
                     
                     try:
                         await bot.load_extension(f"cogs.{cog_module}")
-                        count += 1
+                        cog_counter += 1
                         print(f"{cog_module} loaded successfully")
                     except Exception as e:
                         print(f"{cog_module} failed to load: {e}")
 
-        print(f"Successfully loaded {count} cog(s)")
+        print(f"Successfully loaded {cog_counter} cog(s)")
+
+        async for req in enlistment_requests.find({"is_active": True}):
+            view = EnlistmentRequestView(req["_id"], req["snapshot"])
+            self.add_view(view)
+            enlistment_counter += 1
+        
+        print(f"Successfully loaded {enlistment_counter} enlistments")
+
+        async for req in point_requests.find({"is_active": True}):
+            view = PointsRequestView(req["_id"], req["snapshot"])
+            self.add_view(view)
+            points_counter += 1
+        
+        print(f"Successfully loaded {points_counter} points")
+
+        async for req in promotion_requests.find({"is_active": True}):
+            view = PromotionRequestView(self, req["_id"], req["snapshot"])
+            self.add_view(view)
+            promotion_counter += 1
+        
+        print(f"Successfully loaded {promotion_counter} promotions")
 
     async def on_connect(self):
         print('Connected to discord gateway')

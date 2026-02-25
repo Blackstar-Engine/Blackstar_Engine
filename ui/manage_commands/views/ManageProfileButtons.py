@@ -7,6 +7,7 @@ from ui.manage_commands.views.DemoteUnit import DemoteUnitView
 from utils.utils import interaction_check, fetch_unit_options
 from discord import ui
 import asyncio
+
 class SelectAction(ui.ActionRow):
     def __init__(self, bot, user, options, profile):
         super().__init__()

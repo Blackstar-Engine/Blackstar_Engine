@@ -1,9 +1,38 @@
 import discord
 from discord.ext import commands
-from utils.constants import departments
 from ui.promotion.views.PromotionRequest import PromotionRequestView
-from utils.utils import fetch_profile, fetch_department
+from utils.utils import fetch_profile, fetch_department, generate_timestamp
+import uuid
+from utils.constants import promotion_requests
 
+async def send_promotion_request(bot, channel, profile, dept_name, proof, new_rank):
+    request_id = str(uuid.uuid4())
+
+    snapshot = {
+        "user_id": profile["user_id"],
+        "codename": profile.get("codename"),
+        "status": profile.get("status"),
+        "department": dept_name,
+        "current_rank": profile["unit"][dept_name]["rank"],
+        "new_rank": new_rank,
+        "proof": proof,
+        "current_points": profile["unit"][dept_name]["current_points"],
+        "total_points": profile["unit"][dept_name]["total_points"],
+        "join_timestamp": generate_timestamp(profile["join_date"])
+    }
+
+    view = PromotionRequestView(bot, request_id, snapshot)
+    msg = await channel.send(view=view)
+
+    await promotion_requests.insert_one({
+        "_id": request_id,
+        "guild_id": channel.guild.id,
+        "target_user_id": profile["user_id"],
+        "snapshot": snapshot,
+        "message_id": msg.id,
+        "channel_id": channel.id,
+        "is_active": True
+    })
 
 class Promotion(commands.Cog):
     def __init__(self, bot):
@@ -70,25 +99,7 @@ class Promotion(commands.Cog):
             embed = discord.Embed(title="Error!", description="Promotion request channel not found. Please contact DSM!", color=discord.Color.red())
             return await ctx.send(embed=embed, ephemeral=True)
 
-        embed = discord.Embed(
-            title="Promotion Request",
-            description=f"**{current_rank_name}** ⟶ **{next_rank["name"]}**\n> **Department: ** {dept_name}\n> **Proof: **{proof}",
-            color=discord.Color.light_grey()
-        )
-        embed.add_field(name="Member Information",
-                        value=f"> **User: **{ctx.author.mention}\n> **Codename: **{profile.get('codename')}\n> **Status: **{profile.get('status')}\n> **Join Date: ** {profile.get('join_date')}\n> **Current Points: **{profile['unit'][dept_name].get('current_points', 'N/A')}\n> **Total Points: **{profile['unit'][dept_name].get('total_points', 'N/A')}",
-                        inline=False)
-        
-
-        view = PromotionRequestView(
-            self.bot,
-            ctx.author,
-            embed,
-            profile,
-            dept_name,
-            next_rank["name"],
-        )
-        await channel.send(embed=embed, view=view)
+        await send_promotion_request(self.bot, channel, profile, dept_name, proof, next_rank['name'])
 
         await ctx.send("Promotion request submitted.", ephemeral=True, delete_after=10)
 

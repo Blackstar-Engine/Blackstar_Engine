@@ -1,11 +1,39 @@
 import discord
-from discord.ext import commands
-from discord.ui import View, Select
-from ui.department_request.view.AcceptDenyButtons import AcceptDenyButtons
-from utils.utils import interaction_check, fetch_department
+from discord.ui import Select
+from ui.enlistment_request.views.EnlistmentRequestView import EnlistmentRequestView
+from utils.utils import interaction_check, fetch_department, generate_timestamp
 from discord import ui
+import uuid
+from utils.constants import enlistment_requests
 
-class DepartmentSelect(Select):
+async def send_enlistment_request(channel, user, department, profile):
+    request_id = str(uuid.uuid4())
+
+    snapshot = {
+        "department_name": department["display_name"],
+        "codename": profile.get("codename"),
+        "roblox_name": profile.get("roblox_name"),
+        "status": profile.get("status"),
+        "user_id": user.id,
+        "join_timestamp": generate_timestamp(profile["join_date"])
+    }
+
+    view = EnlistmentRequestView(request_id, snapshot)
+    msg = await channel.send(view=view)
+
+    await enlistment_requests.insert_one({
+        "_id": request_id,
+        "guild_id": channel.guild.id,
+        "target_user_id": user.id,
+        "department": department["display_name"],
+        "join_timestamp": snapshot["join_timestamp"],
+        "snapshot": snapshot,
+        "channel_id": channel.id,
+        "message_id": msg.id,
+        "is_active": True
+    })
+
+class EnlistmentSelect(Select):
     def __init__(self, options):
         super().__init__(
             placeholder="Select the departments",
@@ -28,13 +56,8 @@ class DepartmentSelect(Select):
                 department = await fetch_department(interaction, value)
 
                 channel = await interaction.guild.fetch_channel(department.get("request_channel"))
-                
-                view = AcceptDenyButtons(self.view.bot, self.view.user, department, self.view.profile)
-                
-                try:
-                    await channel.send(view=view)
-                except discord.Forbidden:
-                    pass
+
+                await send_enlistment_request(channel, self.view.user, department, self.view.profile)
         
         view = ui.LayoutView()
         container = ui.Container(
@@ -52,15 +75,14 @@ class DepartmentSelect(Select):
         await interaction.edit_original_response(view=view)
         self.view.stop()
 
-class DepartmentsRequestView(ui.LayoutView):
-    def __init__(self, bot, user, options, profile):
+class EnlistmentRequestSelect(ui.LayoutView):
+    def __init__(self, user, options, profile):
         super().__init__()
-        self.bot = bot
         self.user = user
         self.options = options
         self.profile = profile
 
-        action_row = ui.ActionRow(DepartmentSelect(options))
+        action_row = ui.ActionRow(EnlistmentSelect(options))
 
         container = ui.Container(
             ui.TextDisplay('## Department Selection'),

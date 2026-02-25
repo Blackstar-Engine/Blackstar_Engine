@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.constants import departments, mtf_overall_role_id, central_command, high_command, site_command, foundation_command, drm_id
+from utils.constants import mtf_overall_role_id, central_command, high_command, site_command, foundation_command, drm_id
 from utils.utils import fetch_department
 
 class RoleUser(commands.Cog):

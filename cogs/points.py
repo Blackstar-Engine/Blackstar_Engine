@@ -1,10 +1,37 @@
 import discord
 from discord.ext import commands
-from utils.constants import profiles, departments
-from ui.points.views.AcceptDenyButtons import AcceptDenyButtons
+from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.points.views.UnitSelect import UnitSelectView
-from utils.utils import fetch_profile, fetch_unit_options, fetch_department
+from utils.utils import fetch_profile, fetch_unit_options, fetch_department, generate_timestamp
+import uuid
+from utils.constants import point_requests
 
+async def send_points_request(channel, profile, dept_name, points, proof):
+    request_id = str(uuid.uuid4())
+
+    snapshot = {
+        "user_id": profile["user_id"],
+        "codename": profile.get("codename"),
+        "department": dept_name,
+        "points": float(points),
+        "proof": proof,
+        "current_points": profile["unit"][dept_name].get("current_points", 0),
+        "total_points": profile["unit"][dept_name].get("total_points", 0),
+        "join_timestamp": generate_timestamp(profile["join_date"])
+    }
+
+    view = PointsRequestView(request_id, snapshot)
+    msg = await channel.send(view=view)
+
+    await point_requests.insert_one({
+        "_id": request_id,
+        "guild_id": channel.guild.id,
+        "target_user_id": profile["user_id"],
+        "snapshot": snapshot,
+        "message_id": msg.id,
+        "channel_id": channel.id,
+        "is_active": True
+    })
 
 class Points(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -30,10 +57,8 @@ class Points(commands.Cog):
         # Create the View and Embed
         unit_select_view = UnitSelectView(self.bot, options, profile)
 
-        unit_select_embed = discord.Embed(title="Select a Unit", description="Please select a unit you would like this point request to send to!", color=discord.Color.light_grey())
-
         # Send and wait
-        await ctx.send(embed=unit_select_embed, view=unit_select_view, ephemeral=True)
+        select_message = await ctx.send(view=unit_select_view, ephemeral=True)
 
         await unit_select_view.wait()
 
@@ -48,28 +73,17 @@ class Points(commands.Cog):
 
         channel = ctx.guild.get_channel(int(department_doc.get("points_request_channel")))
 
-        # Create the points request mod embed
-        mod_embed = discord.Embed(title="New Points Request",
-                                  description=f"**User: ** {ctx.author.mention}\n** Requested Points: ** {points}\n**Proof: ** {proof}",
-                                  color=discord.Color.light_grey())
-        
-        current_points = profile['unit'][dept].get('current_points', 0)
-        total_points = profile['unit'][dept].get('total_points', 0)
-
-        mod_embed.add_field(name="__Profile Info:__",
-                            value=f"> **Codename: ** {profile.get('codename')}\n> **Join Date: ** {profile.get('join_date')}\n> **{dept} Current Points: ** {current_points}\n> **{dept} Total Points: ** {total_points}")
-
-        # Init the view and send the embed
-        accept_deny_buttons_view = AcceptDenyButtons(self.bot, ctx.author, points, mod_embed, profile, dept)
-
-        await channel.send(embed=mod_embed, view=accept_deny_buttons_view)
+        await send_points_request(channel, profile, dept, points, proof)
 
         # Create the users embed and send to the channel
-        embed=discord.Embed(title="", 
-                            description=f"**{points}** point(s) have been **successfully** requested!",
-                            color=discord.Color.light_grey())
+        view = discord.ui.LayoutView()
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(f"**{points}** point(s) have been **successfully** requested!"),
+            accent_color=discord.Color.light_grey()
+        )
+        view.add_item(container)
 
-        await ctx.send(embed=embed, delete_after=10, ephemeral=True)
+        await select_message.edit(view=view)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Points(bot))
