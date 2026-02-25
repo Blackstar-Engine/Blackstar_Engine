@@ -1,6 +1,25 @@
 import discord
+from discord import ui
 
-class UnitSelectView(discord.ui.View):
+class PointsRoleSelect(ui.Select):
+    def __init__(self, options):
+        super().__init__(placeholder="Select a Role",
+                        min_values=1,
+                        max_values=1,
+                        options=options)
+    
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        value = self.values[0]
+
+        if value == "no_units":
+            self.view.dept = "no_unit"
+        else:
+            self.view.dept = value
+
+        self.view.stop()
+
+class UnitSelectView(discord.ui.LayoutView):
     def __init__(self, bot, options, profile):
         super().__init__(timeout=300)
         self.bot = bot
@@ -8,21 +27,14 @@ class UnitSelectView(discord.ui.View):
 
         self.dept = None
 
-        self.dept_role_select.options = options
-    
-    @discord.ui.select(
-        placeholder="Select a Role",
-        min_values=1,
-        max_values=1,
-        options=[]
-    )
-    async def dept_role_select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        await interaction.response.defer(ephemeral=True)
-        value = select.values[0]
+        action_row = ui.ActionRow(PointsRoleSelect(options))
 
-        if value == "no_units":
-            self.dept = "no_unit"
-        else:
-            self.dept = value
+        container = ui.Container(
+            ui.TextDisplay('## Unit Selection'),
+            ui.TextDisplay('Please select a unit you would like this point request to send to!'),
+            ui.Separator(),
+            action_row,
+            accent_color=discord.Color.light_grey()
+        )
 
-        self.stop()
+        self.add_item(container)

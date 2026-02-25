@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from datetime import timedelta, datetime
-from utils.constants import foundation_command, wolf_id
+from utils.constants import wolf_id
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):

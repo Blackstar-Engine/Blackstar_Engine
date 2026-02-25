@@ -3,8 +3,7 @@ from discord.ext import commands
 import uuid
 from gtts import gTTS
 import threading
-from datetime import datetime
-import re
+from datetime import datetime, timezone
 import os
 import asyncio
 
@@ -175,3 +174,10 @@ def tts_logic(queue: asyncio.Queue, vc: discord.VoiceClient, file):
             pass
         queue.task_done()
         return None
+
+def generate_timestamp(date_str: str):
+    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    dt = dt.replace(tzinfo=timezone.utc)
+    unix_ts = int(dt.timestamp())
+
+    return unix_ts

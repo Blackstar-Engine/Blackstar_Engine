@@ -2,14 +2,18 @@ import discord
 from discord.ext import commands
 from utils.constants import departments
 from utils.utils import fetch_profile
-from ui.department_request.view.DepartmentsRequestSelect import DepartmentsRequestView
+from ui.enlistment_request.views.EnlistmentRequestSelect import EnlistmentRequestSelect
 
 class DepartmentRequest(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    @commands.hybrid_group()
+    async def enlistment(self, ctx: commands.Context):
+        return
         
-    @commands.hybrid_command(name="department_request", description="Send a request to join a department")
-    async def department_request(self, ctx: commands.Context):
+    @enlistment.command(name="request", description="Send a request to join a department")
+    async def enlistment_request(self, ctx: commands.Context):
         profile = await fetch_profile(ctx)
         if not profile:
             return
@@ -29,7 +33,7 @@ class DepartmentRequest(commands.Cog):
             else:
                 options.append(discord.SelectOption(label=dept))
         
-        view = DepartmentsRequestView(self.bot, ctx.author, options, profile)
+        view = EnlistmentRequestSelect(ctx.author, options, profile)
 
         await ctx.send(view=view, ephemeral=True)
 

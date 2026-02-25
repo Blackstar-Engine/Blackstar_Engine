@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ui import Button
-from utils.constants import profiles, foundation_command, site_command, high_command
+from utils.constants import foundation_command, site_command, high_command
 from ui.paginator import PaginatorView
 from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal

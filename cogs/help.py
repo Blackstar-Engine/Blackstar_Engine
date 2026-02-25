@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
-from datetime import timedelta, datetime
-from utils.constants import foundation_command, wolf_id
+from datetime import datetime
 
 class HelpCommand(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -25,7 +24,8 @@ class HelpCommand(commands.Cog):
                                             "> `!loa request time(ex. 1w2d) reason` - Send an LOA request\n\n"
                                             "> `!loa manage @User(Optional)` - Manage your own or another users LOA\n\n"
                                             "> `!loa active` - See all active LOAs **(Foundation & Site Command Locked)**\n\n"
-                                            "> `!department_request` - Request to join a department\n\n"
+                                            "> `!enlistment request` - Request to join a department\n\n"
+                                            "> `!roleuser @user department` - Give user the overall and first rank for that department, DMs that person\n\n"
                                             ,
                               color=discord.Color.light_grey())
         embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")

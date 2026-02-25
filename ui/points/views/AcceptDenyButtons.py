@@ -1,99 +1,186 @@
 import discord
-from utils.constants import ia_id, central_command, high_command, site_command, foundation_command, wolf_id, profiles
+from discord import ui
+from utils.constants import (
+    ia_id, central_command, high_command, site_command,
+    foundation_command, wolf_id, profiles, point_requests
+)
+from utils.utils import generate_timestamp
 
-class AcceptDenyButtons(discord.ui.View):
-    def __init__(self, bot, user, points, embed, profile, dept):
+
+# ---------- Permission Logic ----------
+
+def has_points_approval_perms(member: discord.Member, points: float, guild: discord.Guild):
+    if member.id == wolf_id:
+        return True
+
+    ia_role = guild.get_role(ia_id)
+    central_role = guild.get_role(central_command)
+    high_role = guild.get_role(high_command)
+    site_role = guild.get_role(site_command)
+    foundation_role = guild.get_role(foundation_command)
+
+    if 1 <= points <= 1.5:
+        allowed = [ia_role, central_role, high_role, site_role, foundation_role]
+    elif 1.5 < points <= 2:
+        allowed = [central_role, high_role, site_role, foundation_role]
+    elif 2 < points <= 7.99:
+        allowed = [site_role, foundation_role]
+    elif points >= 8:
+        allowed = [foundation_role]
+    else:
+        allowed = []
+
+    allowed = [r for r in allowed if r is not None]
+    return any(role in member.roles for role in allowed)
+
+
+# ---------- Persistent Buttons ----------
+
+class PointsAcceptButton(ui.Button):
+    def __init__(self, request_id: str):
+        super().__init__(
+            label="Accept",
+            style=discord.ButtonStyle.green,
+            custom_id=f"points_accept:{request_id}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await handle_points_decision(interaction, approved=True)
+
+
+class PointsDenyButton(ui.Button):
+    def __init__(self, request_id: str):
+        super().__init__(
+            label="Deny",
+            style=discord.ButtonStyle.red,
+            custom_id=f"points_deny:{request_id}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await handle_points_decision(interaction, approved=False)
+
+
+# ---------- Persistent LayoutView ----------
+
+class PointsRequestView(ui.LayoutView):
+    def __init__(self, request_id: str, snapshot: dict):
         super().__init__(timeout=None)
-        self.bot = bot
-        self.points = points
-        self.embed: discord.Embed = embed
-        self.profile = profile
-        self.user: discord.Member = user
-        self.dept = dept
+        self.request_id = request_id
 
-    @discord.ui.button(
-        label="Accept",
-        style=discord.ButtonStyle.green,
-        custom_id="points_accept_button"
-    )
-    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
-        ia_role = interaction.guild.get_role(ia_id)
-        central_role = interaction.guild.get_role(central_command)
-        high_role = interaction.guild.get_role(high_command)
-        site_role = interaction.guild.get_role(site_command)
-        foundation_role = interaction.guild.get_role(foundation_command)
+        timestamp = f"<t:{snapshot['join_timestamp']}:d>"
+        
+        action_row = ui.ActionRow(
+            PointsAcceptButton(request_id),
+            PointsDenyButton(request_id),
+        )
 
-        if interaction.user.id != wolf_id:
+        container = ui.Container(
+            ui.TextDisplay("## Point Request"),
+            ui.TextDisplay(
+                f"> **User:** <@{snapshot['user_id']}>\n"
+                f"> **Requested Points:** {snapshot['points']}\n"
+                f"> **Proof:** {snapshot['proof']}"
+            ),
+            ui.Separator(),
+            ui.TextDisplay("### Profile Information"),
+            ui.TextDisplay(
+                f"> **Codename:** {snapshot['codename']}\n"
+                f"> **Join Date:** {timestamp}\n"
+                f"> **{snapshot['department']} Points:** "
+                f"{snapshot['current_points']}/{snapshot['total_points']}"
+            ),
+            ui.Separator(),
+            action_row,
+            accent_color=discord.Color.yellow()
+        )
 
-            if 1 <= self.points <= 1.5:
-                allowed_roles = [
-                    ia_role,
-                    central_role,
-                    high_role,
-                    site_role,
-                    foundation_role
-                ]
+        self.add_item(container)
 
-            elif 1.5 < self.points <= 2:
-                allowed_roles = [
-                    central_role,
-                    high_role,
-                    site_role,
-                    foundation_role
-                ]
 
-            elif 2 < self.points <= 7.99:
-                allowed_roles = [
-                    site_role,
-                    foundation_role
-                ]
+# ---------- Decision Handler ----------
 
-            elif self.points >= 8:
-                allowed_roles = [
-                    foundation_role
-                ]
+async def handle_points_decision(interaction: discord.Interaction, approved: bool):
+    request_id = interaction.data["custom_id"].split(":")[1]
 
-            else:
-                allowed_roles = []
+    req = await point_requests.find_one({
+        "_id": request_id,
+        "is_active": True
+    })
 
-            allowed_roles = [r for r in allowed_roles if r is not None]
+    if not req:
+        return await interaction.response.send_message(
+            "This point request is no longer active.",
+            ephemeral=True
+        )
 
-            if not any(role in interaction.user.roles for role in allowed_roles):
-                await interaction.response.send_message(
-                    "❌ You do not have permission to accept this point request.",
-                    ephemeral=True
-                )
-                return
-            
+    snapshot = req["snapshot"]
+    guild = interaction.guild
+
+    if approved:
+        if not has_points_approval_perms(interaction.user, snapshot["points"], guild):
+            return await interaction.response.send_message(
+                "❌ You do not have permission to accept this point request.",
+                ephemeral=True
+            )
+
+        profile = await profiles.find_one({
+            "guild_id": guild.id,
+            "user_id": snapshot["user_id"]
+        })
+
+        dept = snapshot["department"]
+
         await profiles.update_one(
-            self.profile,
-            {'$inc': {
-                f"unit.{self.dept}.current_points": self.points,
-                f"unit.{self.dept}.total_points": self.points
-            }}
+            {"_id": profile["_id"]},
+            {
+                "$inc": {
+                    f"unit.{dept}.current_points": snapshot["points"],
+                    f"unit.{dept}.total_points": snapshot["points"]
+                }
+            }
         )
 
-        self.embed.color = discord.Color.green()
-        self.embed.title = "Points Accepted"
-        self.embed.add_field(name="Moderator", value=f"{interaction.user.mention}", inline=False)
+    # mark inactive
+    await point_requests.update_one(
+        {"_id": request_id},
+        {"$set": {"is_active": False}}
+    )
 
-        await self.user.send(
-            f"Your points request for **{self.points}** "
-            f"in **{interaction.guild.name}** has been **ACCEPTED**!"
+    # ---------- Result UI ----------
+
+    result_view = ui.LayoutView()
+    color = discord.Color.green() if approved else discord.Color.red()
+    title = "## Point Request Accepted" if approved else "## Point Request Denied"
+
+    timestamp = f"<t:{snapshot['join_timestamp']}:d>"
+
+    container = ui.Container(
+        ui.TextDisplay(title),
+        ui.TextDisplay(
+            f"> **User:** <@{snapshot['user_id']}>\n"
+            f"> **Requested Points:** {snapshot['points']}\n"
+            f"> **Proof:** {snapshot['proof']}"
+        ),
+        ui.Separator(),
+        ui.TextDisplay("### Profile Information"),
+        ui.TextDisplay(
+            f"> **Codename:** {snapshot['codename']}\n"
+            f"> **Join Date:** {timestamp}\n"
+            f"> **{snapshot['department']} Points:** "
+            f"{snapshot['current_points']}/{snapshot['total_points']}"
+        ),
+        ui.Separator(),
+        ui.TextDisplay(f"> **Moderator:** {interaction.user.mention}"),
+        accent_color=color
+    )
+
+    result_view.add_item(container)
+    await interaction.response.edit_message(view=result_view)
+
+    member = guild.get_member(snapshot["user_id"])
+    if member:
+        status = "ACCEPTED" if approved else "DENIED"
+        await member.send(
+            f"Your points request for **{snapshot['points']}** "
+            f"in **{guild.name}** has been **{status}**."
         )
-
-        await interaction.response.edit_message(
-            content=None,
-            view=None,
-            embed=self.embed
-        )
-
-    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red, custom_id="points_deny_button")
-    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        
-        self.embed.color = discord.Color.red()
-        self.embed.title = "Points Denied"
-        self.embed.add_field(name="Moderator", value=f"{interaction.user.mention}", inline=False)
-        
-        await self.user.send(f"Your points request for **{self.points}** in **{interaction.guild.name}** has been **DENIED**!")
-        await interaction.response.edit_message(content=None, view=None, embed=self.embed)

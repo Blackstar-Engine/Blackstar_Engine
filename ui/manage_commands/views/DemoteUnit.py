@@ -1,5 +1,4 @@
 import discord
-from utils.constants import departments
 from ui.manage_commands.views.DemoteRank import DemoteRankView
 from utils.utils import fetch_department, fetch_unit_options
 

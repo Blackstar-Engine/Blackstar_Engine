@@ -1,86 +1,192 @@
 import discord
-from utils.constants import profiles, overall_promotion_channel
-from utils.utils import has_approval_perms
-from ui.promotion.modals.PointsRemoval import PointsRemovalModal
+from discord import ui
 from datetime import datetime
-class PromotionRequestView(discord.ui.View):
-    def __init__(self, bot, user: discord.Member, embed: discord.Embed, profile, department, new_rank):
+from utils.constants import profiles, overall_promotion_channel, promotion_requests
+from utils.utils import has_approval_perms, generate_timestamp
+from ui.promotion.modals.PointsRemoval import PointsRemovalModal
+
+
+# ---------- Persistent Buttons ----------
+
+class PromotionAcceptButton(ui.Button):
+    def __init__(self, request_id: str):
+        super().__init__(
+            label="Accept",
+            style=discord.ButtonStyle.green,
+            custom_id=f"promo_accept:{request_id}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await handle_promotion_decision(interaction, approved=True)
+
+
+class PromotionDenyButton(ui.Button):
+    def __init__(self, request_id: str):
+        super().__init__(
+            label="Deny",
+            style=discord.ButtonStyle.red,
+            custom_id=f"promo_deny:{request_id}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await handle_promotion_decision(interaction, approved=False)
+
+
+# ---------- Persistent LayoutView ----------
+
+class PromotionRequestView(ui.LayoutView):
+    def __init__(self, bot, request_id: str, snapshot: dict):
         super().__init__(timeout=None)
         self.bot = bot
-        self.user = user
-        self.embed = embed
-        self.profile = profile
-        self.department = department
-        self.new_rank = new_rank
+        self.request_id = request_id
 
-    @discord.ui.button(label="Accept", style=discord.ButtonStyle.green)
-    async def accept(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button
-    ):
-        if not has_approval_perms(interaction.user):
-            await interaction.response.send_message(
-                "You do not have permission to approve promotions.",
-                ephemeral=True
-            )
-            return
-        
-        modal = PointsRemovalModal(self.profile)
+        timestamp = f"<t:{snapshot['join_timestamp']}:d>"
+
+        action_row = ui.ActionRow(
+            PromotionAcceptButton(request_id),
+            PromotionDenyButton(request_id)
+        )
+
+        container = ui.Container(
+            ui.TextDisplay("## Promotion Request"),
+            ui.TextDisplay(
+                f"**{snapshot['current_rank']}** ⟶ **{snapshot['new_rank']}**\n"
+                f"> **Department:** {snapshot['department']}\n"
+                f"> **Proof:** {snapshot['proof']}"
+            ),
+            ui.Separator(),
+            ui.TextDisplay("### Profile Information"),
+            ui.TextDisplay(
+                f"> **User:** <@{snapshot['user_id']}>\n"
+                f"> **Codename:** {snapshot['codename']}\n"
+                f"> **Status:** {snapshot['status']}\n"
+                f"> **Join Date:** {timestamp}\n"
+                f"> **Points:** {snapshot['current_points']}/{snapshot['total_points']}"
+            ),
+            ui.Separator(),
+            action_row,
+            accent_color=discord.Color.yellow()
+        )
+
+        self.add_item(container)
+
+
+# ---------- Decision Handler ----------
+
+async def handle_promotion_decision(interaction: discord.Interaction, approved: bool):
+    bot = interaction.client
+    request_id = interaction.data["custom_id"].split(":")[1]
+
+    if not has_approval_perms(interaction.user):
+        return await interaction.response.send_message(
+            "You do not have permission to manage promotions.",
+            ephemeral=True
+        )
+
+    req = await promotion_requests.find_one({
+        "_id": request_id,
+        "is_active": True
+    })
+
+    if not req:
+        return await interaction.response.send_message(
+            "This promotion request is no longer active.",
+            ephemeral=True
+        )
+
+    snapshot = req["snapshot"]
+    guild = interaction.guild
+    department = snapshot["department"]
+
+    profile = await profiles.find_one({
+        "guild_id": guild.id,
+        "user_id": snapshot["user_id"]
+    })
+
+    if approved:
+        modal = PointsRemovalModal(profile)
         await interaction.response.send_modal(modal)
         await modal.wait()
 
         points_to_remove = modal.data
         if points_to_remove is None:
-            await interaction.followup.send("Promotion approval cancelled.", ephemeral=True)
-            return
-        
-        
+            return await interaction.followup.send(
+                "Promotion approval cancelled.",
+                ephemeral=True
+            )
+
         await profiles.update_one(
-            {"_id": self.profile["_id"]},
+            {"_id": profile["_id"]},
             {
                 "$set": {
-                    f"unit.{self.department}.rank": self.new_rank
+                    f"unit.{department}.rank": snapshot["new_rank"]
                 },
                 "$inc": {
-                    f"unit.{self.department}.current_points": -float(points_to_remove)
+                    f"unit.{department}.current_points": -float(points_to_remove)
                 }
             }
         )
 
-        self.embed.title = "Promotion Approved"
-        self.embed.color = discord.Color.green()
+    # mark inactive
+    await promotion_requests.update_one(
+        {"_id": request_id},
+        {"$set": {"is_active": False}}
+    )
 
-        await interaction.message.edit(embed=self.embed, view=None)
+    # ---------- Result UI ----------
 
-        await self.user.send(f"Your Promotion to **{self.new_rank}** in **{interaction.guild.name}** has been **APPROVED**")
+    result_view = ui.LayoutView()
+    color = discord.Color.green() if approved else discord.Color.red()
+    title = "## Promotion Request Approved" if approved else "## Promotion Request Denied"
 
-        channel: discord.TextChannel = self.bot.get_channel(overall_promotion_channel)
-        user_profile: discord.Member = self.bot.get_user(self.profile.get("user_id"))
-        
-        if channel:
-            embed = discord.Embed(title="New Promotion", description=f"**User: ** {user_profile.mention}\n**New Rank: ** {self.new_rank}\n**Department: ** {self.department}", color=discord.Color.green())
-            embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+    timestamp = f"<t:{snapshot['join_timestamp']}:d>"
 
-            embed.set_thumbnail(url=user_profile.display_avatar.url)
-            await channel.send(embed=embed)
+    container = ui.Container(
+        ui.TextDisplay(title),
+        ui.TextDisplay(
+            f"**{snapshot['current_rank']}** ⟶ **{snapshot['new_rank']}**\n"
+            f"> **Department:** {department}\n"
+            f"> **Proof:** {snapshot['proof']}"
+        ),
+        ui.Separator(),
+        ui.TextDisplay("### Profile Information"),
+        ui.TextDisplay(
+            f"> **User:** <@{snapshot['user_id']}>\n"
+            f"> **Codename:** {snapshot['codename']}\n"
+            f"> **Status:** {snapshot['status']}\n"
+            f"> **Join Date:** {timestamp}\n"
+            f"> **Points:** {snapshot['current_points']}/{snapshot['total_points']}"
+        ),
+        ui.Separator(),
+        ui.TextDisplay(f"> **Moderator:** {interaction.user.mention}"),
+        accent_color=color
+    )
 
-    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
-    async def deny(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button
-    ):
-        if not has_approval_perms(interaction.user):
-            await interaction.response.send_message(
-                "You do not have permission to deny promotions.",
-                ephemeral=True
+    result_view.add_item(container)
+    await interaction.message.edit(view=result_view)
+
+    # DM user
+    member = guild.get_member(snapshot["user_id"])
+    if member:
+        status = "APPROVED" if approved else "DENIED"
+        await member.send(
+            f"Your promotion to **{snapshot['new_rank']}** "
+            f"in **{guild.name}** has been **{status}**."
+        )
+
+    # announce promotion
+    if approved:
+        channel = bot.get_channel(overall_promotion_channel)
+        if channel and member:
+            embed = discord.Embed(
+                title="New Promotion",
+                description=(
+                    f"**User:** {member.mention}\n"
+                    f"**New Rank:** {snapshot['new_rank']}\n"
+                    f"**Department:** {department}"
+                ),
+                color=discord.Color.green()
             )
-            return
-
-        self.embed.title = "Promotion Denied"
-        self.embed.color = discord.Color.red()
-
-        await interaction.message.edit(embed=self.embed, view=None)
-
-        await self.user.send(f"Your Promotion to **{self.new_rank}** in **{interaction.guild.name}** has been **DENIED**")
+            embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+            embed.set_thumbnail(url=member.display_avatar.url)
+            await channel.send(embed=embed)

@@ -1,6 +1,5 @@
 import discord
 from utils.constants import profiles, departments
-from utils.utils import interaction_check
 from discord import ui
 
 

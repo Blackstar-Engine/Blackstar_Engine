@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands
 from ui.reaction_roles.views.RoleSelect import RoleSelect
 from utils.constants import foundation_command

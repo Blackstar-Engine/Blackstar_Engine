@@ -1,6 +1,5 @@
 import discord
-from discord.ext import commands
-from discord.ui import View, Button, Modal
+from discord.ui import View, Button
 from utils.utils import interaction_check
 from datetime import datetime
 

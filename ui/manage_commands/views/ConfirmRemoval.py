@@ -1,5 +1,5 @@
 import discord
-from discord.ui import View, Button
+from discord.ui import Button
 
 class ConfirmRemovalView(discord.ui.ActionRow):
     def __init__(self, bot, record, index):

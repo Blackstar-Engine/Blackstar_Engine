@@ -54,9 +54,8 @@ loa = db.loa
 stored_loa = db.stored_loa
 profiles = db.profiles
 promotion_requests = db.promotion_requests
-reaction_roles = db.reaction_roles
-reminders = db.reminders
-sessions = db.sessions
+enlistment_requests = db.enlistment_requests
+point_requests = db.point_requests
 departments = db.departments
 
 if constants.ENVIRONMENT == "PRODUCTION":
