@@ -176,7 +176,10 @@ def tts_logic(queue: asyncio.Queue, vc: discord.VoiceClient, file):
         return None
 
 def generate_timestamp(date_str: str):
-    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        dt = datetime.strptime(date_str, "%m-%d-%Y")
     dt = dt.replace(tzinfo=timezone.utc)
     unix_ts = int(dt.timestamp())
 
