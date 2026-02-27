@@ -13,3 +13,4 @@ ffmpeg
 discord.py[voice]
 asyncio
 collections
+python-dateutil
