@@ -32,4 +32,5 @@ dependencies = [
   "ffmpeg>=1.4",
   "gtts>=2.5.4",
   "asyncio>=4.0.0",
+  "python-dateutil>=2.9.0.post0",
 ]
