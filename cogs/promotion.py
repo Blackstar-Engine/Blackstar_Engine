@@ -6,6 +6,7 @@ import uuid
 from utils.constants import promotion_requests
 
 async def send_promotion_request(bot, channel, profile, dept_name, proof, new_rank):
+    
     request_id = str(uuid.uuid4())
 
     snapshot = {

@@ -32,6 +32,8 @@ profanity_list = [
                     "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker",
                     "fucking", "fucker", "fucked", "fucks", "fuk"
                 ]
+whitelisted_guilds = [1411941814923169826, 1450297281088720928]
+ghost_id = 758170288566566952
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     constants.MONGO_URI,

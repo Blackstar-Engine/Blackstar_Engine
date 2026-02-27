@@ -5,7 +5,7 @@ import os
 import sys
 import asyncio
 from collections import defaultdict
-from utils.constants import BlackstarConstants, auto_replys, enlistment_requests, point_requests, promotion_requests
+from utils.constants import BlackstarConstants, auto_replys, enlistment_requests, point_requests, promotion_requests, whitelisted_guilds
 from ui.promotion.views.PromotionRequest import PromotionRequestView
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.enlistment_request.views.EnlistmentRequestView import EnlistmentRequestView
@@ -113,8 +113,16 @@ class Bot(commands.Bot):
         await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
         for guild in bot.guilds:
-            print(f'Chunked: {guild.id}')
-            await guild.chunk()
+            if guild.id not in whitelisted_guilds:
+                print(f"Server not found: {guild.name}({guild.id})")
+                try:
+                    await guild.leave()
+                except Exception:
+                    await guild.owner.send(f"Please remove me from **{guild.name}**, I will not work!")
+                
+            else:
+                print(f'Chunked: {guild.id}')
+                await guild.chunk()
         
         print(f'{self.user} is ready.')
 
