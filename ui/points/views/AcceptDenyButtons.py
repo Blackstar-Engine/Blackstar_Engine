@@ -12,7 +12,7 @@ constants = BlackstarConstants()
 # ---------- Permission Logic ----------
 
 def has_points_approval_perms(member: discord.Member, snapshot: dict, guild: discord.Guild):
-    if (member.id == wolf_id) or (constants.ENVIRONMENT == "Development" and member.id == ghost_id):
+    if (member.id == wolf_id) or (constants.ENVIRONMENT == "DEVELOPMENT" and member.id == ghost_id):
         return True
     
     if int(member.id) == int(snapshot['user_id']):
