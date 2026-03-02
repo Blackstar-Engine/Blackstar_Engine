@@ -33,6 +33,17 @@ class General(commands.Cog):
 
 
         await ctx.send(embed=custom_embed)
+
+    @commands.hybrid_command(name="say", description="Makes the bot say a message")
+    async def embed(self, ctx: commands.Context, *, text: str):
+        if ctx.author.id != wolf_id:
+            await ctx.send("You are not allowed to use this command!", ephermal=True)
+            return
+
+        await ctx.message.delete()
+
+        await ctx.send(text)
+    
         
 
         
