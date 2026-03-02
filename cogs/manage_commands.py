@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ui import Button
-from utils.constants import foundation_command, site_command, high_command
+from utils.constants import foundation_command, site_command, high_command, profiles
 from ui.paginator import PaginatorView
 from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
@@ -149,9 +149,10 @@ class ManageCommands(commands.Cog):
             return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
 
         # check to see if they have a profile
-        profile = await fetch_profile(ctx)
+        profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
         if not profile:
-            return
+            embed = discord.Embed(title="", description="Profile Not Found", color=discord.Color.dark_embed())
+            await ctx.send(embed=embed)
         else:
             # Fetch active departments
             options = fetch_unit_options(profile)
