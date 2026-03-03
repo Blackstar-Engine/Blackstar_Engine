@@ -34,6 +34,7 @@ profanity_list = [
                 ]
 whitelisted_guilds = [1411941814923169826, 1450297281088720928]
 ghost_id = 758170288566566952
+option_id = 1007353417779396709
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     constants.MONGO_URI,

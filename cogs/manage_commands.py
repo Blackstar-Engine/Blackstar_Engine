@@ -145,8 +145,9 @@ class ManageCommands(commands.Cog):
         site_role = await ctx.guild.fetch_role(site_command)
         high_role = await ctx.guild.fetch_role(high_command)
 
-        if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles and high_role not in ctx.author.roles:
-            return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
+        if not commands.is_owner():
+            if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles and high_role not in ctx.author.roles:
+                return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
 
         # check to see if they have a profile
         profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})

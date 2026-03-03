@@ -4,6 +4,7 @@ from ui.manage_commands.modals.EditProfile import EditProfileModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
 from ui.manage_commands.views.DemoteUnit import DemoteUnitView
+from ui.manage_commands.views.ManageDepartment import ManageDepartmentRow
 from utils.utils import interaction_check, fetch_unit_options
 from discord import ui
 import asyncio
@@ -44,9 +45,13 @@ class SelectAction(ui.ActionRow):
 
         view = ui.LayoutView()
 
+        action_row = ManageDepartmentRow(self.profile, value)
+
         container = ui.Container(
             ui.TextDisplay(f"## {value} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
+            ui.Separator(),
+            action_row,
             accent_color=discord.Color.light_grey()
         )
 
@@ -146,13 +151,13 @@ class ButtonsAction2(ui.ActionRow):
         self.profile = profile
         self.user = user
 
-        demote_button = ui.Button(label="Demote", style=discord.ButtonStyle.blurple, row=1)
+        # demote_button = ui.Button(label="Demote", style=discord.ButtonStyle.blurple, row=1)
         delete_button = ui.Button(label="Delete", style=discord.ButtonStyle.red, row=1)
 
-        demote_button.callback = self.demote_user_button
+        # demote_button.callback = self.demote_user_button
         delete_button.callback = self.manage_profile_delete
 
-        self.add_item(demote_button)
+        # self.add_item(demote_button)
         self.add_item(delete_button)
     
     async def demote_user_button(self, interaction: discord.Interaction):
