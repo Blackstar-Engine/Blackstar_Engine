@@ -74,6 +74,11 @@ if constants.ENVIRONMENT == "PRODUCTION":
     profile_thread_channel = 1433946174791876740
     drm_id = 1428178727824658502
 
+    junior_mod = 1449266238659493988
+    mod = 1449265443939287171
+    senior_mod = 1449265506585546903
+    staff_manager = 1455684044665917562
+
     annoucement_role_id = 1413199178934259844
     misc_role_id = 1413199348753498222
     game_night_role_id = 1413199433264398517
@@ -99,6 +104,11 @@ else:
     overall_promotion_channel = 1450298055336136716
     profile_thread_channel = 1450298068162576525
     drm_id = 1450297796174286900
+
+    junior_mod = 1450297632739164193
+    mod = 1450297631736729660
+    senior_mod = 1450297630545547405
+    staff_manager = 1478181575475593416
 
     annoucement_role_id = 1450297860846387312
     dpr_display_role_id = 1450297861836247050
