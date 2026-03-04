@@ -21,7 +21,7 @@ class ChangeRankRow(ui.ActionRow):
         selection = self.unit_select.values[0]
 
         await profiles.update_one(
-            {'user_id': interaction.user.id, 'guild_id': self.profile["user_id"]},
+            {'user_id': self.profile["user_id"], 'guild_id': interaction.guild.id},
             {"$set": {
                 f"unit.{self.department}.rank": selection
             }}

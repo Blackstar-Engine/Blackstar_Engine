@@ -81,7 +81,7 @@ class General(commands.Cog):
 
         members = role_obj.members
 
-        description = ", ".join(member.mention for member in members)
+        description = "\n".join(member.mention for member in members)
 
         embed = discord.Embed(
             title="All High Command",
@@ -97,7 +97,7 @@ class General(commands.Cog):
 
         members = role_obj.members
 
-        description = ", ".join(member.mention for member in members)
+        description = "\n".join(member.mention for member in members)
 
         embed = discord.Embed(
             title="All Site Command",
