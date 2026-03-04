@@ -79,13 +79,13 @@ class ThreadProfileCreation(commands.Cog):
         return True
 
     async def _generate_units(self, department: str, thread: discord.Thread, subunit):
-        departments_list = [d.strip() for d in department.split("/")]
+        departments_list = [d.strip().upper() for d in department.split("/")]
         units = {}
         mtf_subunits = []
         depts_to_remove = []
 
         for dept in departments_list:
-            if dept in ["RRT", "ISD", "IA", "CI", "ScD", "SCD"]:
+            if dept in ["RRT", "ISD", "IA", "CI", "SCD"]:
                 embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
                 await thread.send(embed=embed)
                 depts_to_remove.append(dept)

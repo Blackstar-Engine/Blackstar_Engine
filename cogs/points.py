@@ -11,7 +11,7 @@ async def send_points_request(channel, profile, dept_name, points, proof):
 
     snapshot = {
         "user_id": profile["user_id"],
-        "codename": profile.get("codename"),
+        "codename": profile["codename"],
         "department": dept_name,
         "points": float(points),
         "proof": proof,
@@ -65,11 +65,13 @@ class Points(commands.Cog):
         # Get returned values and check
         dept = unit_select_view.dept
 
-        if dept == "no_unit":
+        if not dept or dept == "no_unit":
             return await ctx.send("You do not have any active units to send this request to.", ephemeral=True)
 
         # Fetch the department and get the request channel
         department_doc = await fetch_department(ctx, dept)
+        if not department_doc:
+            return
 
         channel = ctx.guild.get_channel(int(department_doc.get("points_request_channel")))
 

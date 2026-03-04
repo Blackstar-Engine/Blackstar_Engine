@@ -38,7 +38,7 @@ class Bot(commands.Bot):
             1371489554279825439, #Wolf
             412192199028113408, #Maz
             934537337113804891, #Bread
-            1007353417779396709 #Option
+            1007353417779396709, #Option
         ]
 
         return user.id in bypassed_users

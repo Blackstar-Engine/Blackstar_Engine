@@ -1,9 +1,10 @@
 import discord
-from utils.constants import profiles, departments
+from utils.constants import profiles, departments, foundation_command
 from ui.manage_commands.modals.EditProfile import EditProfileModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
 from ui.manage_commands.views.DemoteUnit import DemoteUnitView
+from ui.manage_commands.views.ManageDepartment import ManageDepartmentRow
 from utils.utils import interaction_check, fetch_unit_options
 from discord import ui
 import asyncio
@@ -47,8 +48,18 @@ class SelectAction(ui.ActionRow):
         container = ui.Container(
             ui.TextDisplay(f"## {value} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
+            
             accent_color=discord.Color.light_grey()
         )
+
+        foundation = interaction.guild.get_role(foundation_command)
+
+        if (
+            await self.bot.is_owner(interaction.user)
+            or any(role == foundation for role in self.user.roles)
+        ):
+            container.add_item(ui.Separator())
+            container.add_item(ManageDepartmentRow(self.profile, value))
 
         view.add_item(container)
 

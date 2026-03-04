@@ -5,7 +5,7 @@ class DevTestingCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    @commands.hybrid_command(name="testing", guild_only=True, guild_ids=[1450297281088720928])
+    @commands.command(name="testing", guild_only=True, guild_ids=[1450297281088720928])
     @commands.is_owner()
     async def testing(self, ctx: commands.Context):
         raise commands.CommandError("testing")
