@@ -6,23 +6,29 @@ class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    async def _check_if_wolf(self, ctx: commands.Context):
+        if ctx.author.id != wolf_id:
+            await ctx.send("You are not allowed to use this command!", ephemeral=True)
+            return False
+        return True
+
     @commands.hybrid_command(name="execute", description="Execute the user")
     async def execute_user(self, ctx: commands.Context, user: discord.Member):
-        if ctx.author.id != wolf_id:
-            return await ctx.send("You are not allowed to use this command!", ephemeral=True)
+        if not await self._check_if_wolf(ctx):
+            return
 
         duration = timedelta(seconds=10)
         try:
             await user.timeout(duration, reason="Execute Command")
-        except Exception as e:
-            raise commands.CommandInvokeError(e) from e
+        except discord.Forbidden:
+            await ctx.send("Not Timed Out, dont have permission!", ephemeral=True)
 
         await ctx.send(f"{user.mention} has been executed by the order of {ctx.author.mention}!")
 
     @commands.hybrid_command(name="embed", description="Send an Embed")
     async def embed(self, ctx: commands.Context, *, text: str):
-        if ctx.author.id != wolf_id:
-            return await ctx.send("You are not allowed to use this command!", ephemeral=True)
+        if not await self._check_if_wolf(ctx):
+            return
 
         await ctx.message.delete()
         
@@ -35,8 +41,7 @@ class General(commands.Cog):
 
     @commands.hybrid_command(name="say", description="Makes the bot say a message")
     async def say(self, ctx: commands.Context, *, text: str):
-        if ctx.author.id != wolf_id:
-            await ctx.send("You are not allowed to use this command!", ephemeral=True)
+        if not await self._check_if_wolf(ctx):
             return
 
         await ctx.message.delete()
@@ -67,8 +72,56 @@ class General(commands.Cog):
                 embed = discord.Embed(title="Error", description="The user you are attempting to DM has their direct messages turned off.", color=discord.Color.red())
                 await ctx.send(embed=embed, ephemeral=True)
         else:
-            await ctx.send("You are not allowed to use this command!", ephemeral=True)
-            return
+            return await ctx.send("You are not allowed to use this command!", ephemeral=True)
+            
+    
+    @commands.hybrid_command(name="view_high", description="View all high command team members")
+    async def view_high_members(self, ctx: commands.Context):
+        role_obj = ctx.guild.get_role(high_command)
+
+        members = role_obj.members
+
+        description = ", ".join(member.mention for member in members)
+
+        embed = discord.Embed(
+            title="All High Command",
+            description=description,
+            color=discord.Color.light_grey()
+        )
+
+        await ctx.send(embed=embed, ephemeral=True)
+    
+    @commands.hybrid_command(name="view_site", description="View all site command team members")
+    async def view_site_members(self, ctx: commands.Context):
+        role_obj = ctx.guild.get_role(site_command)
+
+        members = role_obj.members
+
+        description = ", ".join(member.mention for member in members)
+
+        embed = discord.Embed(
+            title="All Site Command",
+            description=description,
+            color=discord.Color.light_grey()
+        )
+
+        await ctx.send(embed=embed, ephemeral=True)
+    
+    @commands.hybrid_command(name="view_foundation", description="View all foundation command team members")
+    async def view_foundation_members(self, ctx: commands.Context):
+        role_obj = ctx.guild.get_role(foundation_command)
+
+        members = role_obj.members
+
+        description = "\n".join(member.mention for member in members)
+
+        embed = discord.Embed(
+            title="All Foundation Command",
+            description=description,
+            color=discord.Color.light_grey()
+        )
+
+        await ctx.send(embed=embed, ephemeral=True)
     
 
     

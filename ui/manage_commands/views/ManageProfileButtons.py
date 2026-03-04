@@ -1,5 +1,5 @@
 import discord
-from utils.constants import profiles, departments
+from utils.constants import profiles, departments, foundation_command
 from ui.manage_commands.modals.EditProfile import EditProfileModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
@@ -45,15 +45,21 @@ class SelectAction(ui.ActionRow):
 
         view = ui.LayoutView()
 
-        action_row = ManageDepartmentRow(self.profile, value)
-
         container = ui.Container(
             ui.TextDisplay(f"## {value} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
-            ui.Separator(),
-            action_row,
+            
             accent_color=discord.Color.light_grey()
         )
+
+        foundation = interaction.guild.get_role(foundation_command)
+
+        if (
+            await self.bot.is_owner(interaction.user)
+            or any(role == foundation for role in self.user.roles)
+        ):
+            container.add_item(ui.Separator())
+            container.add_item(ManageDepartmentRow(self.profile, value))
 
         view.add_item(container)
 
@@ -151,13 +157,13 @@ class ButtonsAction2(ui.ActionRow):
         self.profile = profile
         self.user = user
 
-        # demote_button = ui.Button(label="Demote", style=discord.ButtonStyle.blurple, row=1)
+        demote_button = ui.Button(label="Demote", style=discord.ButtonStyle.blurple, row=1)
         delete_button = ui.Button(label="Delete", style=discord.ButtonStyle.red, row=1)
 
-        # demote_button.callback = self.demote_user_button
+        demote_button.callback = self.demote_user_button
         delete_button.callback = self.manage_profile_delete
 
-        # self.add_item(demote_button)
+        self.add_item(demote_button)
         self.add_item(delete_button)
     
     async def demote_user_button(self, interaction: discord.Interaction):
