@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 # ---------- Environment ----------
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -13,12 +13,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
+    build-essential \
+    libffi-dev \
     ffmpeg \
     ca-certificates \
     tini \
     git \
     && rm -rf /var/lib/apt/lists/*
-
 # ---------- Non-root runtime ----------
 RUN useradd -m -u 1000 botuser
 WORKDIR /app
