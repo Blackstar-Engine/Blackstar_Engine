@@ -36,7 +36,7 @@ class EditPointsModal(discord.ui.Modal):
         current = float(self.current.value)
         total = float(self.total.value)
 
-        await profiles.update_one({'user_id': interaction.user.id, 'guild_id': self.profile["user_id"]},
+        await profiles.update_one({'user_id': self.profile["user_id"], 'guild_id': interaction.guild.id},
                                 {'$set': {
                                         f"unit.{self.department}.current_points": current,
                                         f"unit.{self.department}.total_points": total,
