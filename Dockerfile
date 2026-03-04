@@ -25,6 +25,8 @@ RUN useradd -m -u 1000 botuser
 WORKDIR /app
 RUN chown botuser:botuser /app
 
+USER botuser
+
 # ---------- Dependency layer (for fast rebuilds) ----------
 COPY pyproject.toml uv.lock ./
 
@@ -38,7 +40,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # ---------- Runtime ----------
-USER botuser
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
