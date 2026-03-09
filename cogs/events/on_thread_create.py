@@ -147,7 +147,7 @@ class ThreadProfileCreation(commands.Cog):
 
         # Preliminary validation for profile creation
         if codename == -1 or roblox_user == -1 or department == -1 or timezone == -1:
-            embed = discord.Embed(title="Enlistment Error", description="Please make sure to include the following as listed `Codename:`, `Roblox user:`, `Time zone:`, and `Department:`.", color=discord.Color.red())
+            embed = discord.Embed(title="Enlistment Error", description="I was unable to process your profile. **Please create your profile via `!profile`!**", color=discord.Color.red())
             return await thread.send(embed=embed)
 
         if any(word in codename.lower() for word in profanity_list):
