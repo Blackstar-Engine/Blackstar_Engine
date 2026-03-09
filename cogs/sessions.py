@@ -38,10 +38,13 @@ class Sessions(commands.Cog):
         
         
         unique_users = set()
+
         for reaction in target_message.reactions:
-            async for user in reaction.users():
-                if not user.bot:
-                    unique_users.add(user.mention)
+            if str(reaction.emoji) == "🟩":
+                async for user in reaction.users():
+                    if not user.bot:
+                        unique_users.add(user.mention)
+                break
 
         if not unique_users:
             return await ctx.send("No Voters Found!", ephemeral=True)

@@ -100,7 +100,9 @@ class AutoReply(commands.Cog):
     async def React_To_Message(self, message: discord.Message):
         channels = [sessions_channel_id, event_channel_id, mission_channel_id, training_channel_id]
         if message.channel.id in channels and MESSAGE_CODE_RE.search(message.content):
-            await message.add_reaction("✅")
+            await message.add_reaction("🟩")
+            await message.add_reaction("🟨")
+            await message.add_reaction("🟥")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
