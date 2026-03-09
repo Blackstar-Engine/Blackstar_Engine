@@ -131,16 +131,6 @@ class ThreadProfileCreation(commands.Cog):
         if thread.parent_id != profile_thread_channel:
             return
         
-        claim_embed = discord.Embed(
-            title="Click to Claim",
-            description="D.R.M, please click this button to claim the enlistment!",
-            color=discord.Color.yellow()
-        )
-
-        view = ClaimButtonView()
-
-        await thread.send(embed=claim_embed, view=view)
-        
         # Variable Declarations
         guild = thread.guild
         member = guild.get_member(thread.owner_id)
@@ -159,6 +149,16 @@ class ThreadProfileCreation(commands.Cog):
             return
 
         main_message = str(main_message.content)
+
+        claim_embed = discord.Embed(
+            title="Click to Claim",
+            description="D.R.M, please click this button to claim the enlistment!",
+            color=discord.Color.yellow()
+        )
+
+        view = ClaimButtonView()
+
+        await thread.send(embed=claim_embed, view=view)
 
         # Preliminary Checks
         if not await self._check_profile(main_message, member, thread):
