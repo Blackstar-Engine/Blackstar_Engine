@@ -10,7 +10,7 @@ class ClaimButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
     
-    @discord.ui.button(label="Claim Enlistment", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="Claim Enlistment", style=discord.ButtonStyle.blurple, custom_id="enlistment_claim_button")
     async def claim_enlistment_button(self, interaction: discord.Interaction, button: discord.Button):
         drm_role = interaction.guild.get_role(drm_id)
         if drm_role not in interaction.user.roles:
