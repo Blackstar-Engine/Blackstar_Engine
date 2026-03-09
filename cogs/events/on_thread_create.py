@@ -230,5 +230,6 @@ class ThreadProfileCreation(commands.Cog):
         except Exception:
             return
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(ThreadProfileCreation(bot))
+    bot.add_view(ClaimButtonView())
