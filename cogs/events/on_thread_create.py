@@ -1,10 +1,28 @@
 import discord
 from discord.ext import commands
-from utils.constants import profile_thread_channel, profiles, departments, profanity_list
+from utils.constants import profile_thread_channel, profiles, departments, profanity_list, drm_id
 from datetime import datetime
 import re 
 from utils.utils import profile_creation_embed
 import asyncio
+
+class ClaimButtonView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+    
+    @discord.ui.button(label="Claim Enlistment", style=discord.ButtonStyle.blurple)
+    async def claim_enlistment_button(self, interaction: discord.Interaction, button: discord.Button):
+        drm_role = interaction.guild.get_role(drm_id)
+        if drm_role not in interaction.user.roles:
+            return await interaction.response.send_message("This is a D.R.M only button!", ephemeral=True)
+        embed = discord.Embed(
+            title="Claimed",
+            description=f"This enlistment has been claimed by {interaction.user.mention}",
+            color=discord.Color.green()
+        )
+        await interaction.response.edit_message(embed=embed, view=None)
+        await interaction.followup.send("You have claimed this enlistment!", ephemeral=True)
+        self.stop()
 
 class ThreadProfileCreation(commands.Cog):
     def __init__(self, bot):
@@ -177,7 +195,7 @@ class ThreadProfileCreation(commands.Cog):
         
         await profiles.insert_one(profile)
 
-        embed = discord.Embed(
+        created_embed = discord.Embed(
                                 title="Profile Created!",
                                 description=(
                                         f"Your profile has been created!\n\n"
@@ -191,7 +209,19 @@ class ThreadProfileCreation(commands.Cog):
                                     ),
                                 color=discord.Color.green()
                                 )
-        await thread.send(embed=embed)
+        await thread.send(embed=created_embed)
+
+        claim_embed = discord.Embed(
+            title="Click to Claim",
+            description="D.R.M, please click this button to claim the enlistment!",
+            color=discord.Color.yellow()
+        )
+
+        view = ClaimButtonView()
+
+        await thread.send(embed=claim_embed, view=view)
+
+
 
         dm_embed = profile_creation_embed()
         

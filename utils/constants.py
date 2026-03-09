@@ -25,7 +25,7 @@ CHANNEL_RE = re.compile(r"<#\d{17,20}>")
 USER_RE = re.compile(r"<@!?\d{17,20}>")
 ROLE_RE = re.compile(r"<@&\d{17,20}>")
 URL_RE = re.compile(r"https?://\S+")
-MESSAGE_CODE_RE = re.compile(r"\*\*(.*?)\*\*")# (\[[^\]]*\]|\*\*.*?\*\*)   | This will check for [?] and ****
+MESSAGE_CODE_RE = re.compile(r"^(\[[^\]]+\]|\*\*[\s\S]+?\*\*)")#  \*\*(.*?)\*\* | This will check for ****
 profanity_list = [
                     "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
                     "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
