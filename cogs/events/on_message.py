@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands
-from utils.constants import loa
+from utils.constants import loa, sessions_channel_id, event_channel_id, mission_channel_id, training_channel_id, MESSAGE_CODE_RE
 from utils.utils import tts_to_file, tts_match_object, tts_logic
 import os
 import asyncio
 from collections import defaultdict
 import re
+
 
 
 
@@ -95,6 +96,11 @@ class AutoReply(commands.Cog):
                     self.bot.tts_tasks[message.guild.id] = self.bot.loop.create_task(
                         self.tts_player(message.guild)
                     )
+    
+    async def React_To_Message(self, message: discord.Message):
+        channels = [sessions_channel_id, event_channel_id, mission_channel_id, training_channel_id]
+        if message.channel.id in channels and MESSAGE_CODE_RE.search(message.content):
+            await message.add_reaction("✅")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -111,6 +117,9 @@ class AutoReply(commands.Cog):
 
         # Text to Speech
         await self.TTS_Event(message)
+
+        # Session Votes
+        await self.React_To_Message(message)
 
 
 async def setup(bot: commands.Bot):

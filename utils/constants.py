@@ -25,6 +25,7 @@ CHANNEL_RE = re.compile(r"<#\d{17,20}>")
 USER_RE = re.compile(r"<@!?\d{17,20}>")
 ROLE_RE = re.compile(r"<@&\d{17,20}>")
 URL_RE = re.compile(r"https?://\S+")
+MESSAGE_CODE_RE = re.compile(r"\*\*(.*?)\*\*")# (\[[^\]]*\]|\*\*.*?\*\*)   | This will check for [?] and ****
 profanity_list = [
                     "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
                     "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
@@ -92,6 +93,11 @@ if constants.ENVIRONMENT == "PRODUCTION":
 
     mtf_overall_role_id = 1413195090096034015
 
+    sessions_channel_id = 1434351873518993509
+    event_channel_id = 1452343119327662242
+    mission_channel_id = 1412241044392640654
+    training_channel_id = 1412242444271095929
+
 else:
     loa_channel = 1454232138571448524
     loa_role = 1454233756545323200
@@ -122,6 +128,11 @@ else:
     session_role_id = 1470978602324590789
 
     mtf_overall_role_id = 1450297782983327795
+
+    sessions_channel_id = 1450298076995522650
+    event_channel_id = 1480400559562293329
+    mission_channel_id = 1450298080346767493
+    training_channel_id = 1450298082968211526
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console
