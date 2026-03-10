@@ -36,7 +36,7 @@ class RoleSelectRow(ui.ActionRow):
 
         self.role_select.values.clear()
 
-        await interaction.edit_original_response(view=self.view)
+        await interaction.message.edit(view=self.view)
 
         if role in interaction.user.roles:
             await interaction.user.remove_roles(role, reason="Reaction Roles Removal")
