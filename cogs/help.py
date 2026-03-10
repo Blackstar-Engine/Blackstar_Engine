@@ -28,7 +28,7 @@ class HelpCommand(commands.Cog):
                                             "> `!roleuser @user department` - Give user the overall and first rank for that department, DMs that person\n\n"
                                             "> `!dm_punish @user <text>` - Notifies a user that disciplinary action has been taken against them **(Junior Mod and Central Command+)**\n\n"
                                             "> `!say <text>` - Makes the bot say a message of your choosing **(Wolf Only Command)**\n\n"
-                                            "> `!send_votes` - Pings everyone who reacted with a checkmark to a training. **(Central Command+)**"
+                                            "> `!send_votes vc_channel game_link` - Pings everyone who reacted with a checkmark to a training. **(Central Command+)**"
                                             ,
                               color=discord.Color.light_grey())
         embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
