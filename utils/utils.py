@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import ui
 import uuid
 from gtts import gTTS
 import threading
@@ -14,6 +15,10 @@ from utils.constants import (
     high_command,
     central_command,
     wolf_id,
+    ghost_id,
+    option_id,
+    drm_id,
+    ia_id,
     profiles,
     departments,
     URL_RE,
@@ -21,24 +26,63 @@ from utils.constants import (
     USER_RE,
     CHANNEL_RE,
     EMOJI_RE,
-    mtf_overall_role_id
+    mtf_overall_role_id,
+    BlackstarConstants
 )
 
 tts_lock = threading.Lock()
+constants = BlackstarConstants()
 
 def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
         raise commands.CommandError("Sorry but you can't use this button.")
 
-def has_approval_perms(member: discord.Member) -> bool:
-    allowed_roles = {
-        foundation_command,
-        site_command,
-        high_command,
-        central_command,
-    }
+def has_approval_perms(member: discord.Member, level: int) -> bool:
+    match level:
+        case 1:
+            allowed_roles = {
+                foundation_command,
+                site_command,
+                high_command,
+                central_command,
+                ia_id
+            }
+        case 2:
+            allowed_roles = {
+                foundation_command,
+                site_command,
+                high_command,
+                central_command,
+                drm_id
+            }
+        case 3:
+            allowed_roles = {
+                foundation_command,
+                site_command,
+                high_command,
+                central_command,
+            }
+        case 4:
+            allowed_roles = {
+                foundation_command,
+                site_command,
+                high_command,
+            }
+        case 5:
+            allowed_roles = {
+                foundation_command,
+                site_command,
+            }
+        case 6:
+            allowed_roles = {
+                foundation_command,
+            }
+
 
     if member.id == wolf_id:
+        return True
+
+    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (ghost_id, option_id):
         return True
 
     return any(role.id in allowed_roles for role in member.roles)

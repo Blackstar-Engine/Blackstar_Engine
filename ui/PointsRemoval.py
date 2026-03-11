@@ -2,7 +2,7 @@ import discord
 
 class PointsRemovalModal(discord.ui.Modal):
     def __init__(self, profile):
-        super().__init__(title="Promotion Points Removal")
+        super().__init__(title="Points Deduction")
         self.profile = profile
         self.data = None
 

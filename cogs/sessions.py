@@ -10,7 +10,7 @@ class Sessions(commands.Cog):
 
     @commands.hybrid_command(name="send_votes", description="End the vote and send the reacted users")
     async def send_votes(self, ctx: commands.Context, vc_channel: discord.VoiceChannel, game_link: str):
-        result = has_approval_perms(ctx.author)
+        result = has_approval_perms(ctx.author, 3)
         if not result:
             return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
             

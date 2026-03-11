@@ -3,7 +3,7 @@ from discord import ui
 from datetime import datetime
 from utils.constants import profiles, overall_promotion_channel, promotion_requests
 from utils.utils import has_approval_perms, generate_timestamp
-from ui.promotion.modals.PointsRemoval import PointsRemovalModal
+from ui.PointsRemoval import PointsRemovalModal
 
 
 # ---------- Persistent Buttons ----------
@@ -77,7 +77,7 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
     bot = interaction.client
     request_id = interaction.data["custom_id"].split(":")[1]
 
-    if not has_approval_perms(interaction.user):
+    if not has_approval_perms(interaction.user, 3):
         return await interaction.response.send_message(
             "You do not have permission to manage promotions.",
             ephemeral=True

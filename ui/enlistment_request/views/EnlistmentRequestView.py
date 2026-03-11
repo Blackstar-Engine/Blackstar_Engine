@@ -1,17 +1,8 @@
 import discord
 from discord import ui
 from discord.ext import commands
-from utils.constants import site_command, foundation_command, central_command, high_command, enlistment_requests, profiles
-
-# ---------- Permission Helper ----------
-
-def has_moderation_role(member: discord.Member):
-    roles = member.roles
-    return any(
-        role.id in (site_command, foundation_command, central_command, high_command)
-        for role in roles
-    )
-
+from utils.constants import enlistment_requests, profiles
+from utils.utils import has_approval_perms
 
 # ---------- Buttons ----------
 
@@ -76,7 +67,7 @@ class EnlistmentRequestView(ui.LayoutView):
 async def handle_enlistment_decision(interaction: discord.Interaction, approved: bool):
     request_id = interaction.data["custom_id"].split(":")[1]
 
-    if not has_moderation_role(interaction.user):
+    if not has_approval_perms(interaction.user, 3):
         return await interaction.response.send_message(
             "You need foundation, site, central, or high command.",
             ephemeral=True

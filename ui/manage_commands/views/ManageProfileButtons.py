@@ -3,8 +3,8 @@ from utils.constants import profiles, departments, foundation_command
 from ui.manage_commands.modals.EditProfile import EditProfileModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
-from ui.manage_commands.views.DemoteUnit import DemoteUnitView
-from ui.manage_commands.views.ManageDepartment import ManageDepartmentRow
+from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
+from ui.manage_commands.views.AdminTools import ManageDepartmentRow
 from utils.utils import interaction_check, fetch_unit_options
 from discord import ui
 import asyncio
@@ -48,7 +48,8 @@ class SelectAction(ui.ActionRow):
         container = ui.Container(
             ui.TextDisplay(f"## {value} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
-            
+            ui.Separator(),
+            DepartmentButtons(self.bot, self.user, value, self.profile),
             accent_color=discord.Color.light_grey()
         )
 
@@ -137,9 +138,9 @@ class ButtonsAction1(ui.ActionRow):
                     option.default = True
                 normal_unit_results.append(option)
 
-        view = ProfileManageUnitsView(self.bot, self.profile, normal_unit_results, private_unit_results)
+        view = ProfileManageUnitsView(self.bot, self.user, self.profile, normal_unit_results, private_unit_results)
 
-        await interaction.response.send_message(view=view, ephemeral=True)
+        await interaction.response.edit_message(view=view)
         await view.wait()
 
         # 🔄 Reload profile after submit
@@ -157,35 +158,16 @@ class ButtonsAction2(ui.ActionRow):
         self.profile = profile
         self.user = user
 
-        demote_button = ui.Button(label="Demote", style=discord.ButtonStyle.blurple, row=1)
         delete_button = ui.Button(label="Delete", style=discord.ButtonStyle.red, row=1)
 
-        demote_button.callback = self.demote_user_button
         delete_button.callback = self.manage_profile_delete
 
-        self.add_item(demote_button)
         self.add_item(delete_button)
-    
-    async def demote_user_button(self, interaction: discord.Interaction):
-        interaction_check(self.user, interaction.user)
-
-        view = ui.LayoutView()
-        container = ui.Container(
-            ui.TextDisplay('## Warning!'),
-            ui.TextDisplay('This action is permanent and will demote the user from the selected department.'),
-            ui.TextDisplay('Please select a department to demote this user from.'),
-            DemoteUnitView(self.profile),
-            accent_color=discord.Color.yellow()
-        )
-        view.add_item(container)
-        
-
-        await interaction.response.send_message(view=view, ephemeral=True)
     
     async def manage_profile_delete(self, interaction: discord.Interaction):
         interaction_check(self.user, interaction.user)
 
-        confirm_buttons = ConfirmRemovalView(self.bot, self.profile, 0)
+        confirm_buttons = ConfirmRemovalView(self.bot, self.user, self.profile, 0)
         view = ui.LayoutView()
         container = ui.Container(
             ui.TextDisplay('## Warning!'),
@@ -196,7 +178,7 @@ class ButtonsAction2(ui.ActionRow):
             accent_color=discord.Color.yellow()
         )
         view.add_item(container)
-        await interaction.response.send_message(view=view, ephemeral=True)
+        await interaction.response.edit_message(view=view)
         await view.wait()
 
         if confirm_buttons.status == 1:
@@ -232,3 +214,4 @@ class ManageProfileButtons(ui.LayoutView):
         )
 
         self.add_item(container)
+
