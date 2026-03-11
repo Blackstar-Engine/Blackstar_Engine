@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.constants import central_command, high_command, site_command, foundation_command, drm_id
-from utils.utils import role_user
+from utils.utils import role_user, has_approval_perms
 
 class RoleUser(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -10,17 +9,11 @@ class RoleUser(commands.Cog):
 
     @commands.hybrid_command(name="roleuser", description="Auto give a user the overall and first rank role of a unit", with_app_command=True)
     async def role_user(self, ctx: commands.Context, user: discord.Member, unit: str):
-        central_role = ctx.guild.get_role(central_command)
-        high_role = ctx.guild.get_role(high_command)
-        site_role = ctx.guild.get_role(site_command)
-        foundation_role = ctx.guild.get_role(foundation_command)
-        drm_role = ctx.guild.get_role(drm_id)
-
-        if not any(role in ctx.author.roles for role in [central_role, high_role, site_role, foundation_role, drm_role]):
+        if not has_approval_perms(ctx.author, 2):
             embed = discord.Embed(title="Permission Denied", description="You need to be apart of either foundation, site, central, high command, or the DRM to use this command.", color=discord.Color.red())
             return await ctx.send(embed=embed, ephemeral=True)
         
-        result = await self.role_user(ctx, unit)
+        result = await role_user(ctx, unit)
         if not result:
             return
         

@@ -1,44 +1,30 @@
 import discord
 from discord import ui
 from utils.constants import (
-    ia_id, central_command, high_command, site_command,
-    foundation_command, wolf_id, profiles, point_requests, BlackstarConstants,
-    ghost_id
+    profiles, point_requests, BlackstarConstants
 )
-from utils.utils import generate_timestamp
+from utils.utils import generate_timestamp, has_approval_perms
 
 constants = BlackstarConstants()
 
 # ---------- Permission Logic ----------
 
-def has_points_approval_perms(member: discord.Member, snapshot: dict, guild: discord.Guild):
-    if (member.id == wolf_id) or (constants.ENVIRONMENT == "DEVELOPMENT" and member.id == ghost_id):
-        return True
-    
+def has_points_approval_perms(member: discord.Member, snapshot: dict):    
     if int(member.id) == int(snapshot['user_id']):
         return False
-
-    ia_role = guild.get_role(ia_id)
-    central_role = guild.get_role(central_command)
-    high_role = guild.get_role(high_command)
-    site_role = guild.get_role(site_command)
-    foundation_role = guild.get_role(foundation_command)
 
     points = snapshot["points"]
 
     if 1 <= points <= 1.5:
-        allowed = [ia_role, central_role, high_role, site_role, foundation_role]
+        return has_approval_perms(member, 1)
     elif 1.5 < points <= 2:
-        allowed = [central_role, high_role, site_role, foundation_role]
+        return has_approval_perms(member, 3)
     elif 2 < points <= 7.99:
-        allowed = [site_role, foundation_role]
+        return has_approval_perms(member, 5)
     elif points >= 8:
-        allowed = [foundation_role]
-    else:
-        allowed = []
+        return has_approval_perms(member, 6)
 
-    allowed = [r for r in allowed if r is not None]
-    return any(role in member.roles for role in allowed)
+    return False
 
 
 # ---------- Persistent Buttons ----------
@@ -123,7 +109,7 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
     snapshot = req["snapshot"]
     guild = interaction.guild
 
-    if not has_points_approval_perms(interaction.user, snapshot, guild):
+    if not has_points_approval_perms(interaction.user, snapshot):
             return await interaction.response.send_message(
                 "❌ You do not have permission to act on this point request.",
                 ephemeral=True

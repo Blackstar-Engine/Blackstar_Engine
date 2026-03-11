@@ -1,12 +1,17 @@
 import discord
-from utils.constants import profiles
+from utils.constants import profiles, foundation_command
+from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
+from ui.manage_commands.views.AdminTools import ManageDepartmentRow
+from discord import ui
 
-class DemoteRankView(discord.ui.ActionRow):
-    def __init__(self, profile, unit, ranks, current_rank):
+class DemoteRankView(ui.ActionRow):
+    def __init__(self, bot, user, profile, unit, ranks, current_rank):
         super().__init__()
 
         self.profile = profile
         self.unit = unit
+        self.bot = bot
+        self.user = user
 
         # Find current rank order
         current_rank_obj = next(
@@ -28,7 +33,7 @@ class DemoteRankView(discord.ui.ActionRow):
             for r in self.valid_ranks
         ]
 
-        self.rank_select = discord.ui.Select(
+        self.rank_select = ui.Select(
             placeholder="Select rank to demote to",
             options=options,
             min_values=1,
@@ -38,6 +43,7 @@ class DemoteRankView(discord.ui.ActionRow):
         self.add_item(self.rank_select)
 
     async def rank_select_callback(self, interaction: discord.Interaction):
+        from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
         new_rank = self.rank_select.values[0]
 
         await profiles.update_one(
@@ -46,11 +52,38 @@ class DemoteRankView(discord.ui.ActionRow):
                 f"unit.{self.unit}.rank": new_rank
             }}
         )
+
+        self.profile["unit"][self.unit]["rank"] = new_rank
+
+        department = self.profile["unit"][self.unit]
+
+        main_view = ui.LayoutView()
+
+        container = ui.Container(
+            ui.TextDisplay(f"## {self.unit} Information"),
+            ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
+            ui.Separator(),
+            DepartmentButtons(self.bot, self.user, self.unit, self.profile),
+            accent_color=discord.Color.light_grey()
+        )
+
+        foundation = interaction.guild.get_role(foundation_command)
+
+        if (
+            await self.bot.is_owner(interaction.user)
+            or any(role == foundation for role in self.user.roles)
+        ):
+            container.add_item(ui.Separator())
+            container.add_item(ManageDepartmentRow(self.profile, self.unit))
+
+        main_view.add_item(container)
+
+        await interaction.response.edit_message(view = main_view)
         
-        view = discord.ui.LayoutView()
-        container = discord.ui.Container(
-            discord.ui.TextDisplay(f"✅ {self.unit} rank updated to **{new_rank}**"),
+        confirm_view = ui.LayoutView()
+        container = ui.Container(
+            ui.TextDisplay(f"✅ {self.unit} rank updated to **{new_rank}**"),
             accent_color=discord.Color.green()
         )
-        view.add_item(container)
-        await interaction.response.edit_message(view=view)
+        confirm_view.add_item(container)
+        await interaction.followup.send(view=confirm_view, ephemeral=True)
