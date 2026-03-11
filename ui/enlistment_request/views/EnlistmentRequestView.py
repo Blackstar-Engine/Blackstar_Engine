@@ -67,7 +67,7 @@ class EnlistmentRequestView(ui.LayoutView):
 async def handle_enlistment_decision(interaction: discord.Interaction, approved: bool):
     request_id = interaction.data["custom_id"].split(":")[1]
 
-    if not has_approval_perms(interaction.user, 3):
+    if not await has_approval_perms(interaction.user, 3):
         return await interaction.response.send_message(
             "You need foundation, site, central, or high command.",
             ephemeral=True

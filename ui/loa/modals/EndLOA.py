@@ -1,5 +1,6 @@
 import discord
-from utils.constants import loa_channel, stored_loa, loa
+from utils.constants import stored_loa, loa
+from utils.utils import fetch_id
 
 class EndLOAModal(discord.ui.Modal):
     def __init__(self, bot, user, member, active_loa):
@@ -20,6 +21,9 @@ class EndLOAModal(discord.ui.Modal):
     
     async def on_submit(self, interaction: discord.Interaction):
         reason = self.reason.value
+
+        results = await fetch_id(interaction.guild.id, ["loa_channel"])
+        loa_channel = results["loa_channel"]
 
         channel = await interaction.guild.fetch_channel(loa_channel)
 

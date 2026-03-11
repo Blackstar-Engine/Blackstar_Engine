@@ -1,8 +1,8 @@
 import discord
 from discord import ui
 from datetime import datetime
-from utils.constants import profiles, overall_promotion_channel, promotion_requests
-from utils.utils import has_approval_perms, generate_timestamp
+from utils.constants import profiles, promotion_requests
+from utils.utils import has_approval_perms, fetch_id
 from ui.PointsRemoval import PointsRemovalModal
 
 
@@ -77,7 +77,7 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
     bot = interaction.client
     request_id = interaction.data["custom_id"].split(":")[1]
 
-    if not has_approval_perms(interaction.user, 3):
+    if not await has_approval_perms(interaction.user, 3):
         return await interaction.response.send_message(
             "You do not have permission to manage promotions.",
             ephemeral=True
@@ -175,8 +175,9 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
         )
 
     # announce promotion
+    results = await fetch_id(interaction.guild.id, ["overall_promotion_channel"])
     if approved:
-        channel = bot.get_channel(overall_promotion_channel)
+        channel = bot.get_channel(results["overall_promotion_channel"])
         if channel and member:
             embed = discord.Embed(
                 title="New Promotion",

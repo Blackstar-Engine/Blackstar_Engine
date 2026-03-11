@@ -9,20 +9,20 @@ constants = BlackstarConstants()
 
 # ---------- Permission Logic ----------
 
-def has_points_approval_perms(member: discord.Member, snapshot: dict):    
+async def has_points_approval_perms(member: discord.Member, snapshot: dict):    
     if int(member.id) == int(snapshot['user_id']):
         return False
 
     points = snapshot["points"]
 
     if 1 <= points <= 1.5:
-        return has_approval_perms(member, 1)
+        return await has_approval_perms(member, 1)
     elif 1.5 < points <= 2:
-        return has_approval_perms(member, 3)
+        return await has_approval_perms(member, 3)
     elif 2 < points <= 7.99:
-        return has_approval_perms(member, 5)
+        return await has_approval_perms(member, 5)
     elif points >= 8:
-        return has_approval_perms(member, 6)
+        return await has_approval_perms(member, 6)
 
     return False
 
@@ -109,7 +109,7 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
     snapshot = req["snapshot"]
     guild = interaction.guild
 
-    if not has_points_approval_perms(interaction.user, snapshot):
+    if not await has_points_approval_perms(interaction.user, snapshot):
             return await interaction.response.send_message(
                 "❌ You do not have permission to act on this point request.",
                 ephemeral=True

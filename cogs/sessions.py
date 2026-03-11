@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-from utils.constants import sessions_channel_id, event_channel_id, mission_channel_id, training_channel_id, MESSAGE_CODE_RE, central_command, high_command, foundation_command, site_command
-from utils.utils import has_approval_perms
+from utils.constants import MESSAGE_CODE_RE
+from utils.utils import has_approval_perms, fetch_id
 
 class Sessions(commands.Cog):
     def __init__(self, bot):
@@ -10,14 +10,16 @@ class Sessions(commands.Cog):
 
     @commands.hybrid_command(name="send_votes", description="End the vote and send the reacted users")
     async def send_votes(self, ctx: commands.Context, vc_channel: discord.VoiceChannel, game_link: str):
-        result = has_approval_perms(ctx.author, 3)
+        result = await has_approval_perms(ctx.author, 3)
         if not result:
             return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
             
         if ctx.message:
             await ctx.message.delete()
 
-        valid_channels = [sessions_channel_id, event_channel_id, mission_channel_id, training_channel_id]
+        results = await fetch_id(ctx.guild.id, ["sessions_channel_id", "event_channel_id", "mission_channel_id", "training_channel_id"])
+
+        valid_channels = [results["sessions_channel_id"], results["event_channel_id"], results["mission_channel_id"], results["training_channel_id"]]
         if ctx.channel.id not in valid_channels:
             return
         

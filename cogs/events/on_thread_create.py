@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
-from utils.constants import profile_thread_channel, profiles, departments, profanity_list, drm_id
+from utils.constants import profiles, departments, profanity_list
 from datetime import datetime
 import re 
-from utils.utils import profile_creation_embed
+from utils.utils import profile_creation_embed, fetch_id
 import asyncio
 
 class ClaimButtonView(discord.ui.View):
@@ -12,7 +12,8 @@ class ClaimButtonView(discord.ui.View):
     
     @discord.ui.button(label="Claim Enlistment", style=discord.ButtonStyle.blurple, custom_id="enlistment_claim_button")
     async def claim_enlistment_button(self, interaction: discord.Interaction, button: discord.Button):
-        drm_role = interaction.guild.get_role(drm_id)
+        results = await fetch_id(interaction.guild.id, ['drm_id'])
+        drm_role = interaction.guild.get_role(results['drm_id'])
         if drm_role not in interaction.user.roles:
             return await interaction.response.send_message("This is a D.R.M only button!", ephemeral=True)
         embed = discord.Embed(
@@ -128,7 +129,8 @@ class ThreadProfileCreation(commands.Cog):
         await self.bot.wait_until_ready()
 
         # Only run in enlistment channel
-        if thread.parent_id != profile_thread_channel:
+        results = await fetch_id(thread.guild.id, ['profile_thread_channel'])
+        if thread.parent_id != results['profile_thread_channel']:
             return
         
         # Variable Declarations

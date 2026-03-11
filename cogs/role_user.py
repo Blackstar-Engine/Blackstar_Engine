@@ -9,7 +9,7 @@ class RoleUser(commands.Cog):
 
     @commands.hybrid_command(name="roleuser", description="Auto give a user the overall and first rank role of a unit", with_app_command=True)
     async def role_user(self, ctx: commands.Context, user: discord.Member, unit: str):
-        if not has_approval_perms(ctx.author, 2):
+        if not await has_approval_perms(ctx.author, 2):
             embed = discord.Embed(title="Permission Denied", description="You need to be apart of either foundation, site, central, high command, or the DRM to use this command.", color=discord.Color.red())
             return await ctx.send(embed=embed, ephemeral=True)
         

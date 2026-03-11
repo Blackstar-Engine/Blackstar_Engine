@@ -1,8 +1,8 @@
 import discord
 from discord import ui
-from utils.utils import fetch_department
+from utils.utils import fetch_department, has_approval_perms
 from ui.PointsRemoval import PointsRemovalModal
-from utils.constants import profiles, foundation_command
+from utils.constants import profiles
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
 
 class DepartmentButtons(ui.ActionRow):
@@ -81,11 +81,9 @@ class DepartmentButtons(ui.ActionRow):
             accent_color=discord.Color.light_grey()
         )
 
-        foundation = interaction.guild.get_role(foundation_command)
-
         if (
             await self.bot.is_owner(interaction.user)
-            or any(role == foundation for role in self.user.roles)
+            or await has_approval_perms(self.user, 6)
         ):
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))

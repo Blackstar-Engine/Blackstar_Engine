@@ -1,7 +1,7 @@
 import discord
-from utils.constants import loa_role, loa
+from utils.constants import loa
 from ui.loa.modals.RequestDeny import RequestDenyModal
-from utils.utils import has_approval_perms
+from utils.utils import has_approval_perms, fetch_id
 
 class RequestAcceptDenyButtons(discord.ui.View):
     def __init__(self, bot, user, reason, start_date, end_date, time, embed):
@@ -16,7 +16,7 @@ class RequestAcceptDenyButtons(discord.ui.View):
 
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.green)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not has_approval_perms(interaction.user, 3):
+        if not await has_approval_perms(interaction.user, 3):
             return await interaction.response.send_message("You need to be foundation/site/high/central command to use this function", ephemeral=True)
         
         self.embed.title = "Leave Of Absence Approved"
@@ -36,6 +36,9 @@ class RequestAcceptDenyButtons(discord.ui.View):
         }
         await loa.insert_one(loa_doc)
 
+        results = await fetch_id(interaction.guild.id, ["loa_role"])
+        loa_role = results["loa_role"]
+
         role = await interaction.guild.fetch_role(loa_role)
 
         await self.user.add_roles(role)
@@ -43,7 +46,7 @@ class RequestAcceptDenyButtons(discord.ui.View):
 
     @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
     async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not has_approval_perms(interaction.user, 3):
+        if not await has_approval_perms(interaction.user, 3):
             return await interaction.response.send_message("You need to be foundation/site/high/central command to use this function", ephemeral=True)
         
         modal = RequestDenyModal(self.bot)

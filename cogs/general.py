@@ -1,15 +1,17 @@
 import discord
 from discord.ext import commands
 from datetime import timedelta, datetime
-from utils.constants import wolf_id, central_command, high_command, site_command, foundation_command, junior_mod, mod, senior_mod, staff_manager, profiles
+from utils.constants import profiles
 from ui.leaderboard.ScrollButtons import LeaderboardView
+from utils.utils import fetch_id
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     async def _check_if_wolf(self, ctx: commands.Context):
-        if ctx.author.id != wolf_id:
+        results = await fetch_id(ctx.guild.id, ["wolf_id"])
+        if ctx.author.id != results["wolf_id"]:
             await ctx.send("You are not allowed to use this command!", ephemeral=True)
             return False
         return True
@@ -52,15 +54,24 @@ class General(commands.Cog):
 
     @commands.hybrid_command(name="dm_punish", description="Notifies a user that disciplinary action has been taken")
     async def dm_punish(self, ctx: commands.Context, user: discord.Member, *, text: str):
+        results = await fetch_id(ctx.guild.id, ["central_command",
+            "high_command",
+            "site_command",
+            "foundation_command",
+            "junior_mod",
+            "mod",
+            "senior_mod",
+            "staff_manager"])
+        
         allowed_roles = [
-            central_command,
-            high_command,
-            site_command,
-            foundation_command,
-            junior_mod,
-            mod,
-            senior_mod,
-            staff_manager
+            results["central_command"],
+            results["high_command"],
+            results["site_command"],
+            results["foundation_command"],
+            results["junior_mod"],
+            results["mod"],
+            results["senior_mod"],
+            results["staff_manager"]
         ]
         if any(role.id in allowed_roles for role in ctx.author.roles):
             try:
@@ -79,7 +90,8 @@ class General(commands.Cog):
     
     @commands.hybrid_command(name="view_high", description="View all high command team members")
     async def view_high_members(self, ctx: commands.Context):
-        role_obj = ctx.guild.get_role(high_command)
+        results = await fetch_id(ctx.guild.id, ['high_command'])
+        role_obj = ctx.guild.get_role(results["high_command"])
 
         members = role_obj.members
 
@@ -95,7 +107,8 @@ class General(commands.Cog):
     
     @commands.hybrid_command(name="view_site", description="View all site command team members")
     async def view_site_members(self, ctx: commands.Context):
-        role_obj = ctx.guild.get_role(site_command)
+        results = await fetch_id(ctx.guild.id, ['site_command'])
+        role_obj = ctx.guild.get_role(results['site_command'])
 
         members = role_obj.members
 
@@ -111,7 +124,8 @@ class General(commands.Cog):
     
     @commands.hybrid_command(name="view_foundation", description="View all foundation command team members")
     async def view_foundation_members(self, ctx: commands.Context):
-        role_obj = ctx.guild.get_role(foundation_command)
+        results = await fetch_id(ctx.guild.id, ['foundation_command'])
+        role_obj = ctx.guild.get_role(results['foundation_command'])
 
         members = role_obj.members
 
