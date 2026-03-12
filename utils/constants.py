@@ -61,6 +61,29 @@ point_requests = db.point_requests
 departments = db.departments
 ids = db.ids
 
+if constants.ENVIRONMENT == "PRODUCTION":
+    annoucement_role_id = 1413199178934259844
+    misc_role_id = 1413199348753498222
+    game_night_role_id = 1413199433264398517
+    question_role_id = 1413199535081259079
+    vote_role_id = 1416830734760546476
+    chat_revive_role_id = 1450660091442368612
+    dpr_display_role_id = 1460112895252758569
+    raid_role_id = 1457222250817392661
+    session_role_id = 1456018515050893425
+    external_role_id = 1481419195903381716
+else:
+    annoucement_role_id = 1450297860846387312
+    dpr_display_role_id = 1450297861836247050
+    misc_role_id = 1450297863145001030
+    game_night_role_id = 1450297865569304596
+    question_role_id = 1450297866991042701
+    vote_role_id = 1450297868459049131
+    chat_revive_role_id = 1450297899811475558
+    raid_role_id = 1470978604883116245
+    session_role_id = 1470978602324590789
+    external_role_id = 1481485568784470127
+
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console
     from rich.logging import RichHandler
