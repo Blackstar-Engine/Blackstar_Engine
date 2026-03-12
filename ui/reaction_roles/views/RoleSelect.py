@@ -20,7 +20,8 @@ class RoleSelectRow(ui.ActionRow):
                 discord.SelectOption(label="Vote Ping", value=int(results["vote_role_id"]), emoji='<:BlackStar_Vote:1467561338321502348>'),
                 discord.SelectOption(label="Chat Revive Ping", value=int(results["chat_revive_role_id"]), emoji='<:BlackStar_ChatRevive:1467561189612716205>'),
                 discord.SelectOption(label="Raid Ping", value=int(results["raid_role_id"]), emoji='<:BlackStar_Raid:1474396707780431882>'),
-                discord.SelectOption(label="Session Ping", value=int(results["session_role_id"]), emoji='<:BlackStar_Session:1474396734909190201>')
+                discord.SelectOption(label="Session Ping", value=int(results["session_role_id"]), emoji='<:BlackStar_Session:1474396734909190201>'),
+                discord.SelectOption(label="External Training Ping", value=int(results['external_role_id']))
             ]
         )
 
@@ -62,7 +63,8 @@ class RoleSelect(discord.ui.LayoutView):
                            '> <:BlackStar_Vote:1467561338321502348> | **Vote Ping: ** Votes\n'
                            '> <:BlackStar_ChatRevive:1467561189612716205> | **Chat Revive Ping: ** Chat Revival\n'
                            '> <:BlackStar_Raid:1474396707780431882> | **Raid Ping: ** Server Raid notifications\n'
-                           '> <:BlackStar_Session:1474396734909190201> | **Session Ping: ** SSU Notifications'
+                           '> <:BlackStar_Session:1474396734909190201> | **Session Ping: ** SSU Notifications\n'
+                           '> **External Training Ping: ** Other Game Trainings'
                            ),
             ui.Separator(),
             ui.TextDisplay('*Select a role below to add or remove the role.*'),

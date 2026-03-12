@@ -16,7 +16,7 @@ class ReactionRoles(commands.Cog):
         
         await ctx.message.delete()
 
-        results = await fetch_id(ctx.guild.id, ["annoucement_role_id", "chat_revive_role_id", "dpr_display_role_id", "game_night_role_id", "misc_role_id", "question_role_id", "raid_role_id", "session_role_id", "vote_role_id"])
+        results = await fetch_id(ctx.guild.id, ["annoucement_role_id", "chat_revive_role_id", "dpr_display_role_id", "game_night_role_id", "misc_role_id", "question_role_id", "raid_role_id", "session_role_id", "vote_role_id", "external_role_id"])
 
         view = RoleSelect(results)
 
@@ -28,5 +28,5 @@ async def setup(bot: commands.Bot):
         guild_id = 1411941814923169826
     else:
         guild_id = 1450297281088720928
-    results = await fetch_id(guild_id, ["annoucement_role_id", "chat_revive_role_id", "dpr_display_role_id", "game_night_role_id", "misc_role_id", "question_role_id", "raid_role_id", "session_role_id", "vote_role_id"])
+    results = await fetch_id(guild_id, ["annoucement_role_id", "chat_revive_role_id", "dpr_display_role_id", "game_night_role_id", "misc_role_id", "question_role_id", "raid_role_id", "session_role_id", "vote_role_id",  "external_role_id"])
     bot.add_view(RoleSelect(results))

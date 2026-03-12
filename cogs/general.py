@@ -159,6 +159,12 @@ class General(commands.Cog):
 
         await ctx.send(embed=embed, view=view)
 
+    @commands.hybrid_command(name="test", description="Leaderboard that showcases members with the highest stats")
+    async def test(self, ctx: commands.Context):
+        results = await fetch_id(ctx.guild.id, ['external_role_id'])
+        role_obj = ctx.guild.get_role(results['external_role_id'])
+        await ctx.send(role_obj.mention)
+
 
     
 
