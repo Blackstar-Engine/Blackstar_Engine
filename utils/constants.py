@@ -34,8 +34,6 @@ profanity_list = [
                     "fucking", "fucker", "fucked", "fucks", "fuk"
                 ]
 whitelisted_guilds = [1411941814923169826, 1450297281088720928]
-# ghost_id = 758170288566566952
-# option_id = 1007353417779396709
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     constants.MONGO_URI,
@@ -62,78 +60,6 @@ enlistment_requests = db.enlistment_requests
 point_requests = db.point_requests
 departments = db.departments
 ids = db.ids
-
-# if constants.ENVIRONMENT == "PRODUCTION":
-#     loa_channel = 1412244838660968590
-#     loa_role = 1418067647177691156
-
-#     foundation_command = 1413208971304636597
-#     site_command = 1422416268585341049
-#     high_command = 1413226553982320713
-#     central_command = 1413226456968069180
-#     ia_id = 1413193754013073459
-#     wolf_id = 1371489554279825439
-#     overall_promotion_channel = 1412244417380618320
-#     profile_thread_channel = 1433946174791876740
-#     drm_id = 1428178727824658502
-
-#     junior_mod = 1449266238659493988
-#     mod = 1449265443939287171
-#     senior_mod = 1449265506585546903
-#     staff_manager = 1455684044665917562
-
-#     annoucement_role_id = 1413199178934259844
-#     misc_role_id = 1413199348753498222
-#     game_night_role_id = 1413199433264398517
-#     question_role_id = 1413199535081259079
-#     vote_role_id = 1416830734760546476
-#     chat_revive_role_id = 1450660091442368612
-#     dpr_display_role_id = 1460112895252758569
-#     raid_role_id = 1457222250817392661
-#     session_role_id = 1456018515050893425
-
-#     mtf_overall_role_id = 1413195090096034015
-
-#     sessions_channel_id = 1434351873518993509
-#     event_channel_id = 1452343119327662242
-#     mission_channel_id = 1412241044392640654
-#     training_channel_id = 1412242444271095929
-
-# else:
-#     loa_channel = 1454232138571448524
-#     loa_role = 1454233756545323200
-
-#     foundation_command = 1450297609515307134
-#     site_command = 1450297617073442816
-#     high_command = 1450297635994079375
-#     central_command = 1450297654662660156
-#     ia_id = 1450297786254889021
-#     wolf_id = 1371489554279825439
-#     overall_promotion_channel = 1450298055336136716
-#     profile_thread_channel = 1450298068162576525
-#     drm_id = 1450297796174286900
-
-#     junior_mod = 1450297632739164193
-#     mod = 1450297631736729660
-#     senior_mod = 1450297630545547405
-#     staff_manager = 1478181575475593416
-
-#     annoucement_role_id = 1450297860846387312
-#     dpr_display_role_id = 1450297861836247050
-#     misc_role_id = 1450297863145001030
-#     game_night_role_id = 1450297865569304596
-#     question_role_id = 1450297866991042701
-#     vote_role_id = 1450297868459049131
-#     chat_revive_role_id = 1450297899811475558
-#     raid_role_id = 1470978604883116245
-#     session_role_id = 1470978602324590789
-
-#     mtf_overall_role_id = 1450297782983327795
-
-#     sessions_channel_id = 1450298076995522650
-#     event_channel_id = 1480400559562293329
-#     mission_channel_id = 1450298080346767493
-#     training_channel_id = 1450298082968211526
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console
