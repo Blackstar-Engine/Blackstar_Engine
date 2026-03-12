@@ -5,9 +5,8 @@ from datetime import datetime, timezone
 from utils.constants import (
     loa,
     stored_loa,
-    loa_channel,
-    loa_role,
 )
+from utils.utils import fetch_id
 
 
 class LOAEvent(commands.Cog):
@@ -29,6 +28,9 @@ class LOAEvent(commands.Cog):
             {"end_date": {"$lte": now}}
         ).to_list(length=None)
 
+        if len(expired_loas) > 0:
+            results = await fetch_id(expired_loas[0]["guild_id"], ['loa_role', 'loa_channel'])
+
         for record in expired_loas:
             guild = self.bot.get_guild(record.get("guild_id"))
             if not guild:
@@ -36,11 +38,11 @@ class LOAEvent(commands.Cog):
                 continue
 
             # Get channel and member
-            channel = await self._fetch_channel(guild)
+            channel = await self._fetch_channel(guild, results['loa_channel'])
             member = await self._fetch_member(guild, record.get("user_id"))
 
             # Remove LOA role
-            role = guild.get_role(loa_role)
+            role = guild.get_role(results['loa_role'])
             if role and isinstance(member, discord.Member):
                 try:
                     await member.remove_roles(role, reason="LOA expired")
@@ -73,7 +75,7 @@ class LOAEvent(commands.Cog):
 
             await self._cleanup_record(record)
 
-    async def _fetch_channel(self, guild: discord.Guild):
+    async def _fetch_channel(self, guild: discord.Guild, loa_channel):
         channel = guild.get_channel(loa_channel)
         if not channel:
             try:

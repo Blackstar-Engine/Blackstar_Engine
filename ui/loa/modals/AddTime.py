@@ -1,8 +1,9 @@
 import discord
 import re
 from datetime import timedelta
-from utils.constants import loa_channel, LOARegFormat, loa
+from utils.constants import LOARegFormat, loa
 from ui.loa.views.ExtendAcceptDenyButtons import ExtendAcceptDenyButtons
+from utils.utils import fetch_id
 
 class AddTimeModal(discord.ui.Modal):
     def __init__(self, bot, active_loa, user, member):
@@ -45,6 +46,9 @@ class AddTimeModal(discord.ui.Modal):
         time_delta = timedelta(days=years * 365 + months * 30 + weeks * 7 + days, hours=hours)
 
         new_end_date = self.active_loa["end_date"] + time_delta
+        results = await fetch_id(interaction.guild.id, ["loa_channel"])
+        loa_channel = results["loa_channel"]
+
         if self.member == self.user:  # If managing your own LOA
             channel = await interaction.guild.fetch_channel(loa_channel)
 

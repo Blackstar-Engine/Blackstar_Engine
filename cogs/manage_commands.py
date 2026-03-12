@@ -100,7 +100,7 @@ class ManageCommands(commands.Cog):
     @manage.command(name='auto_reply', description='Manage auto replys')
     async def auto_reply(self, ctx: commands.Context):
         # User must be in foundation or site command to run this command
-        if not has_approval_perms(ctx.author, 5):
+        if not await has_approval_perms(ctx.author, 5):
             return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
         
         # Find all auto replys and create the paginator view object
@@ -141,7 +141,7 @@ class ManageCommands(commands.Cog):
     async def manage_profile(self, ctx: commands.Context, user: discord.User):
         # User must be in foundation or site command to run this command\
         if not await self.bot.is_owner(ctx.author):
-            if not has_approval_perms(ctx.author, 4):
+            if not await has_approval_perms(ctx.author, 4):
                 return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
 
         # check to see if they have a profile

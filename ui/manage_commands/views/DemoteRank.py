@@ -1,8 +1,9 @@
 import discord
-from utils.constants import profiles, foundation_command
+from utils.constants import profiles
 from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
 from discord import ui
+from utils.utils import has_approval_perms
 
 class DemoteRankView(ui.ActionRow):
     def __init__(self, bot, user, profile, unit, ranks, current_rank):
@@ -67,11 +68,9 @@ class DemoteRankView(ui.ActionRow):
             accent_color=discord.Color.light_grey()
         )
 
-        foundation = interaction.guild.get_role(foundation_command)
-
         if (
             await self.bot.is_owner(interaction.user)
-            or any(role == foundation for role in self.user.roles)
+            or await has_approval_perms(self.user, 6)
         ):
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))

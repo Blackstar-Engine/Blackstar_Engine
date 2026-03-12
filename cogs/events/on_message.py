@@ -1,11 +1,9 @@
 import discord
 from discord.ext import commands
-from utils.constants import loa, sessions_channel_id, event_channel_id, mission_channel_id, training_channel_id, MESSAGE_CODE_RE
-from utils.utils import tts_to_file, tts_match_object, tts_logic
+from utils.constants import loa, MESSAGE_CODE_RE
+from utils.utils import tts_to_file, tts_match_object, tts_logic, fetch_id
 import os
 import asyncio
-from collections import defaultdict
-import re
 
 
 
@@ -98,8 +96,10 @@ class AutoReply(commands.Cog):
                     )
     
     async def React_To_Message(self, message: discord.Message):
-        channels = [sessions_channel_id, event_channel_id, mission_channel_id, training_channel_id]
-        if message.channel.id in channels and MESSAGE_CODE_RE.search(message.content):
+        results = await fetch_id(message.guild.id, ["sessions_channel_id", "event_channel_id", "mission_channel_id", "training_channel_id"])
+
+        valid_channels = [results["sessions_channel_id"], results["event_channel_id"], results["mission_channel_id"], results["training_channel_id"]]
+        if message.channel.id in valid_channels and MESSAGE_CODE_RE.search(message.content):
             await message.add_reaction("🟩")
             await message.add_reaction("🟨")
             await message.add_reaction("🟥")

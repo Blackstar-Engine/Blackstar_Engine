@@ -10,15 +10,6 @@ import asyncio
 from dateutil import parser
 
 from utils.constants import (
-    foundation_command,
-    site_command,
-    high_command,
-    central_command,
-    wolf_id,
-    ghost_id,
-    option_id,
-    drm_id,
-    ia_id,
     profiles,
     departments,
     URL_RE,
@@ -26,8 +17,8 @@ from utils.constants import (
     USER_RE,
     CHANNEL_RE,
     EMOJI_RE,
-    mtf_overall_role_id,
-    BlackstarConstants
+    BlackstarConstants,
+    ids
 )
 
 tts_lock = threading.Lock()
@@ -37,52 +28,53 @@ def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
         raise commands.CommandError("Sorry but you can't use this button.")
 
-def has_approval_perms(member: discord.Member, level: int) -> bool:
+async def has_approval_perms(member: discord.Member, level: int) -> bool:
+    results = await fetch_id(member.guild.id, ["foundation_command", "site_command", "high_command", "central_command", "ia_id", "drm_id", "ghost_id", "option_id", "wolf_id"])
     match level:
         case 1:
             allowed_roles = {
-                foundation_command,
-                site_command,
-                high_command,
-                central_command,
-                ia_id
+                results["foundation_command"],
+                results["site_command"],
+                results["high_command"],
+                results["central_command"],
+                results["ia_id"]
             }
         case 2:
             allowed_roles = {
-                foundation_command,
-                site_command,
-                high_command,
-                central_command,
-                drm_id
+                results["foundation_command"],
+                results["site_command"],
+                results["high_command"],
+                results["central_command"],
+                results["drm_id"]
             }
         case 3:
             allowed_roles = {
-                foundation_command,
-                site_command,
-                high_command,
-                central_command,
+                results["foundation_command"],
+                results["site_command"],
+                results["high_command"],
+                results["central_command"]
             }
         case 4:
             allowed_roles = {
-                foundation_command,
-                site_command,
-                high_command,
+                results["foundation_command"],
+                results["site_command"],
+                results["high_command"]
             }
         case 5:
             allowed_roles = {
-                foundation_command,
-                site_command,
+                results["foundation_command"],
+                results["site_command"]
             }
         case 6:
             allowed_roles = {
-                foundation_command,
+                results["foundation_command"]
             }
 
 
-    if member.id == wolf_id:
+    if member.id == results["wolf_id"]:
         return True
 
-    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (ghost_id, option_id):
+    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
         return True
 
     return any(role.id in allowed_roles for role in member.roles)
@@ -126,6 +118,11 @@ def fetch_unit_options(profile):
         options.append(discord.SelectOption(label="No Active Units", value="no_units"))
     
     return options
+
+async def fetch_id(guild_id, id_names: list[str]):
+    results = await ids.find({"guild_id": int(guild_id), "key": {"$in": id_names}}).to_list(length=None)
+
+    return {result["key"]: result["value"] for result in results}
 
 def tts_to_file(user, text: str) -> str:
     filename = f"tts_{uuid.uuid4()}.mp3"
@@ -243,8 +240,10 @@ async def role_user(ctx: commands.Context, department: str):
     overall_role_id = department.get('role_id')
     first_rank_role_id = department.get('first_rank_id')
 
+    results = await fetch_id(ctx.guild.id, ['mtf_overall_role_id'])
+
     if unit.startswith("MTF"):
-        mtf_overall_role_obj = ctx.guild.get_role(mtf_overall_role_id)
+        mtf_overall_role_obj = ctx.guild.get_role(results['mtf_overall_role_id'])
 
     overall_role_obj = ctx.guild.get_role(overall_role_id)
     first_rank_role_obj = ctx.guild.get_role(first_rank_role_id)

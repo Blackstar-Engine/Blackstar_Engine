@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands
 import re
-from utils.constants import loa, stored_loa, LOARegFormat, loa_channel, foundation_command, site_command
+from utils.constants import loa, stored_loa, LOARegFormat
 from datetime import datetime, timedelta
 from ui.paginator import PaginatorView
 from ui.loa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
 from ui.loa.views.ManageExtendButtons import ManageExtendButton
 from typing import Optional
+from utils.utils import fetch_id, has_approval_perms
 
 
 class LOA(commands.Cog):
@@ -89,7 +90,8 @@ class LOA(commands.Cog):
             )
         
         # Creats the View and sends the message to the loa_channel
-        channel: discord.TextChannel = await self.bot.fetch_channel(loa_channel)
+        results = await fetch_id(ctx.guild.id, ["loa_channel"])
+        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["loa_channel"])
 
         view = RequestAcceptDenyButtons(self.bot, ctx.author, reason, start_date, end_date, time, request_embed)
         await channel.send(embed=request_embed, view=view)
@@ -101,10 +103,7 @@ class LOA(commands.Cog):
     @loa.command(description="Get a list of all the active LOA's in the server.")
     async def active(self, ctx: commands.Context):
         # Users have to be in foundation or site command to run this command
-        foundation_role = await ctx.guild.fetch_role(foundation_command)
-        site_role = await ctx.guild.fetch_role(site_command)
-
-        if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
+        if not await has_approval_perms(ctx.author, 5):
             return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
         
         # Find all LOA's, create the view, create the embed, send to user
@@ -121,10 +120,7 @@ class LOA(commands.Cog):
             member = ctx.author
         else:
             # If they are managing another user, they need to be in foundation or site command
-            foundation_role = await ctx.guild.fetch_role(foundation_command)
-            site_role = await ctx.guild.fetch_role(site_command)
-
-            if foundation_role not in ctx.author.roles and site_role not in ctx.author.roles:
+            if not await has_approval_perms(ctx.author, 5):
                 return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
             
             member = user

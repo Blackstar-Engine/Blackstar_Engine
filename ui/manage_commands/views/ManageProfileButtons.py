@@ -1,11 +1,11 @@
 import discord
-from utils.constants import profiles, departments, foundation_command
+from utils.constants import profiles, departments
 from ui.manage_commands.modals.EditProfile import EditProfileModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
 from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
-from utils.utils import interaction_check, fetch_unit_options
+from utils.utils import interaction_check, fetch_unit_options, has_approval_perms
 from discord import ui
 import asyncio
 
@@ -53,11 +53,9 @@ class SelectAction(ui.ActionRow):
             accent_color=discord.Color.light_grey()
         )
 
-        foundation = interaction.guild.get_role(foundation_command)
-
         if (
             await self.bot.is_owner(interaction.user)
-            or any(role == foundation for role in self.user.roles)
+            or await has_approval_perms(self.user, 6)
         ):
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, value))
