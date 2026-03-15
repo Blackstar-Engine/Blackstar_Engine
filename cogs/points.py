@@ -95,20 +95,12 @@ class Points(commands.Cog):
             ["central_command", "foundation_command", "high_command", "site_command"]
         )
 
-        allowed_roles = [
-            results["central_command"],
-            results["foundation_command"],
-            results["high_command"],
-            results["site_command"]
-        ]
-        if any(role.id in allowed_roles for role in ctx.author.roles):
-
+        if await has_approval_perms(ctx.author, 3) == True:
             if ctx.author == user:
                 await ctx.send("You can not gift points to yourself!", ephemeral=True)
                 return
 
             limit = None
-
             if ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
                 limit = 1
             elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
@@ -120,6 +112,9 @@ class Points(commands.Cog):
                     limit = 999999999999999
                 else:
                     limit = 5
+
+            if limit is None:
+                return await ctx.send("You are not allowed to use this command!", ephemeral=True)
 
             profile = await fetch_profile(ctx)
    
@@ -142,7 +137,7 @@ class Points(commands.Cog):
                 )
 
             profile = await fetch_profile(ctx)
-            gifted_total = profile.get("gifted", {}).get("gifted_points")
+            gifted_total = profile.get("gifted", {}).get("gifted_points", 0)
             if gifted_total + points > limit:
                 await ctx.send("You cannot gift that amount of points because it exceeds your remaining gifting limit.", ephemeral=True)      
                 return              
@@ -174,6 +169,11 @@ class Points(commands.Cog):
             await profiles.update_one(
                 {"guild_id": ctx.guild.id, "user_id": user.id},
                 {"$inc": {f"unit.{dept}.current_points": points}}
+            )  
+
+            await profiles.update_one(
+                {"guild_id": ctx.guild.id, "user_id": user.id},
+                {"$inc": {f"unit.{dept}.total_points": points}}
             )  
             
             embed = discord.Embed(description=f"## Point Gift\n> **Point Gifter:** {ctx.author.mention}\n> **Points:** {points}\n> **Gifted To:** {user.mention}\n> **Reason:** {reason}", color=discord.Color.green())
