@@ -9,7 +9,6 @@ class PointsRoleSelect(ui.Select):
                         options=options)
     
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
         value = self.values[0]
 
         if value == "no_units":
@@ -17,9 +16,11 @@ class PointsRoleSelect(ui.Select):
         else:
             self.view.dept = value
 
+        await interaction.response.defer()
+
         self.view.stop()
 
-class UnitSelectView(discord.ui.LayoutView):
+class UnitSelectView(ui.LayoutView):
     def __init__(self, bot, options, profile):
         super().__init__(timeout=300)
         self.bot = bot

@@ -95,92 +95,102 @@ class Points(commands.Cog):
             ["central_command", "foundation_command", "high_command", "site_command"]
         )
 
-        if await has_approval_perms(ctx.author, 3) == True:
-            if ctx.author == user:
-                await ctx.send("You can not gift points to yourself!", ephemeral=True)
-                return
+        # Check to make sure they can run this command
+        if not await has_approval_perms(ctx.author, 3):
+            return await ctx.send("This is only for Central Command+", ephemeral=True)
 
-            limit = None
-            if ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
-                limit = 1
-            elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
-                limit = 2
-            elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
-                limit = 3
-            elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
-                if ctx.author.id == 1371489554279825439:
-                    limit = 999999999999999
-                else:
-                    limit = 5
+        # Command parsing checks
+        if ctx.author.id == user.id:
+            return await ctx.send("You can not gift points to yourself!", ephemeral=True)
+        elif points <= 0:
+            return await ctx.send("You must gift a positive number of points.", ephemeral=True)
 
-            if limit is None:
-                return await ctx.send("You are not allowed to use this command!", ephemeral=True)
-
-            profile = await fetch_profile(ctx)
-   
-            
-            if points <= 0:
-                await ctx.send("You must gift a positive number of points.", ephemeral=True)   
-                return
-            
-            if not profile.get("gifted", {}):
-                await profiles.update_one(
-                    {"guild_id": ctx.guild.id, "user_id": ctx.author.id},
-                    {"$set": {"gifted": {"current_month": datetime.now().month, "gifted_points": 0}}}
-                )
-
-            stored_month = profile.get("gifted", {}).get("current_month")
-            if stored_month != datetime.now().month:
-                await profiles.update_one(
-                    {"guild_id": ctx.guild.id, "user_id": ctx.author.id},
-                    {"$set": {"gifted": {"current_month": datetime.now().month, "gifted_points": 0}}}
-                )
-
-            profile = await fetch_profile(ctx)
-            gifted_total = profile.get("gifted", {}).get("gifted_points", 0)
-            if gifted_total + points > limit:
-                await ctx.send("You cannot gift that amount of points because it exceeds your remaining gifting limit.", ephemeral=True)      
-                return              
-
-            profile = await fetch_profile(ctx)
-            unit_select_view = UnitSelectView(self.bot, fetch_unit_options(profile), profile)
-            msg = await ctx.send(view=unit_select_view, ephemeral=True)
-            await unit_select_view.wait()
-
-            await ctx.send('Gift succesfully sent!', ephemeral=True)
-
-            dept = unit_select_view.dept
-
-            if not dept or dept == "no_unit":
-                return
-            
-            department_doc = await fetch_department(ctx, dept)
-            if not department_doc:
-                await ctx.send("I cannot find the correct channel.", ephemeral=True)
-
-            channel = ctx.guild.get_channel(int(department_doc.get("points_request_channel")))
-
-
-            await profiles.update_one(
-                {"guild_id": ctx.guild.id, "user_id": ctx.author.id},
-                {"$inc": {"gifted.gifted_points": points}}
-            )        
-
-            await profiles.update_one(
-                {"guild_id": ctx.guild.id, "user_id": user.id},
-                {"$inc": {f"unit.{dept}.current_points": points}}
-            )  
-
-            await profiles.update_one(
-                {"guild_id": ctx.guild.id, "user_id": user.id},
-                {"$inc": {f"unit.{dept}.total_points": points}}
-            )  
-            
-            embed = discord.Embed(description=f"## Point Gift\n> **Point Gifter:** {ctx.author.mention}\n> **Points:** {points}\n> **Gifted To:** {user.mention}\n> **Reason:** {reason}", color=discord.Color.green())
-            await channel.send(embed=embed)
-
+        # Calculate the gifting point limit
+        limit = None
+        if ctx.author.id == 1371489554279825439:
+                limit = 999999999999999
+        elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
+            limit = 5
+        elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
+            limit = 3
+        elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
+            limit = 2
+        elif ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
+            limit = 1
         else:
-            return await ctx.send("You are not allowed to use this command!", ephemeral=True)
+            return await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
+
+        authors_profile = await fetch_profile(ctx)
+        if not authors_profile:
+            return
+        
+        users_profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
+        if not users_profile:
+            embed = discord.Embed(title="", description="Profile Not Found", color=discord.Color.dark_embed())
+            await ctx.send(embed=embed)
+
+        # Reinit gifting if new month
+        gifted = authors_profile.setdefault("gifted", {})
+
+        gifted.setdefault("gifted_points", 0)
+        gifted.setdefault("current_month", 0)
+
+        if gifted["current_month"] != datetime.now().month:
+            gifted["gifted_points"] = 0
+            gifted["current_month"] = datetime.now().month
+        
+        # Check if they have exceeded their limit for the month
+        gifted_total = gifted["gifted_points"]
+        if gifted_total + points > limit:
+            return await ctx.send("You have exceeded your gifting limit!", ephemeral=True)              
+
+        # Ask what department they want to use
+        options = fetch_unit_options(users_profile)
+        unit_select_view = UnitSelectView(self.bot, options, users_profile)
+        await ctx.send(view=unit_select_view, ephemeral=True)
+        await unit_select_view.wait()
+
+        # After selection parsing
+        dept = unit_select_view.dept
+
+        if not dept or dept == "no_unit":
+            return
+        
+        department_doc = await fetch_department(ctx, dept)
+        if not department_doc:
+            return
+
+        channel = ctx.guild.get_channel(int(department_doc.get("points_request_channel")))
+
+        new_total_points = gifted["gifted_points"] + points
+        new_current_month = gifted["current_month"]
+
+        # Update the authors profile
+        await profiles.update_one(
+            {"guild_id": ctx.guild.id, "user_id": ctx.author.id},
+            {
+                "$set": {
+                    "gifted.current_month": new_current_month,
+                    "gifted.gifted_points": new_total_points
+                }
+            },
+            upsert=True
+        )        
+
+        # Update the recipient profile
+        await profiles.update_one(
+            {"guild_id": ctx.guild.id, "user_id": user.id},
+            {"$inc": {
+                        f"unit.{dept}.current_points": points,
+                        f"unit.{dept}.total_points": points
+                    }},
+            upsert=True
+        )  
+        
+        embed = discord.Embed(description=f"## Point Gift\n> **Point Gifter:** {ctx.author.mention}\n> **Points:** {points}\n> **Gifted To:** {user.mention}\n> **Reason:** {reason}", color=discord.Color.green())
+        await channel.send(embed=embed)
+
+        await ctx.send('Gift successfully sent!', ephemeral=True)
         
 
 async def setup(bot: commands.Bot):
