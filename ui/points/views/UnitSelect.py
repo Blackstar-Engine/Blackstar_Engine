@@ -31,7 +31,7 @@ class UnitSelectView(discord.ui.LayoutView):
 
         container = ui.Container(
             ui.TextDisplay('## Unit Selection'),
-            ui.TextDisplay('Please select a unit you would like this point request to send to!'),
+            ui.TextDisplay('Please select a unit to proceed.'),
             ui.Separator(),
             action_row,
             accent_color=discord.Color.light_grey()
