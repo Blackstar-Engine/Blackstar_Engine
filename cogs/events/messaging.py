@@ -5,10 +5,7 @@ from utils.utils import tts_to_file, tts_match_object, tts_logic, fetch_id
 import os
 import asyncio
 
-
-
-
-class AutoReply(commands.Cog):
+class Messaging(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
     
@@ -125,4 +122,4 @@ class AutoReply(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(AutoReply(bot))
+    await bot.add_cog(Messaging(bot))

@@ -136,32 +136,30 @@ def tts_to_file(user, text: str) -> str:
 
 def profile_creation_embed():
     dm_embed=discord.Embed(
-        title="Welcome to Blackstar!",
+        title="Congrats on the Enlistment!",
         description="This is a quick tutorial on how we run things around these parts!",
         color=discord.Color.light_grey()
     )
 
     dm_embed.add_field(
-        name="-Points Ranking System",
-        value = "> To earn points you need to attend server sessions which are broadcasted ahead of time in [**#👾 sessions**](https://discord.com/channels/1411941814923169826/1434351873518993509), you can also earn points a variety of other ways such as hosting and co-hosting deployments or attending those deployments! Deployments will also be broadcasted in [**#📢 mission-briefing**](https://discord.com/channels/1411941814923169826/1412241044392640654), The best way to keep track of your points is by using the personal roster system to document all your attended events in one place, this can be found in [**#🪪 personal-roster**](https://discord.com/channels/1411941814923169826/1412295943654735952)",
-        inline=False
+        name="-Personal Roster",
+        value="> We require everyone to create there own roster, please head to https://discord.com/channels/1411941814923169826/1412295943654735952 and following the guidelines."
     )
 
     dm_embed.add_field(
-        name="-How to Enlist",
-        value="> To enlist in a department you first need to make an enlistment form in [**#🪪 enlistment**](https://discord.com/channels/1411941814923169826/1433946174791876740), if you want to join another department you will need to enlist under that teams department category.",
+        name="-Our Point System",
+        value = "> To get points you need to attend sessions, deployments, or trainings. Everything is **1 point** unless notified otherwise. MVP is **1.5 points**. You can than request those with `!points request <number> <proof>`",
         inline=False
     )
 
     dm_embed.add_field(
         name="-Document Links",
-        value="For more information on a specific topic please see out server documents listed below.\n\n"
+        value="Here are some important documents to review:\n"
             "> [Stature of Regulation](https://trello.com/b/5LzFYOKb/name-stature-of-regulation)\n"
             "> [Code of Conduct](https://docs.google.com/document/d/1qUqOgbX8CoB3jzaIrIZxheqBpAeHk5HVLIP252cViac/edit?usp=sharing)\n"
             "> [Hierarchy & Points System](https://docs.google.com/document/d/1abd4Qq6CanUCLqjdmka5RmYEeD6GTFWGo2Czym0-nyo/edit?usp=sharing)\n"
-            "> [Unit Database](https://docs.google.com/spreadsheets/d/1BLlkDxLW7GqPwVPmDuwpu-XBU98aY5_0ADX9QALXp4w/edit?usp=sharing)\n\n"
-            "**For any other documents please refer to https://discord.com/channels/1411941814923169826/1418081211246575617 or a departments specified documents channel, you may also create a ticket to resolve any query or problem you may have.**\n\n"
-            "**Thank you for being apart of the fun!**",
+            "> [BSC Charter](https://docs.google.com/document/d/1jVVxMcG8cB-lGta7gRATSimle2s2PuQZz7WnHOxY8d8/edit?usp=sharing)\n"
+            "**For any other documents please refer to https://discord.com/channels/1411941814923169826/1418081211246575617**",
             inline=False
     )
 

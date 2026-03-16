@@ -9,7 +9,7 @@ from utils.constants import (
 from utils.utils import fetch_id
 
 
-class LOAEvent(commands.Cog):
+class Tasks(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.check_loa_end_date.start()
@@ -104,4 +104,4 @@ class LOAEvent(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(LOAEvent(bot))
+    await bot.add_cog(Tasks(bot))
