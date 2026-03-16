@@ -38,12 +38,30 @@ class Points(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    async def _get_limit(self, ctx: commands.Context, results):
+        limit = None
+        if ctx.author.id == 1371489554279825439:
+                limit = 999999999999999
+        elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
+            limit = 5
+        elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
+            limit = 3
+        elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
+            limit = 2
+        elif ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
+            limit = 1
+        else:
+            await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
+            return False
+        
+        return limit
+
     @commands.hybrid_group(name="points")
     async def points(self, ctx: commands.Context):
         return
 
     @points.command(name="request", description="Request points to be added to your profile")
-    async def request(self, ctx: commands.Context, points: float, proof):
+    async def request(self, ctx: commands.Context, points: float, *, proof: str):
         if points <= 0 or not isinstance(points, float):
             return await ctx.send("Please make sure the number is positive and is an number.", ephemeral=True)
         
@@ -106,19 +124,9 @@ class Points(commands.Cog):
             return await ctx.send("You must gift a positive number of points.", ephemeral=True)
 
         # Calculate the gifting point limit
-        limit = None
-        if ctx.author.id == 1371489554279825439:
-                limit = 999999999999999
-        elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
-            limit = 5
-        elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
-            limit = 3
-        elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
-            limit = 2
-        elif ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
-            limit = 1
-        else:
-            return await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
+        limit = await self._get_limit(ctx, results)
+        if not limit:
+            return
 
         authors_profile = await fetch_profile(ctx)
         if not authors_profile:

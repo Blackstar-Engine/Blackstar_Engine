@@ -3,7 +3,7 @@ from discord.ext import commands
 import asyncio
 from cogs.TTS import tts_system_commands
 
-class OnVCStateUpdate(commands.Cog):
+class Voice(commands.Cog):
     def __init__(self, bot: commands.Bot):
         super().__init__()
         self.bot = bot
@@ -36,4 +36,4 @@ class OnVCStateUpdate(commands.Cog):
                     print(f"VC Update Error: {e}")
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(OnVCStateUpdate(bot=bot))
+    await bot.add_cog(Voice(bot=bot))

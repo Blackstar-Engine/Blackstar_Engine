@@ -31,7 +31,7 @@ async def send_dev_error(bot: commands.Bot, ctx, error):
     if channel:
         await channel.send(embed=dev_embed)
 
-class OnCommandError(commands.Cog):
+class Errors(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -72,6 +72,42 @@ class OnCommandError(commands.Cog):
             await send_dev_error(self.bot, ctx, error)
         
         await send_error(ctx, embed)
+    
+    @commands.Cog.listener()
+    async def on_error(self, ctx: commands.Context, error):
+        embed = discord.Embed(title='Error!', description=' ', color=discord.Color.red())
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            return
+
+        elif isinstance(error, commands.BadArgument):
+            return
+
+        elif isinstance(error, discord.NotFound):
+            return
+
+        elif isinstance(error, discord.Forbidden):
+            return
+
+        elif isinstance(error, discord.HTTPException) and error.code == 10062:
+            return
+
+        elif isinstance(error, commands.MissingPermissions):
+            return
+        
+        elif isinstance(error, commands.NoPrivateMessage):
+            return
+
+        elif isinstance(error, (commands.CheckFailure, commands.CommandNotFound)):
+            return
+
+        else:
+            embed.description = "❌ Uh oh! An unexpected error occurred."
+            logger.error(f'An unexpected error has occurred: {error}')
+
+            await send_dev_error(self.bot, ctx, error)
+        
+        await send_error(ctx, embed)
                 
 async def setup(bot):
-    await bot.add_cog(OnCommandError(bot))
+    await bot.add_cog(Errors(bot))

@@ -25,7 +25,7 @@ class ClaimButtonView(discord.ui.View):
         await interaction.followup.send("You have claimed this enlistment!", ephemeral=True)
         self.stop()
 
-class ThreadProfileCreation(commands.Cog):
+class EnlistmentByThread(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
     
@@ -231,5 +231,5 @@ class ThreadProfileCreation(commands.Cog):
             return
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(ThreadProfileCreation(bot))
+    await bot.add_cog(EnlistmentByThread(bot))
     bot.add_view(ClaimButtonView())
