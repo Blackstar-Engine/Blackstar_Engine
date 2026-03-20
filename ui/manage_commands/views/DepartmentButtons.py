@@ -1,6 +1,6 @@
 import discord
 from discord import ui
-from utils.utils import fetch_department, has_approval_perms
+from utils.utils import fetch_department, has_approval_perms, log_action
 from ui.PointsRemoval import PointsRemovalModal
 from utils.constants import profiles
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
@@ -56,6 +56,8 @@ class DepartmentButtons(ui.ActionRow):
         await modal.wait()
 
         points = modal.data
+
+        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.user.id, points=points)
 
         await profiles.update_one({"guild_id": interaction.guild.id, "user_id": self.user.id}, {"$inc": {f"unit.{self.unit}.current_points": -float(points)}})
 

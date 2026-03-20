@@ -261,3 +261,40 @@ async def role_user(ctx: commands.Context, department: str):
         await user.add_roles(overall_role_obj, first_rank_role_obj, reason=f"Role User Command used by {ctx.author}")
     
     return True
+
+async def log_action(ctx: commands.Context, log_type: str, **kwargs):
+    if isinstance(ctx, discord.Interaction):
+        author = ctx.user
+        command_name = ctx.command.name if ctx.command else "Unknown"
+    else:
+        author = ctx.author
+        command_name = ctx.command.qualified_name if ctx.command else "Unknown"
+
+    log_embed = discord.Embed(title="", description="", color=discord.Color.light_grey())
+    log_embed.set_footer(text=f"Blackstar Engine Logging • {datetime.now().date()}")
+
+    match log_type:
+        case "point_deduction":
+            results = await fetch_id(ctx.guild.id, ["point_deduction_log"])
+            log_embed.title = "Point Deduction"
+            log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Points Reduced:** {kwargs['points']}\n**Command:** {command_name}"
+        case "point_addition":
+            results = await fetch_id(ctx.guild.id, ["point_addition_log"])
+            log_embed.title = "Point Addition"
+            log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Points Added:** {kwargs['points']}\n**Command:** {command_name}"
+        case "department":
+            results = await fetch_id(ctx.guild.id, ["department_log"])
+            log_embed.title = "Department Updated"
+            log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Updated Department:** {kwargs['department']}\n**Command:** {command_name}"
+        case "mod_command":
+            results = await fetch_id(ctx.guild.id, ["mod_command_log"])
+            log_embed.title = "Mod Command Used"
+            log_embed.description = f"**Moderator:** {author.mention}\n**Command:** {command_name}"
+    
+    try:
+        _, first_value = next(iter(results.items()), None)
+        channel = await ctx.guild.fetch_channel(int(first_value))
+
+        await channel.send(embed=log_embed)
+    except Exception:
+        pass

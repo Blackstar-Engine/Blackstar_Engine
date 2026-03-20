@@ -1,5 +1,6 @@
 import discord
 from utils.constants import profiles
+from utils.utils import log_action
 
 class EditPointsModal(discord.ui.Modal):
     def __init__(self, profile: dict, department):
@@ -35,6 +36,8 @@ class EditPointsModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         current = float(self.current.value)
         total = float(self.total.value)
+
+        await log_action(ctx=interaction, log_type="point_addition", user_id=self.profile["user_id"], points=f"current: {current}|total: {total}")
 
         await profiles.update_one({'user_id': self.profile["user_id"], 'guild_id': interaction.guild.id},
                                 {'$set': {

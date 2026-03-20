@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.points.views.UnitSelect import UnitSelectView
-from utils.utils import fetch_profile, fetch_unit_options, fetch_department, generate_timestamp, fetch_id, has_approval_perms
+from utils.utils import fetch_profile, fetch_unit_options, fetch_department, generate_timestamp, fetch_id, has_approval_perms, log_action
 import uuid
 from utils.constants import point_requests, profiles
 from datetime import datetime
@@ -172,6 +172,8 @@ class Points(commands.Cog):
 
         new_total_points = gifted["gifted_points"] + points
         new_current_month = gifted["current_month"]
+
+        await log_action(ctx=ctx, log_type="point_addition", user_id=user.id, points=points)
 
         # Update the authors profile
         await profiles.update_one(

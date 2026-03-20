@@ -3,7 +3,7 @@ from discord import ui
 from utils.constants import (
     profiles, point_requests, BlackstarConstants
 )
-from utils.utils import generate_timestamp, has_approval_perms
+from utils.utils import generate_timestamp, has_approval_perms, log_action
 
 constants = BlackstarConstants()
 
@@ -116,6 +116,7 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
             )
 
     if approved:
+        await log_action(ctx=interaction, log_type="point_addition", user_id=snapshot["user_id"], points=snapshot["points"])
 
         profile = await profiles.find_one({
             "guild_id": guild.id,

@@ -3,7 +3,7 @@ from discord.ext import commands
 from utils.constants import profiles, departments, profanity_list
 from datetime import datetime
 import re 
-from utils.utils import profile_creation_embed, fetch_id
+from utils.utils import profile_creation_embed, fetch_id, log_action
 import asyncio
 
 class ClaimButtonView(discord.ui.View):
@@ -222,6 +222,8 @@ class EnlistmentByThread(commands.Cog):
                                 color=discord.Color.green()
                                 )
         await thread.send(embed=created_embed)
+
+        await log_action(ctx=thread, log_type="department", user_id=member.id, department=', '.join(departments_list) or 'None')
 
         dm_embed = profile_creation_embed()
         

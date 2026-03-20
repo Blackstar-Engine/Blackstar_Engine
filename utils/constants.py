@@ -60,6 +60,7 @@ enlistment_requests = db.enlistment_requests
 point_requests = db.point_requests
 departments = db.departments
 ids = db.ids
+active_sessions = db.active_sessions
 
 if constants.ENVIRONMENT == "PRODUCTION":
     annoucement_role_id = 1413199178934259844

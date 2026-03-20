@@ -3,7 +3,7 @@ from discord.ext import commands
 from datetime import timedelta, datetime
 from utils.constants import profiles
 from ui.leaderboard.ScrollButtons import LeaderboardView
-from utils.utils import fetch_id
+from utils.utils import fetch_id, log_action
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -20,6 +20,8 @@ class General(commands.Cog):
     async def execute_user(self, ctx: commands.Context, user: discord.Member):
         if not await self._check_if_wolf(ctx):
             return
+        
+        await log_action(ctx=ctx, log_type="mod_command")
 
         duration = timedelta(seconds=10)
         try:
@@ -33,6 +35,8 @@ class General(commands.Cog):
     async def embed(self, ctx: commands.Context, *, text: str):
         if not await self._check_if_wolf(ctx):
             return
+        
+        await log_action(ctx=ctx, log_type="mod_command")
 
         await ctx.message.delete()
         
@@ -47,6 +51,8 @@ class General(commands.Cog):
     async def say(self, ctx: commands.Context, *, text: str):
         if not await self._check_if_wolf(ctx):
             return
+        
+        await log_action(ctx=ctx, log_type="mod_command")
 
         await ctx.message.delete()
         await ctx.send(text)
@@ -74,6 +80,7 @@ class General(commands.Cog):
             results["staff_manager"]
         ]
         if any(role.id in allowed_roles for role in ctx.author.roles):
+            await log_action(ctx=ctx, log_type="mod_command")
             try:
                 embed = discord.Embed(title="Notice of Disciplinary Action", description=text, color=discord.Color.light_grey())
                 embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
