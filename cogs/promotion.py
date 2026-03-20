@@ -5,7 +5,7 @@ from utils.utils import fetch_profile, fetch_department, generate_timestamp
 import uuid
 from utils.constants import promotion_requests
 
-async def send_promotion_request(bot, channel, profile, dept_name, proof, new_rank):
+async def send_promotion_request(bot, channel, profile, dept_name, proof: discord.Attachment, new_rank):
     
     request_id = str(uuid.uuid4())
 
@@ -16,7 +16,7 @@ async def send_promotion_request(bot, channel, profile, dept_name, proof, new_ra
         "department": dept_name,
         "current_rank": profile["unit"][dept_name]["rank"],
         "new_rank": new_rank,
-        "proof": proof,
+        "proof": proof.url,
         "current_points": profile["unit"][dept_name]["current_points"],
         "total_points": profile["unit"][dept_name]["total_points"],
         "join_timestamp": generate_timestamp(profile["join_date"])
@@ -44,7 +44,7 @@ class Promotion(commands.Cog):
         await ctx.send("Available subcommands: request")
 
     @promotion.command(name="request", description="Request a promotion in a department.")
-    async def request(self, ctx: commands.Context, department: str, *, proof: str):
+    async def request(self, ctx: commands.Context, department: str, proof: discord.Attachment):
         await ctx.defer(ephemeral=True)
 
         # Fetch the profile

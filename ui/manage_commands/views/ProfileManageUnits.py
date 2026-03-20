@@ -1,6 +1,7 @@
 import discord
 from utils.constants import profiles, departments
 from discord import ui
+from utils.utils import log_action
 
 def ensure_unit_defaults(unit_data: dict, first_rank: str | None):
     """
@@ -63,6 +64,7 @@ class SubmitButtonRow(ui.ActionRow):
         self.profile = profile
         self.normal_row_select = normal_row_select
         self.private_row_select = private_row_select
+        self.user = user
 
         submit_button = ui.Button(label="Submit", style=discord.ButtonStyle.green)
 
@@ -122,6 +124,8 @@ class SubmitButtonRow(ui.ActionRow):
 
         # ───── RESPONSE EMBED ─────
         active_units = [unit_name for unit_name, unit_data in units.items() if unit_data.get("is_active")]
+
+        await log_action(ctx=interaction, log_type="department", user_id=self.user.id, department=', '.join(active_units) or 'None')
 
         view = ui.LayoutView()
         container = ui.Container(

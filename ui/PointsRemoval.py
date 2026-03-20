@@ -1,4 +1,5 @@
 import discord
+from utils.utils import log_action
 
 class PointsRemovalModal(discord.ui.Modal):
     def __init__(self, profile):
@@ -19,6 +20,8 @@ class PointsRemovalModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
         points = self.points.value
+
+        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.profile["user_id"], points=points)
 
         self.data = points
         

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.constants import loa, MESSAGE_CODE_RE
+from utils.constants import loa, MESSAGE_CODE_RE, active_sessions
 from utils.utils import tts_to_file, tts_match_object, tts_logic, fetch_id
 import os
 import asyncio
@@ -93,13 +93,26 @@ class Messaging(commands.Cog):
                     )
     
     async def React_To_Message(self, message: discord.Message):
-        results = await fetch_id(message.guild.id, ["sessions_channel_id", "event_channel_id", "mission_channel_id", "training_channel_id"])
+        try:
+            results = await fetch_id(message.guild.id, ["sessions_channel_id", "event_channel_id", "mission_channel_id", "training_channel_id"])
 
-        valid_channels = [results["sessions_channel_id"], results["event_channel_id"], results["mission_channel_id"], results["training_channel_id"]]
-        if message.channel.id in valid_channels and MESSAGE_CODE_RE.search(message.content):
-            await message.add_reaction("🟩")
-            await message.add_reaction("🟨")
-            await message.add_reaction("🟥")
+            valid_channels = [results["sessions_channel_id"], results["event_channel_id"], results["mission_channel_id"], results["training_channel_id"]]
+            if message.channel.id in valid_channels and MESSAGE_CODE_RE.search(message.content):
+                await message.add_reaction("🟩")
+                await message.add_reaction("🟨")
+                await message.add_reaction("🟥")
+
+                await active_sessions.update_one(
+                {"guild_id": message.guild.id},
+                {
+                    "$set": {
+                        f"active_votes.{message.channel.id}": message.id
+                    }
+                },
+                upsert=True
+            )
+        except Exception:
+            pass
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

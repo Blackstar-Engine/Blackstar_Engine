@@ -2,7 +2,7 @@ import discord
 from discord import ui
 from discord.ext import commands
 from utils.constants import enlistment_requests, profiles
-from utils.utils import has_approval_perms
+from utils.utils import has_approval_perms, log_action, fetch_department
 
 # ---------- Buttons ----------
 
@@ -97,7 +97,8 @@ async def handle_enlistment_decision(interaction: discord.Interaction, approved:
     # ---------- APPLY RESULT ----------
 
     if approved:
-        await apply_department_accept(profile, department)
+        department_doc = await fetch_department(interaction, department)
+        await apply_department_accept(profile, department_doc)
 
     await enlistment_requests.update_one(
         {"_id": request_id},
@@ -129,6 +130,8 @@ async def handle_enlistment_decision(interaction: discord.Interaction, approved:
 
     result_view.add_item(container)
 
+    await log_action(ctx=interaction, log_type="department", user_id=req['snapshot']['user_id'], department=req['snapshot']['department_name'])
+
     if target_user:
         status = "ACCEPTED" if approved else "DENIED"
         await target_user.send(
@@ -142,7 +145,7 @@ async def handle_enlistment_decision(interaction: discord.Interaction, approved:
 # ---------- Profile Update Logic ----------
 
 async def apply_department_accept(profile: dict, department: dict):
-    unit_key = department
+    unit_key = department["display_name"]
     unit_data = profile.get("unit", {}).get(unit_key)
 
     if unit_data is None:
