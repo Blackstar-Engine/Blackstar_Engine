@@ -212,9 +212,9 @@ dependencies = [
     { name = "cuid2" },
     { name = "discord-py", extra = ["voice"] },
     { name = "dotenv" },
+    { name = "edge-tts" },
     { name = "ffmpeg" },
     { name = "gspread-asyncio" },
-    { name = "gtts" },
     { name = "jinja2" },
     { name = "jishaku" },
     { name = "motor" },
@@ -243,9 +243,9 @@ requires-dist = [
     { name = "cuid2" },
     { name = "discord-py", extras = ["voice"], git = "https://github.com/Rapptz/discord.py.git" },
     { name = "dotenv" },
+    { name = "edge-tts", specifier = ">=7.2.7" },
     { name = "ffmpeg", specifier = ">=1.4" },
     { name = "gspread-asyncio", specifier = ">=2.0.0" },
-    { name = "gtts", specifier = ">=2.5.4" },
     { name = "jinja2" },
     { name = "jishaku" },
     { name = "motor", specifier = ">=3.7.1" },
@@ -491,6 +491,21 @@ wheels = [
 ]
 
 [[package]]
+name = "edge-tts"
+version = "7.2.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "certifi" },
+    { name = "tabulate" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/16/d2/1ce38f6e4fe7275207f4033b0971db489a0b594340ae6bac2320127e71ee/edge_tts-7.2.7.tar.gz", hash = "sha256:0127fba57a742bc48ff0a2a3b24b8324f7859260185274c335b4e54735aff325", size = 27508, upload-time = "2025-12-12T20:54:28.403Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/89/92ac6b154ab87d236c15e5e0c73cb99be58efb1ea3eb9318c266bf9a36bf/edge_tts-7.2.7-py3-none-any.whl", hash = "sha256:ac11d9e834347e5ee62cbe72e8a56ffd65d3c4e795be14b1e593b72cf6480dd9", size = 30556, upload-time = "2025-12-12T20:54:26.956Z" },
+]
+
+[[package]]
 name = "ffmpeg"
 version = "1.4"
 source = { registry = "https://pypi.org/simple" }
@@ -614,19 +629,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/bf/7e/480054799ce34cec733d9d33951a801ffd2aea16dcdeea6801807aa44d83/gspread_asyncio-2.0.0.tar.gz", hash = "sha256:693d81a80b17f65cdbb16a292b8cb8a17ffe886dd5aeadbc4a06188ebbc4b2b6", size = 25402, upload-time = "2024-02-10T20:51:01.918Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a2/82/79c5d77c2f7175e14f9af971c692492c1eaf8a8bd4ccd5ec8d4c22e962a6/gspread_asyncio-2.0.0-py3-none-any.whl", hash = "sha256:63713a5337d52d538bb26815d96f98950cbdfae67600e1c137cea8608f41e5c4", size = 23045, upload-time = "2024-02-10T20:51:00.151Z" },
-]
-
-[[package]]
-name = "gtts"
-version = "2.5.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/57/79/5ddb1dfcd663581d0d3fca34ccb1d8d841b47c22a24dc8dce416e3d87dfa/gtts-2.5.4.tar.gz", hash = "sha256:f5737b585f6442f677dbe8773424fd50697c75bdf3e36443585e30a8d48c1884", size = 24018, upload-time = "2024-11-10T21:58:00.358Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/6c/8b8b1fdcaee7e268536f1bb00183a5894627726b54a9ddc6fc9909888447/gTTS-2.5.4-py3-none-any.whl", hash = "sha256:5dd579377f9f5546893bc26315ab1f846933dc27a054764b168f141065ca8436", size = 29184, upload-time = "2024-11-10T21:57:58.448Z" },
 ]
 
 [[package]]

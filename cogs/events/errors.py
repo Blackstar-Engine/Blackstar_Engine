@@ -45,6 +45,9 @@ class Errors(commands.Cog):
         elif isinstance(error, commands.BadArgument):
             embed.description = "❌ Invalid input. Please try again."
 
+        elif isinstance(error, commands.MissingRequiredAttachment):
+            embed.description = "❌ Please remember to add an attachment!"
+
         elif isinstance(error, discord.NotFound):
             embed.description = "❌ Asset not found. Please Check my permissions."
 

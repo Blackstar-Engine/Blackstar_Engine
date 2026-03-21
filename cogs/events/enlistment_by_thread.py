@@ -104,6 +104,7 @@ class EnlistmentByThread(commands.Cog):
         depts_to_remove = []
 
         for dept in departments_list:
+            dept = dept.upper()
             if dept in ["RRT", "ISD", "IA", "CI", "SCD"]:
                 embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
                 await thread.send(embed=embed)
