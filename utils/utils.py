@@ -9,7 +9,7 @@ import os
 import asyncio
 from dateutil import parser
 import re
-
+import unicodedata
 from utils.constants import (
     profiles,
     departments,
@@ -128,7 +128,11 @@ async def fetch_id(guild_id, id_names: list[str]):
 async def tts_to_file(user: discord.Member, last_speaker, last_message_time, text: str) -> str:
     filename = f"tts_{uuid.uuid4()}.mp3"
 
-    display_name = clean_username(user.display_name)
+    user_display = unicodedata.normalize("NFKD", user.display_name)
+
+    user_display = user_display.encode("ascii", "ignore").decode("ascii")
+
+    display_name = clean_username(user_display)
 
     if last_speaker == user.id and last_message_time < 30:
         text = f"{text}"

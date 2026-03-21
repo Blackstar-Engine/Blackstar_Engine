@@ -15,7 +15,7 @@ async def has_points_approval_perms(member: discord.Member, snapshot: dict):
 
     points = snapshot["points"]
 
-    if 1 <= points <= 1.5:
+    if 0.5 <= points <= 1.5:
         return await has_approval_perms(member, 1)
     elif 1.5 < points <= 2:
         return await has_approval_perms(member, 3)
