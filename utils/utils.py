@@ -2,12 +2,13 @@ import discord
 from discord.ext import commands
 from discord import ui
 import uuid
-from gtts import gTTS
+import edge_tts
 import threading
 from datetime import datetime, timezone
 import os
 import asyncio
 from dateutil import parser
+import re
 
 from utils.constants import (
     profiles,
@@ -124,15 +125,25 @@ async def fetch_id(guild_id, id_names: list[str]):
 
     return {result["key"]: result["value"] for result in results}
 
-def tts_to_file(user, text: str) -> str:
+async def tts_to_file(user: discord.Member, last_speaker, last_message_time, text: str) -> str:
     filename = f"tts_{uuid.uuid4()}.mp3"
-    text = f"{user} said {text}"
 
-    with tts_lock:
-        tts = gTTS(text=text, lang="en", tld="com.au")
-        tts.save(filename)
+    display_name = clean_username(user.display_name)
+
+    if last_speaker == user.id and last_message_time < 30:
+        text = f"{text}"
+    else:
+        text = f"{display_name} said {text}"
+
+    voice = "en-AU-WilliamMultilingualNeural"
+
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(filename)
 
     return filename
+
+def clean_username(name: str) -> str:
+    return re.sub(r"\[.*?\]\s*", "", name).strip()
 
 def profile_creation_embed():
     dm_embed=discord.Embed(

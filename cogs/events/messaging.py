@@ -4,11 +4,14 @@ from utils.constants import loa, MESSAGE_CODE_RE, active_sessions
 from utils.utils import tts_to_file, tts_match_object, tts_logic, fetch_id
 import os
 import asyncio
+import time
 
 class Messaging(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-    
+        self.last_speaker = {}
+        self.last_message_time = {}
+
     def _create_after_playback(self, file, queue):
         def _after_playback(error):
             if error:
@@ -79,11 +82,24 @@ class Messaging(commands.Cog):
     
     async def TTS_Event(self, message: discord.Message):
         if message.channel.type == discord.ChannelType.voice: 
+            if message.content.startswith("-"):
+                return
+            
             bot_vc = message.guild.voice_client 
+            guild_id = message.guild.id
+            user = message.author
+            now = time.time()
             if bot_vc and message.channel == message.guild.voice_client.channel: 
                 content = tts_match_object(message)
 
-                file = tts_to_file(message.author.display_name, str(content)) 
+                last_speaker = self.last_speaker.get(guild_id)
+                last_message_time = now - self.last_message_time.get(guild_id, 0)
+
+                file = await tts_to_file(user, last_speaker, last_message_time, str(content)) 
+
+                self.last_speaker[guild_id] = message.author.id
+                self.last_message_time[guild_id] = now
+                
                 queue = self.bot.tts_queues[message.guild.id]
                 await queue.put(file)
 

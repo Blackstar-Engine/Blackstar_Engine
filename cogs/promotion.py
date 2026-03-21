@@ -47,13 +47,18 @@ class Promotion(commands.Cog):
     async def request(self, ctx: commands.Context, department: str, proof: discord.Attachment):
         await ctx.defer(ephemeral=True)
 
+        if isinstance(proof, str):
+            return await ctx.send("Please use an attachment for proof!", ephemeral=True)
+        elif not proof:
+            return await ctx.send("Please make sure to add an attachment with proof!", ephemeral=True)
+
         # Fetch the profile
         profile = await fetch_profile(ctx)
         if not profile:
             return
 
         # fetch the department
-        department_doc = await fetch_department(ctx, department)
+        department_doc = await fetch_department(ctx, department.upper())
         if not department_doc:
             return
 

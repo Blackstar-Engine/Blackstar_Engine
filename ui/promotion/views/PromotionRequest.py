@@ -116,7 +116,7 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
             )
 
         await profiles.update_one(
-            {"_id": profile["_id"]},
+            {"user_id": snapshot["user_id"], "guild_id": interaction.guild.id},
             {
                 "$set": {
                     f"unit.{department}.rank": snapshot["new_rank"]
