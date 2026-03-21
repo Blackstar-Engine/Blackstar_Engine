@@ -14,3 +14,5 @@ discord.py[voice]
 asyncio
 collections
 python-dateutil
+unicodedata
+edge_tts

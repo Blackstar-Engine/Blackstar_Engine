@@ -82,7 +82,7 @@ class Messaging(commands.Cog):
     
     async def TTS_Event(self, message: discord.Message):
         if message.channel.type == discord.ChannelType.voice: 
-            if message.content.startswith("-"):
+            if message.content.startswith(("-", "d!", "!")):
                 return
             
             bot_vc = message.guild.voice_client 
