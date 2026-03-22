@@ -4,12 +4,15 @@ from discord import ui
 from utils.constants import active_sessions
 
 class VCSelect(ui.ChannelSelect):
-    def __init__(self, game_link):
+    def __init__(self, game_link, author_id):
+        self.author_id = author_id
         self.game_link = game_link
-
         super().__init__(placeholder="Choose a VC", channel_types=[discord.ChannelType.voice], min_values=1, max_values=1)
 
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.author_id:
+            return await interaction.response.send_message("You are not allowed to interact with this.", ephemeral=True)
+
         vc = interaction.guild.get_channel(int(self.values[0].id))
 
         data = await active_sessions.find_one({"guild_id": interaction.guild.id})
@@ -54,6 +57,7 @@ class VCSelect(ui.ChannelSelect):
             f"**We are starting, please join {vc.mention}**\n"
             f"{self.game_link}\n\n"
             f"{', '.join(users)}"
+
         )
 
         try:
@@ -73,11 +77,10 @@ class VCSelect(ui.ChannelSelect):
         await interaction.message.delete()
 
 class VCChannelSelectView(ui.LayoutView):
-    def __init__(self, game_link):
+    def __init__(self, game_link, author_id):
         super().__init__(timeout=300)
-        self.game_link = game_link
 
-        action_row = ui.ActionRow(VCSelect(game_link))
+        action_row = ui.ActionRow(VCSelect(game_link, author_id))
         container = ui.Container(
             ui.TextDisplay("## VC Selection"),
             ui.TextDisplay("Please select a vc to use below"),
