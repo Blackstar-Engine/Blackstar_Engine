@@ -18,7 +18,7 @@ class Sessions(commands.Cog):
         if ctx.message:
             await ctx.message.delete()
 
-        view = VCChannelSelectView(game_link)
+        view = VCChannelSelectView(game_link, ctx.author.id)
         await ctx.send(view=view, ephemeral=True)
             
 
