@@ -35,6 +35,6 @@ class LeaderboardView(View):
             )
         ]
 
-        embed = discord.Embed(title=f"Point Leaderboard (Page {self.current_page + 1}/{self.max_page})", description="\n".join(lines), color=discord.Color.light_grey())
+        embed = discord.Embed(title=f"Point Leaderboard (Page {self.current_page + 1}/{self.max_page})", description="▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n" + "\n".join(lines), color=discord.Color.light_grey())
         embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
         return embed
