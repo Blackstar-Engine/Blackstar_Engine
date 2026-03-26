@@ -1,109 +1,31 @@
 {
-    "_id": {
-        "$oid": "694ef5a690a4cc7ecf8e1fd8"
-    },
-    "name": "Internal Security Department",
-    "display_name": "ISD",
+    "name": "Long Name",
+    "display_name": "Short Name",
     "is_private": false,
     "ranks": [
         {
-            "name": "Agent",
+            "name": "Rank Name",
             "order": 1,
             "required_points": {
                 "current": 0,
                 "total": 0
             },
             "appointment_only": false
-        },
-        {
-            "name": "Senior Agent",
-            "order": {
-                "$numberLong": "2"
-            },
-            "required_points": {
-                "current": {
-                    "$numberLong": "6"
-                },
-                "total": {
-                    "$numberLong": "0"
-                }
-            },
-            "appointment_only": false
-        },
-        {
-            "name": "Watchman",
-            "order": 3,
-            "required_points": {
-                "current": 5,
-                "total": 5
-            },
-            "appointment_only": false
-        },
-        {
-            "name": "Officer",
-            "order": 4,
-            "required_points": {
-                "current": 10,
-                "total": 15
-            },
-            "appointment_only": false
-        },
-        {
-            "name": "Interrogator",
-            "order": 5,
-            "required_points": {
-                "current": 20,
-                "total": 35
-            },
-            "appointment_only": false
-        },
-        {
-            "name": "Senior Inspector",
-            "order": 6,
-            "required_points": {
-                "current": 30,
-                "total": 65
-            },
-            "appointment_only": false
-        },
-        {
-            "name": "Chief Inspector",
-            "order": 7,
-            "required_points": {
-                "current": 40,
-                "total": 105
-            },
-            "appointment_only": false
-        },
-        {
-            "name": "Enforcer",
-            "order": 8,
-            "required_points": {
-                "current": 55,
-                "total": 160
-            },
-            "appointment_only": false
-        },
-        {
-            "name": "Superintendent",
-            "order": 9,
-            "appointment_only": true,
-            "required_points": {
-                "current": 0,
-                "total": 0
-            }
         }
     ],
     "promo_request_channel": {
-        "$numberLong": "1443309223835471975"
+        "$numberLong": "12"
     },
     "points_request_channel": {
-        "$numberLong": "1437634492004307026"
+        "$numberLong": "12"
+    },
+    "request_channel": {
+        "$numberLong": "12"
     },
     "first_rank_id": {
-        "$numberLong": "1421535104018284604"
+        "$numberLong": "12"
     },
     "role_id": {
-        "$numberLong": "1413193888843300996"
+        "$numberLong": "12"
     }
 }

@@ -139,7 +139,7 @@ async def tts_to_file(user: discord.Member, last_speaker, last_message_time, tex
     else:
         text = f"{display_name} said {text}"
 
-    voice = "en-AU-WilliamMultilingualNeural"
+    voice = "en-CA-LiamNeural"
 
     communicate = edge_tts.Communicate(text, voice)
     await communicate.save(filename)

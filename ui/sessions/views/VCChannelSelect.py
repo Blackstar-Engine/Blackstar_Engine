@@ -42,7 +42,7 @@ class VCSelect(ui.ChannelSelect):
         users = set()
 
         for reaction in message.reactions:
-            if str(reaction.emoji) == "🟩":
+            if str(reaction.emoji) == "🟩" or str(reaction.emoji) == "🟨":
                 async for user in reaction.users():
                     if not user.bot:
                         users.add(user.mention)

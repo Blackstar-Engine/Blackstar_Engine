@@ -38,7 +38,10 @@ class General(commands.Cog):
         
         await log_action(ctx=ctx, log_type="mod_command")
 
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except discord.NotFound:
+            pass
         
         custom_embed = discord.Embed(title="The Blackstar Corporation", description=f"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n{text}", color=discord.Color.light_grey())
         custom_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
@@ -53,8 +56,12 @@ class General(commands.Cog):
             return
         
         await log_action(ctx=ctx, log_type="mod_command")
-
-        await ctx.message.delete()
+        
+        try:
+            await ctx.message.delete()
+        except discord.NotFound:
+            pass
+        
         await ctx.send(text)
 
 

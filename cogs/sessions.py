@@ -15,8 +15,10 @@ class Sessions(commands.Cog):
         if not result:
             return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
             
-        if ctx.message:
+        try:
             await ctx.message.delete()
+        except discord.NotFound:
+            pass
 
         view = VCChannelSelectView(game_link, ctx.author.id)
         await ctx.send(view=view, ephemeral=True)

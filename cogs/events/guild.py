@@ -43,7 +43,7 @@ class Guild(commands.Cog):
                 "VC: YES/NO\n"
                 "Time zone:\n"
                 "Reason:\n"
-                "Invited from:\n ```",
+                "Invited from: ```",
             inline=False
         )
 
