@@ -73,6 +73,17 @@ if constants.ENVIRONMENT == "PRODUCTION":
     raid_role_id = 1457222250817392661
     session_role_id = 1456018515050893425
     external_role_id = 1481419195903381716
+
+    application_channels = {
+        "Internal Security Department":1434725921537134602,
+        "Intelligence Agency":1425652577046888570,
+        "Rapid Response Team":1426997569933938778,
+        "Omega-1":1441490947627290734,
+        "Alpha-1":1427671200162779197,
+        "Resh-1":1428164900823371926,
+        "Moderation Team":1456858048537559272
+    }
+
 else:
     annoucement_role_id = 1450297860846387312
     dpr_display_role_id = 1450297861836247050
@@ -84,6 +95,16 @@ else:
     raid_role_id = 1470978604883116245
     session_role_id = 1470978602324590789
     external_role_id = 1481485568784470127
+
+    application_channels = {
+        "Intelligence Agency":1450297920896237623,
+        "Moderation Team":1486904854965387334,
+        "Rapid Response Team":1450297912188993690,
+        "Omega-1":1450297923991769148,
+        "Alpha-1":1450297927976095838,
+        "Internal Security Department":1450297930060791977,
+        "Resh-1":1450297939510689986
+    }
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console
