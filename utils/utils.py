@@ -313,8 +313,3 @@ async def log_action(ctx: commands.Context, log_type: str, **kwargs):
         await channel.send(embed=log_embed)
     except Exception:
         pass
-
-def get_channel(department):
-    if constants.ENVIRONMENT == "PRODUCTION":
-        if department == "IA" or "Intelligence Agecy":
-            return 
