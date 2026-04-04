@@ -34,7 +34,7 @@ class ApplicationOpen(View):
                 await channel.send(embed=embed)
                 await interaction.response.send_message("Applications have been opened!", ephemeral=True)
             except KeyError:
-                discord.Embed(title="The Blackstar Corporation", description=f"I have failed to locate this department's application channel.")
+                discord.Embed(title="The Blackstar Corporation", description="I have failed to locate this department's application channel.")
 
         dropdown.callback = dropdown_callback
         self.add_item(dropdown)
@@ -71,7 +71,7 @@ class ApplicationClose(View):
                 await channel.send(embed=embed)
                 await interaction.response.send_message("Applications have been closed!", ephemeral=True)
             except KeyError:
-                discord.Embed(title="The Blackstar Corporation", description=f"I have failed to locate this department's application channel.")
+                discord.Embed(title="The Blackstar Corporation", description="I have failed to locate this department's application channel.")
 
         dropdown.callback = dropdown_callback
         self.add_item(dropdown)

@@ -38,15 +38,18 @@ class VCSelect(ui.ChannelSelect):
             container.add_item(ui.TextDisplay("Vote message was deleted."))
             view.add_item(container)
             return await interaction.response.edit_message(view=view)
-
+        
         users = set()
 
+        valid_emojis = {"\U0001F7E9", "\U0001F7E8"}  # green + yellow
+
         for reaction in message.reactions:
-            if str(reaction.emoji) == "🟩" or str(reaction.emoji) == "🟨":
+            emoji = str(reaction.emoji)
+
+            if emoji in valid_emojis:
                 async for user in reaction.users():
                     if not user.bot:
                         users.add(user.mention)
-                break
 
         if not users:
             container.add_item(ui.TextDisplay("No voters found."))
