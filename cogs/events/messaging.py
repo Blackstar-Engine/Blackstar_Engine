@@ -114,9 +114,9 @@ class Messaging(commands.Cog):
 
             valid_channels = [results["sessions_channel_id"], results["event_channel_id"], results["mission_channel_id"], results["training_channel_id"]]
             if message.channel.id in valid_channels and MESSAGE_CODE_RE.search(message.content):
-                await message.add_reaction("🟩")
-                await message.add_reaction("🟨")
-                await message.add_reaction("🟥")
+                await message.add_reaction("\U0001F7E9") # Green Square
+                await message.add_reaction("\U0001F7E8") # Yellow Square
+                await message.add_reaction("\U0001F7E5") # Red Square
 
                 await active_sessions.update_one(
                 {"guild_id": message.guild.id},
