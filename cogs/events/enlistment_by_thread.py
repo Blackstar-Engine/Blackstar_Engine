@@ -70,11 +70,16 @@ class EnlistmentByThread(commands.Cog):
         units_to_remove = []
 
         for unit in mtf_subunits:
-            subunit_name = f"MTF:{unit.strip()}"
+            unit = unit.strip().upper()
+            subunit_name = f"MTF:{unit}"
             department_doc: dict = await departments.find_one({"display_name": subunit_name, "is_private": False})
 
             if not department_doc:
                 embed = discord.Embed(title="Department Error", description=f"`{subunit_name}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
+                await thread.send(embed=embed)
+                units_to_remove.append(unit)
+            elif unit in ('A-1'):
+                embed = discord.Embed(title="Application Only Department", description=f"`{subunit_name}` can only be joined by completing an application. I am **removing** `{subunit_name}`!", color=discord.Color.yellow())
                 await thread.send(embed=embed)
                 units_to_remove.append(unit)
             else:
@@ -82,7 +87,9 @@ class EnlistmentByThread(commands.Cog):
                 unit_doc = {subunit_name: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0}}
                 units.update(unit_doc)
 
-        return [u for u in mtf_subunits if u not in units_to_remove]
+        full_list = [unit for unit in mtf_subunits if unit not in units_to_remove]
+
+        return full_list
 
     async def _handle_regular_department(self, dept: str, thread: discord.Thread, units: dict) -> bool:
         department_doc: dict = await departments.find_one({"display_name": dept, "is_private": False})
@@ -104,7 +111,7 @@ class EnlistmentByThread(commands.Cog):
         depts_to_remove = []
 
         for dept in departments_list:
-            dept = dept.upper()
+            dept = dept.strip().upper()
             if dept in ["RRT", "ISD", "IA", "CI", "SCD"]:
                 embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
                 await thread.send(embed=embed)
@@ -118,6 +125,9 @@ class EnlistmentByThread(commands.Cog):
                     ))
                     continue
                 mtf_subunits = await self._handle_mtf_subunits(subunit, thread, units)
+
+                if mtf_subunits == []:
+                    depts_to_remove.append(dept)
             else:
                 if not await self._handle_regular_department(dept, thread, units):
                     depts_to_remove.append(dept)
@@ -224,7 +234,7 @@ class EnlistmentByThread(commands.Cog):
                                 )
         await thread.send(embed=created_embed)
 
-        await log_action(ctx=thread, log_type="department", user_id=member.id, department=', '.join(departments_list) or 'None')
+        # await log_action(ctx=thread, log_type="department", user_id=member.id, department=', '.join(departments_list) or 'None')
 
         dm_embed = profile_creation_embed()
         
