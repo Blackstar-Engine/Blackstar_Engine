@@ -59,7 +59,7 @@ class EditProfileModal(discord.ui.Modal):
             embed = discord.Embed(title="Error", description="Please make sure the status is one of below:\n\n`Active`\n`Inactive`\n`LOA`\n`ROA`\n`retired`", color=discord.Color.light_grey())
             return await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        await profiles.update_one({'user_id': interaction.user.id, 'guild_id': interaction.guild.id}, {'$set': {'roblox_name': r_name, 'timezone': timezone, 'codename': codename, 'status': status.title()}})
+        await profiles.update_one({'user_id': self.profile.get("user_id", 0), 'guild_id': interaction.guild.id}, {'$set': {'roblox_name': r_name, 'timezone': timezone, 'codename': codename, 'status': status.title()}})
 
         edit_embed = discord.Embed(
                                 title="Profile Edited!",
