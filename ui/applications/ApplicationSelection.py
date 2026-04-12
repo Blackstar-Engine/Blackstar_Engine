@@ -28,6 +28,7 @@ class ApplicationOpen(View):
 
                 overwrite = channel.overwrites_for(interaction.guild.default_role)
                 overwrite.view_channel = True
+                overwrite.send_messages = False
                 await channel.set_permissions(interaction.guild.default_role, overwrite=overwrite)   
                 embed = discord.Embed(title="The Blackstar Corporation", description=f"`{dropdown.values[0]}` applications have been temporarily opened.", color=discord.Color.light_gray())
                 embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
@@ -65,6 +66,7 @@ class ApplicationClose(View):
 
                 overwrite = channel.overwrites_for(interaction.guild.default_role)
                 overwrite.view_channel = False
+                overwrite.send_messages = False
                 await channel.set_permissions(interaction.guild.default_role, overwrite=overwrite)   
                 embed = discord.Embed(title="The Blackstar Corporation", description=f"`{dropdown.values[0]}` applications have been temporarily closed.", color=discord.Color.light_gray())
                 embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
