@@ -220,8 +220,8 @@ class ManageProfileButtons(ui.LayoutView):
         private_unit = ", ".join(profile.get('private_unit', []))
 
         if (
-            any(role.id == 1428178727824658502 for role in author.roles)
-            and not any(role.id in {1422416268585341049, 1413208971304636597} for role in author.roles)
+            any(role.id in (1428178727824658502, 1450297796174286900) for role in author.roles)
+            and not any(role.id in (1422416268585341049, 1413208971304636597, 1450297609515307134, 1450297617073442816) for role in author.roles)
             and not is_owner
         ):
            container = ui.Container(
