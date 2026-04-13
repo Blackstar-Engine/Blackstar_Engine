@@ -1,15 +1,47 @@
 import discord
 from discord.ext import commands
 from discord.ui import Button
-from discord import ui
+from discord.ui import View, Button
 from utils.constants import profiles
 from ui.paginator import PaginatorView
 from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
-from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
 from utils.utils import has_approval_perms, fetch_unit_options, fetch_id
 
+class ConfirmRemovalView(View):
+    def __init__(self, bot, user, record, index):
+        super().__init__()
+        self.bot = bot
+        self.user = user
+        self.record = record
+        self.index = index
+        self.status = None
+
+        # Confirm button
+        confirm_button = Button(label="Confirm", style=discord.ButtonStyle.green)
+        confirm_button.callback = self.confirm
+
+        # Cancel button
+        cancel_button = Button(label="Cancel", style=discord.ButtonStyle.red)
+        cancel_button.callback = self.cancel
+
+        self.add_item(confirm_button)
+        self.add_item(cancel_button)
+
+    async def confirm(self, interaction: discord.Interaction):
+        self.status = 1
+
+        await interaction.response.defer(ephemeral=True)
+
+        self.stop()
+
+    async def cancel(self, interaction: discord.Interaction):
+        self.status = 0
+
+        await interaction.response.defer(ephemeral=True)
+
+        self.stop()
 class ManageCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -31,7 +63,7 @@ class ManageCommands(commands.Cog):
             color=discord.Color.red()
         )
         
-        confirm_view = ConfirmRemovalView(self.bot, current_record, self.auto_reply_view.current_index)
+        confirm_view = ConfirmRemovalView(self.bot, interaction.user, current_record, self.auto_reply_view.current_index)
         await interaction.response.send_message(embed=embed, view=confirm_view, ephemeral=True)
 
         #waiting for the user to interaction with the modal
@@ -138,17 +170,18 @@ class ManageCommands(commands.Cog):
         await ctx.send(embed=embed, view=self.auto_reply_view, ephemeral=True)
 
     @manage.command(name="profile", description="Manage a users profile")
-    async def manage_profile(self, ctx: commands.Context, user: discord.User):
+    async def manage_profile(self, ctx: commands.Context, user: discord.User = None):
+        if not user:
+            user = ctx.author
 
         results = await fetch_id(ctx.guild.id, ["drm_id"])
         drm_id = results["drm_id"]
 
         # User must be in foundation or site command to run this command
         is_bot_owner = await self.bot.is_owner(ctx.author)
-        if not is_bot_owner:
-            if not await has_approval_perms(ctx.author, 4):
-                if not any(role.id == drm_id for role in ctx.author.roles):
-                    return await ctx.send("You need to be apart of either foundation, site, or high command, or D.R.M to manage another user", ephemeral=True)
+        if not is_bot_owner and not await has_approval_perms(ctx.author, 4):
+            if not any(role.id == drm_id for role in ctx.author.roles):
+                return await ctx.send("You need to be apart of either foundation, site, or high command, or D.R.M to manage another user", ephemeral=True)
 
         # check to see if they have a profile
         profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})

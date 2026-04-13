@@ -207,7 +207,7 @@ class EnlistmentByThread(commands.Cog):
         profile = {
                 'user_id': member.id,
                 'guild_id': guild.id,
-                'codename': codename,
+                'codename': codename[0:15],
                 'roblox_name': roblox_user,
                 'unit': units,
                 'private_unit': [],
