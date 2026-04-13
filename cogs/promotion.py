@@ -5,7 +5,7 @@ from utils.utils import fetch_profile, fetch_department, generate_timestamp
 import uuid
 from utils.constants import promotion_requests
 
-async def send_promotion_request(bot, channel, profile, dept_name, proof: discord.Attachment, new_rank):
+async def send_promotion_request(bot, channel: discord.TextChannel, profile, dept_name, proof: discord.Attachment, new_rank, is_appointment=False):
     
     request_id = str(uuid.uuid4())
 
@@ -19,7 +19,9 @@ async def send_promotion_request(bot, channel, profile, dept_name, proof: discor
         "proof": proof.url,
         "current_points": profile["unit"][dept_name]["current_points"],
         "total_points": profile["unit"][dept_name]["total_points"],
-        "join_timestamp": generate_timestamp(profile["join_date"])
+        "join_timestamp": generate_timestamp(profile["join_date"]),
+        "is_appointment": is_appointment,
+        "moderator_id": None,
     }
 
     view = PromotionRequestView(bot, request_id, snapshot)
@@ -32,7 +34,7 @@ async def send_promotion_request(bot, channel, profile, dept_name, proof: discor
         "snapshot": snapshot,
         "message_id": msg.id,
         "channel_id": channel.id,
-        "is_active": True
+        "is_active": True,
     })
 
 class Promotion(commands.Cog):
@@ -95,9 +97,7 @@ class Promotion(commands.Cog):
             embed = discord.Embed(title="", description="You are already at the highest rank.", color=discord.Color.dark_embed())
             return await ctx.send(embed=embed, ephemeral=True)
 
-        if next_rank.get("appointment_only"):
-            embed = discord.Embed(title="", description=f"{next_rank['name']} is an appointment-only rank.", color=discord.Color.dark_embed())
-            return await ctx.send(embed=embed, ephemeral=True)
+        is_appointment = next_rank.get("appointment_only", False)
 
         # Send the request to the mods
         channel = ctx.guild.get_channel(department_doc.get("promo_request_channel"))
@@ -105,7 +105,7 @@ class Promotion(commands.Cog):
             embed = discord.Embed(title="Error!", description="Promotion request channel not found. Please contact DSM!", color=discord.Color.red())
             return await ctx.send(embed=embed, ephemeral=True)
 
-        await send_promotion_request(self.bot, channel, profile, dept_name, proof, next_rank['name'])
+        await send_promotion_request(self.bot, channel, profile, dept_name, proof, next_rank['name'], is_appointment)
 
         await ctx.send("Promotion request submitted.", ephemeral=True, delete_after=10)
 

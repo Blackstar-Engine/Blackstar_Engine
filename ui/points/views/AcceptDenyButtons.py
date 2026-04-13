@@ -4,6 +4,7 @@ from utils.constants import (
     profiles, point_requests, BlackstarConstants
 )
 from utils.utils import generate_timestamp, has_approval_perms, log_action
+from ui.ReasonModal import ReasonModal
 
 constants = BlackstarConstants()
 
@@ -50,7 +51,11 @@ class PointsDenyButton(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await handle_points_decision(interaction, approved=False)
+        modal = ReasonModal()
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        await handle_points_decision(interaction, approved=False, reason=modal.data)
 
 
 # ---------- Persistent LayoutView ----------
@@ -92,7 +97,7 @@ class PointsRequestView(ui.LayoutView):
 
 # ---------- Decision Handler ----------
 
-async def handle_points_decision(interaction: discord.Interaction, approved: bool):
+async def handle_points_decision(interaction: discord.Interaction, approved: bool, reason: str = None):
     request_id = interaction.data["custom_id"].split(":")[1]
 
     req = await point_requests.find_one({
@@ -110,11 +115,11 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
     guild = interaction.guild
 
     if not await has_points_approval_perms(interaction.user, snapshot):
-            return await interaction.response.send_message(
-                "❌ You do not have permission to act on this point request.",
-                ephemeral=True
-            )
-
+        try:
+            return await interaction.response.send_message("❌ You do not have permission to act on this point request.", ephemeral=True) 
+        except discord.InteractionResponded:
+            return await interaction.followup.send("❌ You do not have permission to act on this point request.", ephemeral=True) 
+    
     if approved:
         await log_action(ctx=interaction, log_type="point_addition", user_id=snapshot["user_id"], points=snapshot["points"])
 
@@ -169,13 +174,27 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
         accent_color=color
     )
 
+    if reason:
+        container.add_item(ui.TextDisplay(f"> **Reason: ** {reason}"))
+
     result_view.add_item(container)
-    await interaction.response.edit_message(view=result_view)
+    try:
+        await interaction.response.edit_message(view=result_view)
+    except discord.InteractionResponded:
+        await interaction.edit_original_response(view=result_view)
 
     member = guild.get_member(snapshot["user_id"])
     if member:
         status = "ACCEPTED" if approved else "DENIED"
-        await member.send(
-            f"Your points request for **{snapshot['points']}** "
-            f"in **{guild.name}** has been **{status}**."
+        embed = discord.Embed(
+            title=f"Points Request {status}",
+            description=(
+                f"> **Requested Points:** {snapshot['points']}\n"
+                f"> **Moderator:** {interaction.user.mention}\n"
+                f"> **Reason:** {reason if reason else 'No reason provided.'}\n"
+                f"> **Server: **{guild.name}"
+            ),
+            color=color
         )
+
+        await member.send(embed=embed)
