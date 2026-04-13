@@ -1,0 +1,25 @@
+services:
+  blackstar_qa_bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blackstar_qa_bot_container
+
+    working_dir: /app
+
+    command: uv run main.py
+
+    env_file:
+      - .env
+
+    volumes:
+      # Use absolute path or check where your credentials actually are
+      - /home/credentials.json:/app/credentials.json:ro # change me
+      # find ~ -name "credentials.json" 2>/dev/null
+      # OR if it's in the current directory:
+      # - ./credentials.json:/app/credentials.json:ro
+
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+
+    restart: unless-stopped
