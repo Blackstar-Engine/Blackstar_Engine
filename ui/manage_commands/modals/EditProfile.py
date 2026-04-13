@@ -10,8 +10,8 @@ class EditProfileModal(discord.ui.Modal):
 
         self.codename = discord.ui.TextInput(
             label="Codename",
-            placeholder=str(profile.get('codename', "None")),
-            default=str(profile.get('codename', "None")),
+            placeholder=str(profile.get('codename', "None"))[0:15],
+            default=str(profile.get('codename', "None"))[0:15],
             required=True,
             max_length=25,
             style=discord.TextStyle.short

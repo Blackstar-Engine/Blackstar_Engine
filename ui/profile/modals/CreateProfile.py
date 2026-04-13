@@ -65,7 +65,7 @@ class CreateProfileModal(discord.ui.Modal):
         profile = {
                 'user_id': user,
                 'guild_id': guild,
-                'codename': codename,
+                'codename': codename[0:15],
                 'roblox_name': r_name,
                 'unit': {},
                 'private_unit': [],
