@@ -8,7 +8,7 @@ from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
-from utils.utils import has_approval_perms, fetch_unit_options
+from utils.utils import has_approval_perms, fetch_unit_options, fetch_id
 
 class ManageCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -139,10 +139,16 @@ class ManageCommands(commands.Cog):
 
     @manage.command(name="profile", description="Manage a users profile")
     async def manage_profile(self, ctx: commands.Context, user: discord.User):
-        # User must be in foundation or site command to run this command\
-        if not await self.bot.is_owner(ctx.author):
+
+        results = await fetch_id(ctx.guild.id, ["drm_id"])
+        drm_id = results["drm_id"]
+
+        # User must be in foundation or site command to run this command
+        is_bot_owner = await self.bot.is_owner(ctx.author)
+        if not is_bot_owner:
             if not await has_approval_perms(ctx.author, 4):
-                return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
+                if not any(role.id == drm_id for role in ctx.author.roles):
+                    return await ctx.send("You need to be apart of either foundation, site, or high command, or D.R.M to manage another user", ephemeral=True)
 
         # check to see if they have a profile
         profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
@@ -153,7 +159,7 @@ class ManageCommands(commands.Cog):
             # Fetch active departments
             options = fetch_unit_options(profile)
 
-            view = ManageProfileButtons(self.bot, ctx.author, profile, options)
+            view = ManageProfileButtons(self.bot, ctx, ctx.author, profile, options, is_owner=is_bot_owner)
 
             # Send to the user
             await ctx.send(view=view, ephemeral=True)

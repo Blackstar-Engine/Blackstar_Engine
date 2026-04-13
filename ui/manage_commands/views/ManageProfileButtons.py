@@ -5,8 +5,8 @@ from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ProfileManageUnits import ProfileManageUnitsView
 from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
-from utils.utils import interaction_check, fetch_unit_options, has_approval_perms
-from discord import ui
+from utils.utils import interaction_check, fetch_unit_options, has_approval_perms, fetch_id
+from discord import ui, Interaction
 import asyncio
 
 class SelectAction(ui.ActionRow):
@@ -33,8 +33,8 @@ class SelectAction(ui.ActionRow):
         self.role_select.values.clear()
 
         options = fetch_unit_options(self.profile)
-
-        view = ManageProfileButtons(self.bot, self.user, self.profile, options)
+        is_owner = await self.bot.is_owner(interaction.user)
+        view = ManageProfileButtons(self.bot, interaction, interaction.user, self.profile, options, is_owner=is_owner)
 
         await interaction.response.edit_message(view=view)
 
@@ -54,7 +54,7 @@ class SelectAction(ui.ActionRow):
         )
 
         if (
-            await self.bot.is_owner(interaction.user)
+            is_owner
             or await has_approval_perms(self.user, 6)
         ):
             container.add_item(ui.Separator())
@@ -98,7 +98,15 @@ class ButtonsAction1(ui.ActionRow):
         self.profile["status"] = status.title()
 
         options = fetch_unit_options(self.profile)
-        view = ManageProfileButtons(self.bot, self.user, self.profile, options)
+        is_owner = await self.bot.is_owner(interaction.user)
+        view = ManageProfileButtons(
+            self.bot,
+            interaction,
+            self.user,
+            self.profile,
+            options,
+            is_owner=is_owner
+        )
 
         await interaction.edit_original_response(view=view)
     
@@ -145,7 +153,15 @@ class ButtonsAction1(ui.ActionRow):
         self.profile = await profiles.find_one({"_id": self.profile["_id"]})
 
         options = fetch_unit_options(self.profile)
-        manage_profile_view = ManageProfileButtons(self.bot, self.user, self.profile, options)
+        is_owner = await self.bot.is_owner(interaction.user)
+        manage_profile_view = ManageProfileButtons(
+            self.bot,
+            interaction,
+            self.user,
+            self.profile,
+            options,
+            is_owner=is_owner
+        )
 
         await interaction.edit_original_response(view=manage_profile_view)
 
@@ -193,23 +209,44 @@ class ButtonsAction2(ui.ActionRow):
             view.stop()
 
 class ManageProfileButtons(ui.LayoutView):
-    def __init__(self, bot, user, profile, options):
+    def __init__(self, bot, ctx, user, profile, options, is_owner=False):
         super().__init__(timeout=300)
+
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+        else:
+            author = ctx.author
 
         private_unit = ", ".join(profile.get('private_unit', []))
 
-        container = ui.Container(
-            ui.TextDisplay('## Manage Profile'),
-            SelectAction(bot, user, options, profile),
-            ui.Separator(),
-            ui.TextDisplay('### Profile Information'),
-            ui.TextDisplay(f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}"),
-            ui.Separator(),
-            ButtonsAction1(bot, user, profile),
-            ui.Separator(),
-            ButtonsAction2(bot, user, profile),
-            accent_color=discord.Color.light_grey()
-        )
+        if (
+            any(role.id == 1428178727824658502 for role in author.roles)
+            and not any(role.id in {1422416268585341049, 1413208971304636597} for role in author.roles)
+            and not is_owner
+        ):
+           container = ui.Container(
+                ui.TextDisplay('## Manage Profile'),
+                ui.Separator(),
+                ui.TextDisplay('### Profile Information'),
+                ui.TextDisplay(f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}"),
+                ui.Separator(),
+                ButtonsAction1(bot, user, profile),
+                accent_color=discord.Color.light_grey()
+            )
+        else:
+            container = ui.Container(
+                ui.TextDisplay('## Manage Profile'),
+                SelectAction(bot, user, options, profile),
+                ui.Separator(),
+                ui.TextDisplay('### Profile Information'),
+                ui.TextDisplay(f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}"),
+                ui.Separator(),
+                ButtonsAction1(bot, user, profile),
+                ui.Separator(),
+                ButtonsAction2(bot, user, profile),
+                accent_color=discord.Color.light_grey()
+            )
+
 
         self.add_item(container)
 
