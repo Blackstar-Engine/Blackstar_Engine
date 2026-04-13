@@ -20,6 +20,7 @@ class ReturnButton(ui.Button):
             # Fetch active departments
             options = fetch_unit_options(profile)
 
-            view = ManageProfileButtons(self.bot, self.user, profile, options)
+            is_owner = await self.bot.is_owner(interaction.user)
+            view = ManageProfileButtons(self.bot, interaction, self.user, profile, options, is_owner=is_owner)
 
             await interaction.response.edit_message(view=view)
