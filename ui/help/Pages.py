@@ -20,7 +20,8 @@ commands = [
   "> `!roleuser @User department` - Give user the overall and first rank for that department.\n",
   "> `!dm_punish @User text` - Notifies a user that disciplinary action has been taken against them **(Junior Mod+ and Central Command+)**\n",
   "> `!say <text>` - Makes the bot say a message of your choosing **(Wolf only)**\n",
-  "> `!send_votes game_link` - Pings everyone who reacted with a checkmark to a training **(Central Command+)**\n"
+  "> `!send_votes game_link` - Pings everyone who reacted with a checkmark to a training **(Central Command+)**\n",
+  "> `!move #channel` - Move the bot to a different VC **(Central Command+)**\n",
 ]
 
 class Pages(View):
