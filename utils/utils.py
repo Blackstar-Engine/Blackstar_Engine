@@ -246,8 +246,6 @@ async def role_user(ctx: commands.Context, department: str):
     department = await fetch_department(ctx, unit)
 
     if not department:
-        embed = discord.Embed(title="No Department Found", description=f"I couldd not find a department with the name `{unit}`", color=discord.Color.red())
-        await ctx.send(embed=embed, ephemeral=True)
         return False
 
     overall_role_id = department.get('role_id')

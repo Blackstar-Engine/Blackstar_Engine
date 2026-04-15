@@ -20,6 +20,9 @@ class PointsRemovalModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
         points = self.points.value
+        if not points.isdigit() or int(points) <= 0:
+            await interaction.followup.send("Please enter a valid positive integer for points.", ephemeral=True)
+            return
 
         await log_action(ctx=interaction, log_type="point_deduction", user_id=self.profile["user_id"], points=points)
 

@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
+from ui.tts.views.RequestButton import RequestButtonView
 
 class tts_system_commands(commands.Cog):
     def __init__(self, bot):
@@ -19,8 +20,14 @@ class tts_system_commands(commands.Cog):
         if ctx.voice_client is None:
             await channel.connect(self_deaf=True)
         else:
-            await ctx.guild.voice_client.disconnect()
-            await channel.connect(self_deaf=True)
+
+            if channel == ctx.voice_client.channel:
+                embed = discord.Embed(title="Hmm....", description=f"I'm already in {channel.mention}!", color=discord.Color.light_grey())
+                return await ctx.send(embed=embed, ephemeral=True)
+
+            view = RequestButtonView(self.bot, ctx.voice_client, channel)
+            return await ctx.send(view=view, ephemeral=True)
+            
 
         embed = discord.Embed(title="Connected!", description=f"Connected to {channel.mention}!", color=discord.Color.green())
         embed.set_footer(text=f"Executed by {ctx.author.name}")
