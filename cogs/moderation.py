@@ -55,7 +55,10 @@ class Moderation(commands.Cog):
             
             prisoner_role = ctx.guild.get_role(prisoner_id)
             await user.add_roles(prisoner_role)
-            await user.edit(nick=f"[JAILED] {codename}")
+            try:
+                await user.edit(nick=f"[JAILED] {codename}")
+            except:
+                pass
             embed = discord.Embed(description=f"{user.mention} has been **jailed**. | `{user.id}`", color=discord.Color.yellow())
             await ctx.send(embed=embed, ephemeral=True)
         except:
@@ -85,9 +88,12 @@ class Moderation(commands.Cog):
             try:
                 await user.add_roles(role)
             except:
-                print(roleid)
                 pass
-        await user.edit(nick=nickname)
+        
+        try:
+            await user.edit(nick=nickname)
+        except:
+            pass
 
         prisoner_role = ctx.guild.get_role(prisoner_id)
         await user.remove_roles(prisoner_role)
