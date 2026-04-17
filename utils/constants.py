@@ -61,6 +61,7 @@ point_requests = db.point_requests
 departments = db.departments
 ids = db.ids
 active_sessions = db.active_sessions
+jail_snapshots = db.jail_snapshots
 
 if constants.ENVIRONMENT == "PRODUCTION":
     annoucement_role_id = 1413199178934259844
