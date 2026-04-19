@@ -121,7 +121,7 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
             return await interaction.followup.send("❌ You do not have permission to act on this point request.", ephemeral=True) 
     
     if approved:
-        await log_action(ctx=interaction, log_type="point_addition", user_id=snapshot["user_id"], points=snapshot["points"])
+        await log_action(ctx=interaction, log_type="point_addition", user_id=snapshot["user_id"], points=snapshot["points"], command_name="point reqeust")
 
         profile = await profiles.find_one({
             "guild_id": guild.id,

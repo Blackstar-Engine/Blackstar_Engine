@@ -24,7 +24,7 @@ class PointsRemovalModal(discord.ui.Modal):
             await interaction.followup.send("Please enter a valid positive integer for points.", ephemeral=True)
             return
 
-        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.profile["user_id"], points=points)
+        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.profile["user_id"], points=points, command_name="promotion request/manage profile")
 
         self.data = points
         

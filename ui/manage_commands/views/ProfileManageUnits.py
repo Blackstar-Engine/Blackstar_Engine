@@ -125,7 +125,7 @@ class SubmitButtonRow(ui.ActionRow):
         # ───── RESPONSE EMBED ─────
         active_units = [unit_name for unit_name, unit_data in units.items() if unit_data.get("is_active")]
 
-        await log_action(ctx=interaction, log_type="department", user_id=self.user.id, department=', '.join(active_units) or 'None')
+        await log_action(ctx=interaction, log_type="department", user_id=self.user.id, department=', '.join(active_units) or 'None', command_name="manage profile")
 
         view = ui.LayoutView()
         container = ui.Container(

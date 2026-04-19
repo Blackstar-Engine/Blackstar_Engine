@@ -130,7 +130,7 @@ async def handle_enlistment_decision(interaction: discord.Interaction, approved:
 
     result_view.add_item(container)
 
-    await log_action(ctx=interaction, log_type="department", user_id=req['snapshot']['user_id'], department=req['snapshot']['department_name'])
+    await log_action(ctx=interaction, log_type="department", user_id=req['snapshot']['user_id'], department=req['snapshot']['department_name'], command_name="enlistment request")
 
     if target_user:
         status = "ACCEPTED" if approved else "DENIED"
