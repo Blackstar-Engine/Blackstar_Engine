@@ -39,9 +39,9 @@ class VCSelect(ui.ChannelSelect):
             view.add_item(container)
             return await interaction.response.edit_message(view=view)
         
-        users = set()
+        users = {"\U0001F7E9": [], "\U0001F7E8": []}  # green + yellow
 
-        valid_emojis = {"\U0001F7E9", "\U0001F7E8"}  # green + yellow
+        valid_emojis = ("\U0001F7E9", "\U0001F7E8")  # green + yellow
 
         for reaction in message.reactions:
             emoji = str(reaction.emoji)
@@ -49,19 +49,22 @@ class VCSelect(ui.ChannelSelect):
             if emoji in valid_emojis:
                 async for user in reaction.users():
                     if not user.bot:
-                        users.add(user.mention)
+                        users[emoji] += [user.mention]
 
-        if not users:
+        if not users or users == {}:
             container.add_item(ui.TextDisplay("No voters found."))
             view.add_item(container)
             return await interaction.response.edit_message(view=view)
 
-        await message.reply(
-            f"**We are starting, please join {vc.mention}**\n"
-            f"{self.game_link}\n\n"
-            f"{', '.join(users)}"
 
-        )
+        send_message = f"**We are starting, please join {vc.mention}**\n{self.game_link}\n\n"
+        
+        for key, values in users.items():
+            send_message += f"{key}: "
+            send_message += " ".join(str(v) for v in values)
+            send_message += "\n"
+
+        await message.reply(send_message)
 
         try:
             await message.clear_reactions()
