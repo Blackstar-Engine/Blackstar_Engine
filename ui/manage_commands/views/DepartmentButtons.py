@@ -57,7 +57,7 @@ class DepartmentButtons(ui.ActionRow):
 
         points = modal.data
 
-        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.user.id, points=points)
+        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.user.id, points=points, command_name="manage profile")
 
         await profiles.update_one({"guild_id": interaction.guild.id, "user_id": self.user.id}, {"$inc": {f"unit.{self.unit}.current_points": -float(points)}})
 

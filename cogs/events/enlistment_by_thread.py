@@ -234,8 +234,6 @@ class EnlistmentByThread(commands.Cog):
                                 )
         await thread.send(embed=created_embed)
 
-        # await log_action(ctx=thread, log_type="department", user_id=member.id, department=', '.join(departments_list) or 'None')
-
         dm_embed = profile_creation_embed()
         
         try:

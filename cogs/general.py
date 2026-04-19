@@ -21,7 +21,7 @@ class General(commands.Cog):
         if not await self._check_if_wolf(ctx):
             return
         
-        await log_action(ctx=ctx, log_type="mod_command")
+        await log_action(ctx=ctx, log_type="mod_command", command_name="execute_user")
 
         duration = timedelta(seconds=10)
         try:
@@ -36,7 +36,7 @@ class General(commands.Cog):
         if not await self._check_if_wolf(ctx):
             return
         
-        await log_action(ctx=ctx, log_type="mod_command")
+        await log_action(ctx=ctx, log_type="mod_command", command_name="embed")
 
         try:
             await ctx.message.delete()
@@ -55,7 +55,7 @@ class General(commands.Cog):
         if not await self._check_if_wolf(ctx):
             return
         
-        await log_action(ctx=ctx, log_type="mod_command")
+        await log_action(ctx=ctx, log_type="mod_command", command_name="say")
         
         try:
             await ctx.message.delete()
@@ -87,7 +87,7 @@ class General(commands.Cog):
             results["staff_manager"]
         ]
         if any(role.id in allowed_roles for role in ctx.author.roles):
-            await log_action(ctx=ctx, log_type="mod_command")
+            await log_action(ctx=ctx, log_type="mod_command", command_name="dm_punish")
             try:
                 embed = discord.Embed(title="Notice of Disciplinary Action", description=text, color=discord.Color.light_grey())
                 embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")

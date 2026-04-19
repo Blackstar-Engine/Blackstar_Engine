@@ -1,5 +1,4 @@
 import discord
-from utils.utils import log_action
 
 class ReasonModal(discord.ui.Modal):
     def __init__(self):

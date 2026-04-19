@@ -173,7 +173,7 @@ class Points(commands.Cog):
         new_total_points = gifted["gifted_points"] + points
         new_current_month = gifted["current_month"]
 
-        await log_action(ctx=ctx, log_type="point_addition", user_id=user.id, points=points)
+        await log_action(ctx=ctx, log_type="point_addition", user_id=user.id, points=points, command_name="point gift")
 
         # Update the authors profile
         await profiles.update_one(
