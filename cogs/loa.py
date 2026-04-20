@@ -103,8 +103,7 @@ class LOA(commands.Cog):
     @loa.command(description="Get a list of all the active LOA's in the server.")
     async def active(self, ctx: commands.Context):
         # Users have to be in foundation or site command to run this command
-        if not await has_approval_perms(ctx.author, 5):
-            return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+        await has_approval_perms(ctx.author, 5)
         
         # Find all LOA's, create the view, create the embed, send to user
         items = await loa.find({'guild_id': ctx.guild.id}).to_list(length=None)
@@ -120,8 +119,7 @@ class LOA(commands.Cog):
             member = ctx.author
         else:
             # If they are managing another user, they need to be in foundation or site command
-            if not await has_approval_perms(ctx.author, 5):
-                return await ctx.send("You need to be apart of either foundation or site command to manage another user", ephemeral=True)
+            await has_approval_perms(ctx.author, 5)
             
             member = user
 

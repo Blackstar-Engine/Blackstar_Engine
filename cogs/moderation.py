@@ -11,10 +11,8 @@ class Moderation(commands.Cog):
     
     @commands.hybrid_command(name="jail", description="Sends a user to jail")
     async def jail(self, ctx: commands.Context, user: discord.Member):
-        if not await has_approval_perms(ctx.author, 4):
-            embed = discord.Embed(description=f"You do not have permission to use **jail** | `{user.id}`", color=discord.Color.yellow())
-            await ctx.send(embed=embed, ephemeral=True)
-            return
+        await has_approval_perms(ctx.author, 4)
+
         if ctx.interaction:
             await ctx.interaction.response.defer(ephemeral=True)
 
@@ -67,10 +65,8 @@ class Moderation(commands.Cog):
         
     @commands.hybrid_command(name="release", description="Release a user from jail")
     async def release(self, ctx: commands.Context, user: discord.Member):
-        if not await has_approval_perms(ctx.author, 4):
-            embed = discord.Embed(description=f"You do not have permission to use **release** | `{user.id}`", color=discord.Color.yellow())
-            await ctx.send(embed=embed, ephemeral=True)
-            return
+        await has_approval_perms(ctx.author, 4)
+        
         if ctx.interaction:
             await ctx.interaction.response.defer(ephemeral=True)
 

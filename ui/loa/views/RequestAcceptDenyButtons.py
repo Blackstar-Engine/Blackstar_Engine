@@ -16,8 +16,7 @@ class RequestAcceptDenyButtons(discord.ui.View):
 
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.green)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not await has_approval_perms(interaction.user, 3):
-            return await interaction.response.send_message("You need to be foundation/site/high/central command to use this function", ephemeral=True)
+        await has_approval_perms(interaction.user, 3)
         
         self.embed.title = "Leave Of Absence Approved"
         self.embed.color = discord.Color.green()
@@ -46,8 +45,7 @@ class RequestAcceptDenyButtons(discord.ui.View):
 
     @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
     async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not await has_approval_perms(interaction.user, 3):
-            return await interaction.response.send_message("You need to be foundation/site/high/central command to use this function", ephemeral=True)
+        await has_approval_perms(interaction.user, 3)
         
         modal = RequestDenyModal(self.bot)
         await interaction.response.send_modal(modal)

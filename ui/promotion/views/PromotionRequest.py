@@ -53,11 +53,7 @@ class AppointmentVCOpen(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction.user, 6):
-            return await interaction.response.send_message(
-                "You do not have permission to manage promotions.",
-                ephemeral=True
-            )        
+        await has_approval_perms(interaction.user, 6)    
             
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]}, {"snapshot": 1})
 
@@ -99,12 +95,8 @@ class AppointmentVCClose(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction.user, 6):
-            return await interaction.response.send_message(
-                "You do not have permission to manage promotions.",
-                ephemeral=True
-            )  
-        
+        await has_approval_perms(interaction.user, 6)
+
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]})
 
         channel_id = snapshot.get("appointment_vc_id", None)
@@ -228,29 +220,9 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
     snapshot = req["snapshot"]
 
     if snapshot.get("is_appointment", False):
-        if not await has_approval_perms(interaction.user, 6):
-            try:
-                return await interaction.response.send_message(
-                    "You do not have permission to manage promotions.",
-                    ephemeral=True
-                )        
-            except discord.InteractionResponded:
-                return await interaction.followup.send(
-                    "You do not have permission to manage promotions.",
-                    ephemeral=True
-                )
+        await has_approval_perms(interaction.user, 6)
     else:
-        if not await has_approval_perms(interaction.user, 3):
-            try:
-                return await interaction.response.send_message(
-                    "You do not have permission to manage this promotion request.",
-                    ephemeral=True
-                )        
-            except discord.InteractionResponded:
-                return await interaction.followup.send(
-                    "You do not have permission to manage this promotion request.",
-                    ephemeral=True
-                )
+        await has_approval_perms(interaction.user, 3)
             
     guild = interaction.guild
     department = snapshot["department"]
