@@ -18,7 +18,7 @@ class Moderation(commands.Cog):
         results = await fetch_id(ctx.guild.id, ["prisoner_role"])
         prisoner_id = results["prisoner_role"]
 
-        profile = await fetch_profile(ctx, send_message=False)
+        profile = await profiles.find_one({"id": user.id})
         codename = profile.get("codename", None)
 
         if not codename:
