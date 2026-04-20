@@ -7,6 +7,14 @@ class Voice(commands.Cog):
     def __init__(self, bot: commands.Bot):
         super().__init__()
         self.bot = bot
+    
+    async def clear_queue(self, queue, guild_id):
+        try:
+            tts_system_commands._drain_queue(self, queue)
+            await tts_system_commands._cancel_tts_task(self, guild_id)
+            tts_system_commands._cleanup_mp3_files(self)
+        except Exception as e:
+            print(f"VC Update Error: {e}")
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before, after):
@@ -25,7 +33,6 @@ class Voice(commands.Cog):
             humans = [m for m in channel.members if not m.bot]
 
             if len(humans) == 0:
-                print("hit")
                 await asyncio.sleep(30)
 
                 current_vc = member.guild.voice_client
@@ -35,13 +42,8 @@ class Voice(commands.Cog):
                 humans_after = [m for m in current_vc.channel.members if not m.bot]
                 if len(humans_after) == 0:
                     await current_vc.disconnect()
-
-                    try:
-                        tts_system_commands._drain_queue(self, queue)
-                        await tts_system_commands._cancel_tts_task(self, guild_id)
-                        tts_system_commands._cleanup_mp3_files(self)
-                    except Exception as e:
-                        print(f"VC Update Error: {e}")
+                    await self.clear_queue(queue, guild_id)
+                    
                 else:
                     # There are now people in the same channel, so keep the bot connected
                     return

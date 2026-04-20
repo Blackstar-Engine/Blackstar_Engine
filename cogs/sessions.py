@@ -18,7 +18,7 @@ class Sessions(commands.Cog):
         except discord.NotFound:
             pass
 
-        view = VCChannelSelectView(game_link, ctx.author.id)
+        view = VCChannelSelectView(game_link, ctx.author)
         await ctx.send(view=view, ephemeral=True)
             
 
