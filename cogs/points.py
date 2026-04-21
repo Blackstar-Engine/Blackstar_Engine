@@ -114,8 +114,7 @@ class Points(commands.Cog):
         )
 
         # Check to make sure they can run this command
-        if not await has_approval_perms(ctx.author, 3):
-            return await ctx.send("This is only for Central Command+", ephemeral=True)
+        await has_approval_perms(ctx.author, 3)
 
         # Command parsing checks
         if ctx.author.id == user.id:

@@ -11,29 +11,34 @@ class tts_system_commands(commands.Cog):
 
     @commands.hybrid_command(name="move", description="Force move the bot to a different VC.")
     async def move(self, ctx: commands.Context, channel: discord.VoiceChannel):
-        if await has_approval_perms(ctx.author, 3):
-            try:
+        await has_approval_perms(ctx.author, 3)
 
-                current_vc = ctx.guild.voice_client.channel
+        if not ctx.author.voice:
+            embed = discord.Embed(title="Whoops....", description="Please make sure you are in a channel!", color=discord.Color.light_grey())
+            return await ctx.send(embed=embed, ephemeral=True)
 
-                await ctx.guild.voice_client.move_to(channel)
+        if ctx.guild.voice_client is None:
+            embed = discord.Embed(title="Whoops....", description="I need to be connected to a voice channel to move!", color=discord.Color.light_grey())
+            return await ctx.send(embed=embed, ephemeral=True)
+        
+        current_vc = ctx.guild.voice_client.channel
 
-                # notify users in the channel that the bot was originially in that it has been moved
-                embed_not = discord.Embed(
-                    title="Bot has been moved!",
-                    description=f"{ctx.author.mention} has moved the bot to {channel.mention}!",
-                    color=discord.Color.green()
-                )
+        await ctx.guild.voice_client.move_to(channel)
 
-                await current_vc.send(embed=embed_not)
+        # notify users in the channel that the bot was originially in that it has been moved
+        embed_not = discord.Embed(
+            title="Bot has been moved!",
+            description=f"{ctx.author.mention} has moved the bot to {channel.mention}!",
+            color=discord.Color.green()
+        )
 
-                # Send to the new channel the bot will be moved to
-                embed = discord.Embed(title="Moved!", description=f"Moved to {channel.mention}!", color=discord.Color.green())
-                embed.set_footer(text=f"Executed by {ctx.author.name}")
-                await ctx.send(embed=embed)
-            except Exception:
-                embed = discord.Embed(title="Whoops....", description="I need to be connected to a voice channel to move!", color=discord.Color.light_grey())
-                return await ctx.send(embed=embed, ephemeral=True)
+        await current_vc.send(embed=embed_not)
+
+        # Send to the new channel the bot will be moved to
+        embed = discord.Embed(title="Moved!", description=f"Moved to {channel.mention}!", color=discord.Color.green())
+        embed.set_footer(text=f"Executed by {ctx.author.name}")
+        await ctx.send(embed=embed)
+
     
     @commands.hybrid_command(name="join", description="Have the bot join your current VC.")
     async def join(self, ctx: commands.Context, channel: discord.VoiceChannel = None):
@@ -44,7 +49,7 @@ class tts_system_commands(commands.Cog):
         if not channel:
             channel = ctx.author.voice.channel
         
-        if ctx.voice_client is None:
+        if ctx.guild.voice_client is None:
             await channel.connect(self_deaf=True)
         else:
 

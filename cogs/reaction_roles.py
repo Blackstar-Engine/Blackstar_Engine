@@ -11,8 +11,7 @@ class ReactionRoles(commands.Cog):
         
     @commands.command(name="send-reactions", description="This will send an embed with all reaction roles for the server.")
     async def send_reaction_roles(self, ctx: commands.Context):
-        if not await has_approval_perms(ctx.author, 6):
-            return
+        await has_approval_perms(ctx.author, 6)
         
         await ctx.message.delete()
 

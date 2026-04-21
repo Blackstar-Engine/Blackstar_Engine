@@ -11,16 +11,14 @@ class Sessions(commands.Cog):
 
     @commands.hybrid_command(name="send_votes", description="End the vote and send the reacted users")
     async def send_votes(self, ctx: commands.Context, game_link: str):
-        result = await has_approval_perms(ctx.author, 3)
-        if not result:
-            return await ctx.send("You need to be apart of either foundation, site, or high command to manage another user", ephemeral=True)
+        await has_approval_perms(ctx.author, 3)
             
         try:
             await ctx.message.delete()
         except discord.NotFound:
             pass
 
-        view = VCChannelSelectView(game_link, ctx.author.id)
+        view = VCChannelSelectView(game_link, ctx.author)
         await ctx.send(view=view, ephemeral=True)
             
 

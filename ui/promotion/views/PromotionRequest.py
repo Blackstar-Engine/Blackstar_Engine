@@ -53,11 +53,7 @@ class AppointmentVCOpen(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction.user, 6):
-            return await interaction.response.send_message(
-                "You do not have permission to manage promotions.",
-                ephemeral=True
-            )        
+        await has_approval_perms(interaction.user, 6)    
             
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]}, {"snapshot": 1})
 
@@ -99,12 +95,8 @@ class AppointmentVCClose(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction.user, 6):
-            return await interaction.response.send_message(
-                "You do not have permission to manage promotions.",
-                ephemeral=True
-            )  
-        
+        await has_approval_perms(interaction.user, 6)
+
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]})
 
         channel_id = snapshot.get("appointment_vc_id", None)
@@ -203,6 +195,67 @@ def generate_container(snapshot: dict, action_row: ui.ActionRow = None, reason: 
 
     return container, color
 
+async def handle_approval(interaction: discord.Interaction, snapshot: dict, profile: dict, department: str):
+    modal = PointsRemovalModal(profile)
+    await interaction.response.send_modal(modal)
+    await modal.wait()
+
+    points_to_remove = modal.data
+    if points_to_remove is None:
+        return await interaction.followup.send(
+            "Promotion approval cancelled.",
+            ephemeral=True
+        )
+
+    await profiles.update_one(
+        {"user_id": snapshot["user_id"], "guild_id": interaction.guild.id},
+        {
+            "$set": {
+                f"unit.{department}.rank": snapshot["new_rank"]
+            },
+            "$inc": {
+                f"unit.{department}.current_points": -float(points_to_remove)
+            }
+        }
+    )
+
+async def dm_user(interaction: discord.Interaction, guild: discord.Guild, snapshot: dict, reason: str, approved: bool, color: discord.Color, department: str):
+    member = guild.get_member(snapshot["user_id"])
+    if member:
+        status = "APPROVED" if approved else "DENIED"
+        embed = discord.Embed(
+            title=f"Promotion {status}",
+            description=(
+                f"> **New Rank:** {department} | {snapshot['new_rank']}\n"
+                f"> **Moderator:** {interaction.user.mention}\n"
+                f"> **Reason:** {reason if reason else 'No reason provided.'}\n"
+                f"> **Server: **{guild.name}"
+            ),
+            color=color
+        )
+
+        await member.send(embed=embed)
+    
+    return member
+
+async def annouce_promotion(bot, interaction: discord.Interaction, snapshot: dict, department: str, approved: bool, member: discord.Member):
+    results = await fetch_id(interaction.guild.id, ["overall_promotion_channel"])
+    if approved:
+        channel = bot.get_channel(results["overall_promotion_channel"])
+        if channel and member:
+            embed = discord.Embed(
+                title="New Promotion",
+                description=(
+                    f"**User:** {member.mention}\n"
+                    f"**New Rank:** {snapshot['new_rank']}\n"
+                    f"**Department:** {department}"
+                ),
+                color=discord.Color.green()
+            )
+            embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+            embed.set_thumbnail(url=member.display_avatar.url)
+            await channel.send(embed=embed)
+
 async def handle_promotion_decision(interaction: discord.Interaction, approved: bool, reason: str = None):
     bot = interaction.client
     request_id = interaction.data["custom_id"].split(":")[1]
@@ -228,29 +281,9 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
     snapshot = req["snapshot"]
 
     if snapshot.get("is_appointment", False):
-        if not await has_approval_perms(interaction.user, 6):
-            try:
-                return await interaction.response.send_message(
-                    "You do not have permission to manage promotions.",
-                    ephemeral=True
-                )        
-            except discord.InteractionResponded:
-                return await interaction.followup.send(
-                    "You do not have permission to manage promotions.",
-                    ephemeral=True
-                )
+        await has_approval_perms(interaction.user, 6)
     else:
-        if not await has_approval_perms(interaction.user, 3):
-            try:
-                return await interaction.response.send_message(
-                    "You do not have permission to manage this promotion request.",
-                    ephemeral=True
-                )        
-            except discord.InteractionResponded:
-                return await interaction.followup.send(
-                    "You do not have permission to manage this promotion request.",
-                    ephemeral=True
-                )
+        await has_approval_perms(interaction.user, 3)
             
     guild = interaction.guild
     department = snapshot["department"]
@@ -261,28 +294,7 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
     })
 
     if approved:
-        modal = PointsRemovalModal(profile)
-        await interaction.response.send_modal(modal)
-        await modal.wait()
-
-        points_to_remove = modal.data
-        if points_to_remove is None:
-            return await interaction.followup.send(
-                "Promotion approval cancelled.",
-                ephemeral=True
-            )
-
-        await profiles.update_one(
-            {"user_id": snapshot["user_id"], "guild_id": interaction.guild.id},
-            {
-                "$set": {
-                    f"unit.{department}.rank": snapshot["new_rank"]
-                },
-                "$inc": {
-                    f"unit.{department}.current_points": -float(points_to_remove)
-                }
-            }
-        )
+        await handle_approval(interaction, snapshot, profile, department)
 
     # mark inactive
     await promotion_requests.update_one(
@@ -303,36 +315,7 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
         await interaction.edit_original_response(view=result_view)
 
     # DM user
-    member = guild.get_member(snapshot["user_id"])
-    if member:
-        status = "APPROVED" if approved else "DENIED"
-        embed = discord.Embed(
-            title=f"Promotion {status}",
-            description=(
-                f"> **New Rank:** {department} | {snapshot['new_rank']}\n"
-                f"> **Moderator:** {interaction.user.mention}\n"
-                f"> **Reason:** {reason if reason else 'No reason provided.'}\n"
-                f"> **Server: **{guild.name}"
-            ),
-            color=color
-        )
-
-        await member.send(embed=embed)
+    member = await dm_user(interaction, guild, snapshot, reason, approved, color, department)
 
     # announce promotion
-    results = await fetch_id(interaction.guild.id, ["overall_promotion_channel"])
-    if approved:
-        channel = bot.get_channel(results["overall_promotion_channel"])
-        if channel and member:
-            embed = discord.Embed(
-                title="New Promotion",
-                description=(
-                    f"**User:** {member.mention}\n"
-                    f"**New Rank:** {snapshot['new_rank']}\n"
-                    f"**Department:** {department}"
-                ),
-                color=discord.Color.green()
-            )
-            embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
-            embed.set_thumbnail(url=member.display_avatar.url)
-            await channel.send(embed=embed)
+    await annouce_promotion(bot, interaction, snapshot, department, approved, member)

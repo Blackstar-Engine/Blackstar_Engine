@@ -64,8 +64,12 @@ class Errors(commands.Cog):
         
         elif isinstance(error, commands.NoPrivateMessage):
             embed.description = "❌ Private messages are not supported."
+        
+        elif isinstance(error, commands.CheckFailure):
+            embed.description = "❌ " + str(error)
+            
 
-        elif isinstance(error, (commands.CheckFailure, commands.CommandNotFound)):
+        elif isinstance(error, commands.CommandNotFound):
             return
 
         else:

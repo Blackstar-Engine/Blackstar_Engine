@@ -2,16 +2,44 @@ import discord
 from discord.ext import commands
 from discord import ui
 from utils.constants import active_sessions
+from utils.utils import interaction_check
 
 class VCSelect(ui.ChannelSelect):
-    def __init__(self, game_link, author_id):
-        self.author_id = author_id
+    def __init__(self, game_link, user):
+        self.user = user
         self.game_link = game_link
         super().__init__(placeholder="Choose a VC", channel_types=[discord.ChannelType.voice], min_values=1, max_values=1)
+    
+    async def _build_message(self, interaction: discord.Interaction, message: discord.Message, view: ui.LayoutView, container: ui.Container, vc: discord.VoiceChannel):
+        users = {"\U0001F7E9": [], "\U0001F7E8": []}  # green + yellow
+
+        valid_emojis = ("\U0001F7E9", "\U0001F7E8")  # green + yellow
+
+        for reaction in message.reactions:
+            emoji = str(reaction.emoji)
+
+            if emoji in valid_emojis:
+                async for user in reaction.users():
+                    if not user.bot:
+                        users[emoji] += [user.mention]
+
+        if not users or users == {}:
+            container.add_item(ui.TextDisplay("No voters found."))
+            view.add_item(container)
+            return await interaction.response.edit_message(view=view)
+
+
+        send_message = f"**We are starting, please join {vc.mention}**\n{self.game_link}\n\n"
+        
+        for key, values in users.items():
+            send_message += f"{key}: "
+            send_message += " ".join(str(v) for v in values)
+            send_message += "\n"
+        
+        return send_message
 
     async def callback(self, interaction: discord.Interaction):
-        if interaction.user.id != self.author_id:
-            return await interaction.response.send_message("You are not allowed to interact with this.", ephemeral=True)
+        interaction_check(self.user, interaction.user)
 
         vc = interaction.guild.get_channel(int(self.values[0].id))
 
@@ -39,30 +67,7 @@ class VCSelect(ui.ChannelSelect):
             view.add_item(container)
             return await interaction.response.edit_message(view=view)
         
-        users = {"\U0001F7E9": [], "\U0001F7E8": []}  # green + yellow
-
-        valid_emojis = ("\U0001F7E9", "\U0001F7E8")  # green + yellow
-
-        for reaction in message.reactions:
-            emoji = str(reaction.emoji)
-
-            if emoji in valid_emojis:
-                async for user in reaction.users():
-                    if not user.bot:
-                        users[emoji] += [user.mention]
-
-        if not users or users == {}:
-            container.add_item(ui.TextDisplay("No voters found."))
-            view.add_item(container)
-            return await interaction.response.edit_message(view=view)
-
-
-        send_message = f"**We are starting, please join {vc.mention}**\n{self.game_link}\n\n"
-        
-        for key, values in users.items():
-            send_message += f"{key}: "
-            send_message += " ".join(str(v) for v in values)
-            send_message += "\n"
+        send_message = await self._build_message(interaction, message, view, container, vc)
 
         await message.reply(send_message)
 
@@ -83,10 +88,10 @@ class VCSelect(ui.ChannelSelect):
         await interaction.message.delete()
 
 class VCChannelSelectView(ui.LayoutView):
-    def __init__(self, game_link, author_id):
+    def __init__(self, game_link, user):
         super().__init__(timeout=300)
 
-        action_row = ui.ActionRow(VCSelect(game_link, author_id))
+        action_row = ui.ActionRow(VCSelect(game_link, user))
         container = ui.Container(
             ui.TextDisplay("## VC Selection"),
             ui.TextDisplay("Please select a vc to use below"),
