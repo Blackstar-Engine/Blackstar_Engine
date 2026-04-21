@@ -132,6 +132,7 @@ class ManageCommands(commands.Cog):
     @manage.command(name='auto_reply', description='Manage auto replys')
     async def auto_reply(self, ctx: commands.Context):
         # User must be in foundation or site command to run this command
+
         await has_approval_perms(ctx.author, 5)
         
         # Find all auto replys and create the paginator view object
@@ -185,7 +186,8 @@ class ManageCommands(commands.Cog):
                 ephemeral=True
             )
         
-        await has_approval_perms(ctx.author, 4)
+        if not (is_bot_owner or has_drm_role):
+            await has_approval_perms(ctx.author, 4)
 
         # check to see if they have a profile
         profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
