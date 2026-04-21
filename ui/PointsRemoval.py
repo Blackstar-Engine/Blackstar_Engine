@@ -12,17 +12,20 @@ class PointsRemovalModal(discord.ui.Modal):
             placeholder="1",
             required=True,
             row=1,
-            max_length=3,
+            max_length=10,
             style=discord.TextStyle.short
         )
         self.add_item(self.points)
     
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        points = self.points.value
-        if not points.isdigit() or int(points) <= 0:
-            await interaction.followup.send("Please enter a valid positive integer for points.", ephemeral=True)
-            return
+        try:
+            points = float(self.points.value)
+        except ValueError:
+            return await interaction.followup.send("Please enter a valid number for points.", ephemeral=True)
+        
+        if points <= 0:
+            return await interaction.followup.send("Points to remove must be greater than zero.", ephemeral=True)
 
         await log_action(ctx=interaction, log_type="point_deduction", user_id=self.profile["user_id"], points=points, command_name="promotion request/manage profile")
 

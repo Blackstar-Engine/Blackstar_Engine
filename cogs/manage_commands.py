@@ -177,9 +177,10 @@ class ManageCommands(commands.Cog):
         drm_id = results["drm_id"]
 
         is_bot_owner = await self.bot.is_owner(ctx.author)
+        normal_perms = await has_approval_perms(ctx.author, 4)
         has_drm_role = any(role.id == drm_id for role in ctx.author.roles)
 
-        if not (is_bot_owner or has_drm_role):
+        if not (is_bot_owner or normal_perms or has_drm_role):
             return await ctx.send(
                 "You need to be apart of either foundation, site, high command, or D.R.M to manage another user",
                 ephemeral=True
