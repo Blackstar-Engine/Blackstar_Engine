@@ -18,11 +18,14 @@ class Moderation(commands.Cog):
         results = await fetch_id(ctx.guild.id, ["prisoner_role"])
         prisoner_id = results["prisoner_role"]
 
-        profile = await profiles.find_one({"id": user.id})
-        codename = profile.get("codename", None)
+        profile = await profiles.find_one({"user_id": user.id})
 
-        if not codename:
+        if not profile:
             codename = user.name
+        else:
+            codename = profile.get("codename", None)
+            if not codename:
+                codename = user.name
 
         snapshot = await jail_snapshots.find_one({"id": user.id})
         if snapshot:
