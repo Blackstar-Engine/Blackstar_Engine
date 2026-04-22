@@ -25,7 +25,7 @@ class DepartmentRequest(commands.Cog):
         dept_map = {d["display_name"]: d for d in all_departments}
 
         options = []
-        restricted_departments = ["ISD", "CI", "IA", "ScD", "RRT", "SCD", "MTF:A-1"]
+        restricted_departments = ["ISD", "IA", "ScD", "RRT", "SCD", "MTF:A-1"]
 
         for dept in dept_map:
             if dept in restricted_departments:
