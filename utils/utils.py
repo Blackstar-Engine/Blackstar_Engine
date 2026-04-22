@@ -75,15 +75,16 @@ async def has_approval_perms(member: discord.Member, level: int) -> bool:
     if member.id == results["wolf_id"]:
         return True
 
-    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
-        return True
+    # if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
+    #     return True
     
     roles = any(role.id in allowed_roles for role in member.roles)
     if not roles:
         raise commands.CheckFailure("You don't have permission to use this command.")
-    
-    return roles
-
+    elif roles:
+        return True
+    else:
+        return False
 
 async def fetch_profile(ctx: commands.Context, send_message: bool = True):
     profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': ctx.author.id})

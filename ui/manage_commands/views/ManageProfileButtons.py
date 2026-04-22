@@ -53,10 +53,8 @@ class SelectAction(ui.ActionRow):
             accent_color=discord.Color.light_grey()
         )
 
-        if (
-            is_owner
-            or await has_approval_perms(self.user, 6)
-        ):
+        if is_owner:
+            await has_approval_perms(self.user, 6)
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, value))
 
