@@ -75,8 +75,8 @@ async def has_approval_perms(member: discord.Member, level: int) -> bool:
     if member.id == results["wolf_id"]:
         return True
 
-    # if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
-    #     return True
+    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
+        return True
     
     roles = any(role.id in allowed_roles for role in member.roles)
     if not roles:
