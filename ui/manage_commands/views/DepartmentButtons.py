@@ -83,10 +83,9 @@ class DepartmentButtons(ui.ActionRow):
             accent_color=discord.Color.light_grey()
         )
 
-        if (
-            await self.bot.is_owner(interaction.user)
-            or await has_approval_perms(self.user, 6)
-        ):
+        is_bot_owner = await self.bot.is_owner(interaction.user)
+        if is_bot_owner:
+            await has_approval_perms(self.user, 6)
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))
 
