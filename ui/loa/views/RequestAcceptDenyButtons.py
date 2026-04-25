@@ -1,10 +1,9 @@
 import discord
-from utils.constants import loa
-from ui.loa.modals.RequestDeny import RequestDenyModal
-from utils.utils import has_approval_perms, fetch_id
+from discord import ui
+from ui.AcceptDenyButtons import AcceptDenyButtons
 
-class RequestAcceptDenyButtons(discord.ui.View):
-    def __init__(self, bot, user, reason, start_date, end_date, time, embed):
+class RequestAcceptDenyButtons(ui.LayoutView):
+    def __init__(self, bot, user, reason, start_date, end_date, time):
         super().__init__(timeout=None)
         self.bot = bot
         self.user: discord.User = user
@@ -12,52 +11,13 @@ class RequestAcceptDenyButtons(discord.ui.View):
         self.reason = reason
         self.start_date = start_date
         self.end_date = end_date
-        self.embed: discord.Embed = embed
 
-    @discord.ui.button(label="Accept", style=discord.ButtonStyle.green)
-    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await has_approval_perms(interaction.user, 3)
-        
-        self.embed.title = "Leave Of Absence Approved"
-        self.embed.color = discord.Color.green()
-        self.embed.add_field(name="Approved by", value=interaction.user.mention)
-
-        await interaction.response.edit_message(embed=self.embed, view=None)
-
-        loa_doc = {
-            "user_id": self.user.id,
-            "guild_id": interaction.guild.id,
-            "start_date": self.start_date,
-            "end_date": self.end_date,
-            "days": self.time,
-            "reason": self.reason,
-            "moderator_id": interaction.user.id
-        }
-        await loa.insert_one(loa_doc)
-
-        results = await fetch_id(interaction.guild.id, ["loa_role"])
-        loa_role = results["loa_role"]
-
-        role = await interaction.guild.fetch_role(loa_role)
-
-        await self.user.add_roles(role)
-        await self.user.send(f"Your LOA in **{interaction.guild.name}** has been **ACCEPTED**")
-
-    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
-    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await has_approval_perms(interaction.user, 3)
-        
-        modal = RequestDenyModal(self.bot)
-        await interaction.response.send_modal(modal)
-
-        await modal.wait()
-
-        reason = modal.reason.value
-
-        self.embed.title = "Leave Of Absence Denied"
-        self.embed.color = discord.Color.red()
-        self.embed.add_field(name="Denied Information", value=f"**Denied By: ** {interaction.user.mention}\n**Reason: ** {reason}")
-
-        await interaction.edit_original_response(embed=self.embed, view=None)
-
-        await self.user.send(f"Your LOA in **{interaction.guild.name}** has been **DENIED**\n**Reason: ** {reason}")
+        self.action_row = AcceptDenyButtons(bot, user, 3)
+        container = ui.Container(
+            ui.TextDisplay("## Leave Of Absence Request"),
+            ui.TextDisplay(f"**Member:** {user.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
+            ui.Separator(),
+            self.action_row,
+            accent_color=discord.Color.yellow()
+        )
+        self.add_item(container)

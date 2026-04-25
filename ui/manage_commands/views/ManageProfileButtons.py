@@ -54,6 +54,9 @@ class SelectAction(ui.ActionRow):
         )
 
         if is_owner:
+            container.add_item(ui.Separator())
+            container.add_item(ManageDepartmentRow(self.profile, value))
+        else:
             await has_approval_perms(self.user, 6)
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, value))
