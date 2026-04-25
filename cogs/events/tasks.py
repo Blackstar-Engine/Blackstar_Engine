@@ -126,6 +126,11 @@ class Tasks(commands.Cog):
             except discord.Forbidden:
                 pass
 
+            try:
+                await member.edit(nick=record.get("nickname"))
+            except discord.Forbidden:
+                pass
+
             await self._cleanup_record(record)
 
     async def _fetch_channel(self, guild: discord.Guild, loa_channel):

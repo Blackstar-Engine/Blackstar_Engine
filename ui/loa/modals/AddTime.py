@@ -1,12 +1,15 @@
 import discord
+from discord import ui
+from discord.ext import commands
 import re
 from datetime import timedelta
 from utils.constants import LOARegFormat, loa
 from ui.loa.views.ExtendAcceptDenyButtons import ExtendAcceptDenyButtons
+from ui.AcceptDenyButtons import AcceptDenyButtons
 from utils.utils import fetch_id
 
 class AddTimeModal(discord.ui.Modal):
-    def __init__(self, bot, active_loa, user, member):
+    def __init__(self, bot: commands.Bot, active_loa: dict, user: discord.Member, member: discord.Member):
         super().__init__(title="LOA Time Addition")
         self.bot = bot
         self.active_loa = active_loa
@@ -52,15 +55,18 @@ class AddTimeModal(discord.ui.Modal):
         if self.member == self.user:  # If managing your own LOA
             channel = await interaction.guild.fetch_channel(loa_channel)
 
-            request_embed = discord.Embed(
-                title="LOA Extension Request",
-                description=f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}",
-                colour=discord.Color.yellow()
+            action_row = AcceptDenyButtons(bot = self.bot, user=interaction.user, permission_level=3)
+            container = ui.Container(
+                ui.TextDisplay("## LOA Extension Requested"),
+                ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
+                ui.Separator(),
+                action_row,
+                accent_color=discord.Color.yellow()
             )
+            view = ui.LayoutView()
+            view.add_item(container)
 
-            view = ExtendAcceptDenyButtons(self.bot, self.user, self.active_loa, new_end_date, request_embed)
-
-            await channel.send(embed=request_embed, view=view)
+            request_message = await channel.send(view=view)
 
             extend_embed = discord.Embed(
                 title="LOA Extention",
@@ -69,6 +75,57 @@ class AddTimeModal(discord.ui.Modal):
             )
 
             await interaction.response.send_message(embed=extend_embed, ephemeral=True)
+
+            await view.wait()
+
+            if not action_row.is_accepted:
+                try:
+                    embed = discord.Embed(
+                        title="LOA Extension Denied",
+                        description=f"Your request to extend your LOA to {discord.utils.format_dt(new_end_date)} has been **DENIED**.\n**Reason: ** {action_row.kwargs.get('reason', 'No reason provided.')} ",
+                        color=discord.Color.red()
+                    )
+                    await self.user.send(embed=embed)
+
+                    container = ui.Container(
+                        ui.TextDisplay("## LOA Extension Denied"),
+                        ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
+                        ui.Separator(),
+                        ui.TextDisplay(f"**Denied By: ** {interaction.user.mention}\n**Reason: ** {action_row.kwargs.get('reason', 'No reason provided.')}"),
+                        accent_color=discord.Color.red()
+                    )
+                    view = ui.LayoutView()
+                    view.add_item(container)
+
+                    await request_message.edit(view=view)
+                except discord.Forbidden:
+                    pass
+            else:
+                await loa.update_one(self.active_loa, {'$set': {'end_date': new_end_date}})
+
+                try:
+                    embed = discord.Embed(
+                        title="LOA Extension Accepted",
+                        description=f"Your request to extend your LOA to {discord.utils.format_dt(new_end_date)} has been **ACCEPTED**.",
+                        color=discord.Color.green()
+                    )
+                    await self.user.send(embed=embed)
+
+                    container = ui.Container(
+                        ui.TextDisplay("## LOA Extension Accepted"),
+                        ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
+                        ui.Separator(),
+                        ui.TextDisplay(f"**Accepted By: ** {interaction.user.mention}"),
+                        accent_color=discord.Color.green()
+                    )
+                    view = ui.LayoutView()
+                    view.add_item(container)
+
+                    await request_message.edit(view=view)
+                except discord.Forbidden:
+                    pass
+
+                
 
         else:  # If managing someone else's LOA
             await loa.update_one(self.active_loa, {'$set': {'end_date': new_end_date}})

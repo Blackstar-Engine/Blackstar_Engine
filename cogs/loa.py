@@ -1,4 +1,5 @@
 import discord
+from discord import ui
 from discord.ext import commands
 import re
 from utils.constants import loa, stored_loa, LOARegFormat
@@ -7,12 +8,87 @@ from ui.paginator import PaginatorView
 from ui.loa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
 from ui.loa.views.ManageExtendButtons import ManageExtendButton
 from typing import Optional
-from utils.utils import fetch_id, has_approval_perms
+from utils.utils import fetch_id, has_approval_perms, fetch_profile
 
 
 class LOA(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    
+    async def handle_accepted(self, ctx: commands.Context, view: RequestAcceptDenyButtons, reason: str, start_date: datetime, end_date: datetime, time: str, request_message: discord.Message):
+        loa_doc = {
+                "user_id": ctx.author.id,
+                "nickname": ctx.author.display_name,
+                "guild_id": ctx.guild.id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "days": time,
+                "reason": reason,
+                "moderator_id": view.action_row.kwargs.get('moderator_id')
+            }
+        
+        await loa.insert_one(loa_doc)
+
+        results = await fetch_id(ctx.guild.id, ["loa_role"])
+        loa_role = results["loa_role"]
+
+        role = ctx.guild.get_role(loa_role)
+        await ctx.author.add_roles(role)
+
+        profile = await fetch_profile(ctx)
+        if not profile:
+            return
+        codename = profile.get("codename", "N/A")
+
+        try:
+            await ctx.author.edit(nick=f"[LOA] {codename}")
+        except discord.Forbidden:
+            pass
+
+        container = ui.Container(
+            ui.TextDisplay("## Leave Of Absence Accepted"),
+            ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
+            ui.Separator(),
+            ui.TextDisplay(f"**Accepted By: ** {view.action_row.user.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
+            accent_color=discord.Color.green()
+
+        )
+        accepted_view = ui.LayoutView()
+        accepted_view.add_item(container)
+
+        try:
+            await request_message.edit(view=accepted_view)
+        except discord.NotFound:
+            pass
+
+        try:
+            embed = discord.Embed(title="LOA Request Update", description=f"Your LOA request in **{ctx.guild.name}** has been **ACCEPTED**", color=discord.Color.green())
+            await ctx.author.send(embed=embed)
+        except discord.Forbidden:
+            pass
+    
+    async def handle_denied(self, ctx: commands.Context, view: RequestAcceptDenyButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
+        container = ui.Container(
+                ui.TextDisplay("## Leave Of Absence Denied"),
+                ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
+                ui.Separator(),
+                ui.TextDisplay(f"**Denied By: ** {view.action_row.user.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
+                accent_color=discord.Color.red()
+
+            )
+        denied_view = ui.LayoutView()
+        denied_view.add_item(container)
+
+        try:
+            await request_message.edit(view=denied_view)
+        except discord.NotFound:
+            pass
+
+        try:
+            embed = discord.Embed(title="LOA Request Update", description=f"Your LOA request in **{ctx.guild.name}** has been **DENIED**\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')} ", color=discord.Color.red())
+            await ctx.author.send(embed=embed)
+        except discord.Forbidden:
+            pass
 
     @commands.hybrid_group(name="loa", description="Create a loa", invoke_without_sub_command=False)
     async def loa(self, ctx: commands.Context):
@@ -68,37 +144,23 @@ class LOA(commands.Cog):
         # Creates the needed material for the request embed
         start_date = datetime.now()
         end_date = start_date + timedelta(days=total_days, hours=hours)
-
-        
-        request_embed = discord.Embed(
-            title="Leave Of Absence Request",
-            description="",
-            colour=discord.Color.yellow(),
-        )
-        request_embed.add_field(
-            name="Information",
-            value=f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``",
-        )
-
-        if not ctx.author.avatar.url:
-            request_embed.set_author(
-                icon_url=ctx.author.default_avatar.url, name=f"{ctx.author.name}"
-            )
-        else:
-            request_embed.set_author(
-                icon_url=ctx.author.avatar.url, name=f"{ctx.author.name}"
-            )
         
         # Creats the View and sends the message to the loa_channel
         results = await fetch_id(ctx.guild.id, ["loa_channel"])
         channel: discord.TextChannel = await ctx.guild.fetch_channel(results["loa_channel"])
 
-        view = RequestAcceptDenyButtons(self.bot, ctx.author, reason, start_date, end_date, time, request_embed)
-        await channel.send(embed=request_embed, view=view)
+        view = RequestAcceptDenyButtons(self.bot, ctx.author, reason, start_date, end_date, time)
+        request_message = await channel.send(view=view)
 
         # Sends confirmation to user
         embed = discord.Embed(title="Successfully Requested!", description="Your LOA has been sent in for review!", color=discord.Color.green())
         await ctx.send(embed=embed, delete_after=10)
+
+        await view.wait()
+        if not view.action_row.is_accepted:
+            await self.handle_denied(ctx, view, start_date, end_date, reason, time, request_message)
+        else:
+            await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
     @loa.command(description="Get a list of all the active LOA's in the server.")
     async def active(self, ctx: commands.Context):
@@ -142,25 +204,9 @@ class LOA(commands.Cog):
         )
 
         # Create the rest of the embed
-        embed = discord.Embed(title="Leave Of Absence Admin Panel", description=f"LOA History {member.mention}:\n{des}")
+        view = ManageExtendButton(self.bot, ctx.author, member, active_loa, des)
 
-        if not member.avatar.url:
-            embed.set_author(icon_url=member.default_avatar.url, name=member.name)
-        else:
-            embed.set_author(icon_url=member.avatar.url, name=member.name)
-        
-        # If theres an active loa, send it. if not than just send the history
-        if active_loa:
-            embed.add_field(
-                name="Current Leave Of Absence",
-                value=f"**Started:** {discord.utils.format_dt(active_loa.get("start_date"))}\n**Ending:** {discord.utils.format_dt(active_loa.get("end_date"))}\n**Reason:** ``{active_loa.get("reason")}``\n**Moderator:** <@{active_loa.get("moderator_id")}>",
-                inline=False
-            )
-
-            view = ManageExtendButton(self.bot, ctx.author, member, active_loa)
-        else:
-            view = None
-        await ctx.send(embed=embed, view=view, ephemeral=True)
+        await ctx.send(view=view, ephemeral=True)
 
 
 async def setup(bot):

@@ -21,6 +21,6 @@ class ReturnButton(ui.Button):
             options = fetch_unit_options(profile)
 
             is_owner = await self.bot.is_owner(interaction.user)
-            view = ManageProfileButtons(bot=self.bot, interaction=interaction, user=self.user, profile=profile, options=options, is_owner=is_owner)
+            view = ManageProfileButtons(self.bot, interaction, self.user, profile, options, is_owner)
 
             await interaction.response.edit_message(view=view)
