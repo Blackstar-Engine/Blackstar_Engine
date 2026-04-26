@@ -2,20 +2,20 @@ import discord
 from discord import ui
 from discord.ext import commands
 import re
-from utils.constants import loa, stored_loa, roa, LOARegFormat
+from utils.constants import roa, stored_roa, loa, LOARegFormat
 from datetime import datetime, timedelta
 from ui.paginator import PaginatorView
-from ui.loa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
-from ui.loa.views.ManageExtendButtons import ManageExtendButton
+from ui.roa.views.RequestButtons import RequestButtons
+from ui.roa.views.ManageButtons import ManageExtendButton
 from typing import Optional
 from utils.utils import fetch_id, has_approval_perms, fetch_profile
 
 
-class LOA(commands.Cog):
+class ROA(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    async def handle_accepted(self, ctx: commands.Context, view: RequestAcceptDenyButtons, reason: str, start_date: datetime, end_date: datetime, time: str, request_message: discord.Message):
+    async def handle_accepted(self, ctx: commands.Context, view: RequestButtons, reason: str, start_date: datetime, end_date: datetime, time: str, request_message: discord.Message):
         loa_doc = {
                 "user_id": ctx.author.id,
                 "nickname": ctx.author.display_name,
@@ -27,7 +27,7 @@ class LOA(commands.Cog):
                 "moderator_id": view.action_row.kwargs.get('moderator_id')
             }
         
-        await loa.insert_one(loa_doc)
+        await roa.insert_one(loa_doc)
 
         results = await fetch_id(ctx.guild.id, ["loa_role"])
         loa_role = results["loa_role"]
@@ -41,12 +41,12 @@ class LOA(commands.Cog):
         codename = profile.get("codename", "N/A")
 
         try:
-            await ctx.author.edit(nick=f"[LOA] {codename}")
+            await ctx.author.edit(nick=f"[ROA] {codename}")
         except discord.Forbidden:
             pass
 
         container = ui.Container(
-            ui.TextDisplay("## Leave Of Absence Accepted"),
+            ui.TextDisplay("## Reduce of Activity Accepted"),
             ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
             ui.Separator(),
             ui.TextDisplay(f"**Accepted By: ** {view.action_row.user.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
@@ -62,14 +62,14 @@ class LOA(commands.Cog):
             pass
 
         try:
-            embed = discord.Embed(title="LOA Request Update", description=f"Your LOA request in **{ctx.guild.name}** has been **ACCEPTED**", color=discord.Color.green())
+            embed = discord.Embed(title="ROA Request Update", description=f"Your ROA request in **{ctx.guild.name}** has been **ACCEPTED**", color=discord.Color.green())
             await ctx.author.send(embed=embed)
         except discord.Forbidden:
             pass
     
-    async def handle_denied(self, ctx: commands.Context, view: RequestAcceptDenyButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
+    async def handle_denied(self, ctx: commands.Context, view: RequestButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
         container = ui.Container(
-                ui.TextDisplay("## Leave Of Absence Denied"),
+                ui.TextDisplay("## Reduce of Activity Denied"),
                 ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
                 ui.Separator(),
                 ui.TextDisplay(f"**Denied By: ** {view.action_row.user.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
@@ -85,16 +85,16 @@ class LOA(commands.Cog):
             pass
 
         try:
-            embed = discord.Embed(title="LOA Request Update", description=f"Your LOA request in **{ctx.guild.name}** has been **DENIED**\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')} ", color=discord.Color.red())
+            embed = discord.Embed(title="ROA Request Update", description=f"Your ROA request in **{ctx.guild.name}** has been **DENIED**\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')} ", color=discord.Color.red())
             await ctx.author.send(embed=embed)
         except discord.Forbidden:
             pass
 
-    @commands.hybrid_group(name="loa", description="Create a loa", invoke_without_sub_command=False)
-    async def loa(self, ctx: commands.Context):
+    @commands.hybrid_group(name="roa", description="Create a roa", invoke_without_sub_command=False)
+    async def roa(self, ctx: commands.Context):
         return
 
-    @loa.command(description="Request an LOA to get time off.")
+    @roa.command(description="Request an ROA to get time off.")
     async def request(self, ctx: commands.Context, time: str, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
@@ -109,9 +109,9 @@ class LOA(commands.Cog):
 
         error_embed = discord.Embed(title="", description="")
 
-        roa_record = await roa.find_one({"user_id": ctx.author.id, "guild_id": ctx.guild.id})
-        if roa_record:
-            error_embed.description = "You have an active ROA. Please end it before starting a LOA."
+        loa_record = await loa.find_one({"user_id": ctx.author.id, "guild_id": ctx.guild.id})
+        if loa_record:
+            error_embed.description = "You have an active LOA. Please end it before starting a ROA."
             return await ctx.send(embed=error_embed, ephemeral=True)
         
         # If time does not = the correct format, return
@@ -120,30 +120,30 @@ class LOA(commands.Cog):
             return await ctx.send(embed=error_embed, ephemeral=True)
 
         # Find a record for the user and return if record is found
-        loa_record = await loa.find_one({"user_id": ctx.author.id, "guild_id": ctx.guild.id})
+        loa_record = await roa.find_one({"user_id": ctx.author.id, "guild_id": ctx.guild.id})
 
         if loa_record:
-            error_embed.description = "You already have an active LOA. Please end it before starting a new one."
+            error_embed.description = "You already have an active ROA. Please end it before starting a new one."
             return await ctx.send(embed=error_embed, ephemeral=True)
 
         # Break time into y, m, w, d, h and find total days from that
         years, months, weeks, days, hours = extract_time_values(time)
         total_days = years * 365 + months * 30 + weeks * 7 + days
 
-        # Find y, m, w, d, h from loa min and max
+        # Find y, m, w, d, h from roa min and max
         min_years, min_months, min_weeks, min_days, _ = extract_time_values('1d')
         max_years, max_months, max_weeks, max_days, _ = extract_time_values('1y')
 
-        # Find total days for loa min and max
+        # Find total days for roa min and max
         min_total_days = min_years * 365 + min_months * 30 + min_weeks * 7 + min_days
         max_total_days = max_years * 365 + max_months * 30 + max_weeks * 7 + max_days
 
         # Checks to see if the requested days is in between the min and max days
         if total_days < min_total_days:
-            error_embed.description = "LOA time does not meet the minimum LOA time."
+            error_embed.description = "ROA time does not meet the minimum ROA time."
             return await ctx.send(embed=error_embed, ephemeral=True)
         elif total_days > max_total_days:
-            error_embed.description = "LOA time exceeds the maximum LOA time."
+            error_embed.description = "ROA time exceeds the maximum ROA time."
             return await ctx.send(embed=error_embed, ephemeral=True)
 
         # Creates the needed material for the request embed
@@ -154,11 +154,11 @@ class LOA(commands.Cog):
         results = await fetch_id(ctx.guild.id, ["loa_channel"])
         channel: discord.TextChannel = await ctx.guild.fetch_channel(results["loa_channel"])
 
-        view = RequestAcceptDenyButtons(self.bot, ctx.author, reason, start_date, end_date, time)
+        view = RequestButtons(self.bot, ctx.author, reason, start_date, end_date, time)
         request_message = await channel.send(view=view)
 
         # Sends confirmation to user
-        embed = discord.Embed(title="Successfully Requested!", description="Your LOA has been sent in for review!", color=discord.Color.green())
+        embed = discord.Embed(title="Successfully Requested!", description="Your ROA has been sent in for review!", color=discord.Color.green())
         await ctx.send(embed=embed, delete_after=10)
 
         await view.wait()
@@ -167,19 +167,19 @@ class LOA(commands.Cog):
         else:
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
-    @loa.command(description="Get a list of all the active LOA's in the server.")
+    @roa.command(description="Get a list of all the active ROA's in the server.")
     async def active(self, ctx: commands.Context):
         # Users have to be in foundation or site command to run this command
         await has_approval_perms(ctx.author, 5)
         
-        # Find all LOA's, create the view, create the embed, send to user
-        items = await loa.find({'guild_id': ctx.guild.id}).to_list(length=None)
+        # Find all ROA's, create the view, create the embed, send to user
+        items = await roa.find({'guild_id': ctx.guild.id}).to_list(length=None)
         view = PaginatorView(self.bot, ctx.author, items)
         embed = view.create_record_embed()
 
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @loa.command(description="Manage a staff members LOA.")
+    @roa.command(description="Manage a staff members ROA.")
     async def manage(self, ctx: commands.Context, user: Optional[discord.Member | discord.User] = None):
         # Checking if user selected themselves
         if not user or user.id == ctx.author.id:
@@ -190,12 +190,12 @@ class LOA(commands.Cog):
             
             member = user
 
-        # Finding all active and stored loas for that user in that guild
-        active_loa = await loa.find_one({"user_id": member.id, "guild_id": ctx.guild.id})
-        stored_loas = await stored_loa.find({"user_id": member.id, "guild_id": ctx.guild.id}).to_list(length=None)
+        # Finding all active and stored roas for that user in that guild
+        active_roa = await roa.find_one({"user_id": member.id, "guild_id": ctx.guild.id})
+        stored_roas = await stored_roa.find({"user_id": member.id, "guild_id": ctx.guild.id}).to_list(length=None)
         
-        if not active_loa and stored_loas == []:
-            embed = discord.Embed(title="", description=f"{member.mention} has no LOA's to manage")
+        if not active_roa and stored_roas == []:
+            embed = discord.Embed(title="", description=f"{member.mention} has no ROA's to manage")
             return await ctx.send(embed=embed, ephemeral=True)
 
         # Creating the "history" part of the embed
@@ -203,16 +203,16 @@ class LOA(commands.Cog):
 
         des = "\n".join(
             [
-                f"{discord.utils.format_dt(loa['start_date'])} - {discord.utils.format_dt(loa['end_date'])}"
-                for loa in stored_loas
+                f"{discord.utils.format_dt(roa['start_date'])} - {discord.utils.format_dt(roa['end_date'])}"
+                for roa in stored_roas
             ]
         )
 
         # Create the rest of the embed
-        view = ManageExtendButton(self.bot, ctx.author, member, active_loa, des)
+        view = ManageExtendButton(self.bot, ctx.author, member, active_roa, des)
 
         await ctx.send(view=view, ephemeral=True)
 
 
 async def setup(bot):
-    await bot.add_cog(LOA(bot))
+    await bot.add_cog(ROA(bot))
