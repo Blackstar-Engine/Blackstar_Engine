@@ -26,16 +26,20 @@ class AcceptDenyButtons(ui.ActionRow):
 
     
     async def accept_callback(self, interaction: discord.Interaction):
-        await has_approval_perms(interaction.user, self.permission_level)
+        if not await has_approval_perms(interaction, self.permission_level):
+            return
+        
         await interaction.response.defer(ephemeral=True)
 
         self.is_accepted = True
-        self.kwargs['moderator_id'] = interaction.user.id
+        self.kwargs['moderator_obj'] = interaction.user
 
         self.view.stop()
     
     async def deny_callback(self, interaction: discord.Interaction):
-        await has_approval_perms(interaction.user, self.permission_level)
+        if not await has_approval_perms(interaction, self.permission_level):
+            return
+        
         if self.ask_reason:
             modal = ReasonModal()
             await interaction.response.send_modal(modal)
@@ -51,6 +55,6 @@ class AcceptDenyButtons(ui.ActionRow):
             await interaction.response.defer(ephemeral=True)
 
         self.is_accepted = False
-        self.kwargs['moderator_id'] = interaction.user.id
+        self.kwargs['moderator_obj'] = interaction.user
 
         self.view.stop()

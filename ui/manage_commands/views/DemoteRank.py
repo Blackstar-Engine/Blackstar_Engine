@@ -1,4 +1,5 @@
 import discord
+from discord.ext import commands
 from utils.constants import profiles
 from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
@@ -6,13 +7,14 @@ from discord import ui
 from utils.utils import has_approval_perms
 
 class DemoteRankView(ui.ActionRow):
-    def __init__(self, bot, user, profile, unit, ranks, current_rank):
+    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, unit: str, ranks: list, current_rank: str):
         super().__init__()
 
         self.profile = profile
         self.unit = unit
         self.bot = bot
-        self.user = user
+        self.moderator = moderator
+        self.inacted_user = inacted_user
 
         # Find current rank order
         current_rank_obj = next(
@@ -44,7 +46,7 @@ class DemoteRankView(ui.ActionRow):
         self.add_item(self.rank_select)
 
     async def rank_select_callback(self, interaction: discord.Interaction):
-        from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
+        from ui.manage_commands.views.ManageProfileMainView import ManageProfileMainView
         new_rank = self.rank_select.values[0]
 
         await profiles.update_one(
@@ -64,13 +66,14 @@ class DemoteRankView(ui.ActionRow):
             ui.TextDisplay(f"## {self.unit} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
             ui.Separator(),
-            DepartmentButtons(self.bot, self.user, self.unit, self.profile),
+            DepartmentButtons(self.bot, self.moderator, self.inacted_user, self.profile, self.unit),
             accent_color=discord.Color.light_grey()
         )
         
         is_bot_owner = await self.bot.is_owner(interaction.user)
         if is_bot_owner:
-            await has_approval_perms(self.user, 6)
+            if not await has_approval_perms(interaction, 6):
+                return
 
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))

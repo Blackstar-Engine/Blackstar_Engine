@@ -53,7 +53,8 @@ class AppointmentVCOpen(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await has_approval_perms(interaction.user, 6)    
+        if not await has_approval_perms(interaction, 6):
+            return
             
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]}, {"snapshot": 1})
 
@@ -95,7 +96,8 @@ class AppointmentVCClose(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await has_approval_perms(interaction.user, 6)
+        if not await has_approval_perms(interaction, 6):
+            return
 
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]})
 
@@ -201,6 +203,9 @@ async def handle_approval(interaction: discord.Interaction, snapshot: dict, prof
     await modal.wait()
 
     points_to_remove = modal.data
+    if not points_to_remove:
+        return False
+    
     if points_to_remove is None:
         return await interaction.followup.send(
             "Promotion approval cancelled.",
@@ -281,9 +286,11 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
     snapshot = req["snapshot"]
 
     if snapshot.get("is_appointment", False):
-        await has_approval_perms(interaction.user, 6)
+        if not await has_approval_perms(interaction, 6):
+            return
     else:
-        await has_approval_perms(interaction.user, 3)
+        if not await has_approval_perms(interaction, 3):
+            return
             
     guild = interaction.guild
     department = snapshot["department"]

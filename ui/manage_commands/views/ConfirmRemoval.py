@@ -2,7 +2,7 @@ import discord
 from discord.ui import Button
 
 class ConfirmRemovalView(discord.ui.ActionRow):
-    def __init__(self, bot, user, record, index):
+    def __init__(self, bot, moderator, inacted_user, record, index):
         super().__init__()
         from ui.manage_commands.views.ReturnButton import ReturnButton
         self.bot = bot
@@ -10,7 +10,7 @@ class ConfirmRemovalView(discord.ui.ActionRow):
         self.index = index
         self.status = None
 
-        cancel_button = ReturnButton(bot, user)
+        cancel_button = ReturnButton(bot, moderator, inacted_user)
         cancel_button.label = "Cancel"
         cancel_button.style = discord.ButtonStyle.red
 

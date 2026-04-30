@@ -11,7 +11,8 @@ class Sessions(commands.Cog):
 
     @commands.hybrid_command(name="send_votes", description="End the vote and send the reacted users")
     async def send_votes(self, ctx: commands.Context, game_link: str):
-        await has_approval_perms(ctx.author, 3)
+        if not await has_approval_perms(ctx, 3):
+            return
             
         try:
             await ctx.message.delete()

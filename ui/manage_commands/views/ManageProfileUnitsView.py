@@ -1,4 +1,5 @@
 import discord
+from discord.ext import commands
 from utils.constants import profiles, departments
 from discord import ui
 from utils.utils import log_action
@@ -58,20 +59,21 @@ class PrivateUnitsRow(ui.ActionRow):
         await interaction.response.defer(ephemeral=True)
 
 class SubmitButtonRow(ui.ActionRow):
-    def __init__(self, bot, user, profile, normal_row_select, private_row_select):
+    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, normal_row_select: NormalUnitsRow, private_row_select: PrivateUnitsRow):
         super().__init__()
         from ui.manage_commands.views.ReturnButton import ReturnButton
         self.profile = profile
         self.normal_row_select = normal_row_select
         self.private_row_select = private_row_select
-        self.user = user
+        self.moderator = moderator
+        self.inacted_user = inacted_user
 
         submit_button = ui.Button(label="Submit", style=discord.ButtonStyle.green)
 
         submit_button.callback = self.profile_manage_units_submit
 
         self.add_item(submit_button)
-        self.add_item(ReturnButton(bot, user))
+        self.add_item(ReturnButton(bot, moderator, inacted_user))
 
     async def profile_manage_units_submit(self, interaction: discord.Interaction):
 
@@ -125,7 +127,7 @@ class SubmitButtonRow(ui.ActionRow):
         # ───── RESPONSE EMBED ─────
         active_units = [unit_name for unit_name, unit_data in units.items() if unit_data.get("is_active")]
 
-        await log_action(ctx=interaction, log_type="department", user_id=self.user.id, department=', '.join(active_units) or 'None', command_name="manage profile")
+        await log_action(ctx=interaction, log_type="department", user_id=self.moderator.id, department=', '.join(active_units) or 'None', command_name="manage profile")
 
         view = ui.LayoutView()
         container = ui.Container(
@@ -141,10 +143,11 @@ class SubmitButtonRow(ui.ActionRow):
         self.view.stop()
 
 class ProfileManageUnitsView(ui.LayoutView):
-    def __init__(self, bot, user, profile, normal_units_results, private_units_results):
+    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, normal_units_results: list, private_units_results: list):
         super().__init__()
         self.bot = bot
-        self.user = user
+        self.moderator = moderator
+        self.inacted_user = inacted_user
         self.profile = profile
 
         self.normal_units_select = NormalUnitsRow(normal_units_results)
@@ -152,7 +155,8 @@ class ProfileManageUnitsView(ui.LayoutView):
 
         self.submit_button = SubmitButtonRow(
             bot,
-            user,
+            moderator,
+            inacted_user,
             profile,
             self.normal_units_select,
             self.private_units_select
