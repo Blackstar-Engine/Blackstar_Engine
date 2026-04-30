@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, time
-from utils.constants import loa, stored_loa, BlackstarConstants, logger
+from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger
 from utils.utils import fetch_id
 
 constants = BlackstarConstants()
@@ -81,57 +81,42 @@ class Tasks(commands.Cog):
             {"end_date": {"$lte": now}}
         ).to_list(length=None)
 
-        if len(expired_loas) > 0:
-            results = await fetch_id(expired_loas[0]["guild_id"], ['loa_role', 'loa_channel'])
+        expired_roas = await roa.find(
+            {"end_date": {"$lte": now}}
+        ).to_list(length=None)
+
+        if len(expired_loas) > 0 or len(expired_roas) > 0:
+            results = await fetch_id(expired_loas[0]["guild_id"], ['loa_role', 'loa_channel', 'roa_role'])
+        
+        for record in expired_roas:
+            # Get guild, channel, and member
+            guild = self.bot.get_guild(record.get("guild_id"))
+            channel = await self._fetch_channel(guild, results['loa_channel'])
+            member = await self._fetch_member(guild, record.get("user_id"))
+
+            # Remove LOA role
+            role = guild.get_role(results['roa_role'])
+            try:
+                await member.remove_roles(role, reason="ROA expired")
+            except discord.Forbidden:
+                pass
+
+            await self._preform_final_action(member, record, channel, guild, "ROA")
 
         for record in expired_loas:
+            # Get guild, channel, and member
             guild = self.bot.get_guild(record.get("guild_id"))
-            if not guild:
-                await self._cleanup_record(record)
-                continue
-
-            # Get channel and member
             channel = await self._fetch_channel(guild, results['loa_channel'])
             member = await self._fetch_member(guild, record.get("user_id"))
 
             # Remove LOA role
             role = guild.get_role(results['loa_role'])
-            if role and isinstance(member, discord.Member):
-                try:
-                    await member.remove_roles(role, reason="LOA expired")
-                except discord.Forbidden:
-                    pass
-
-            # Log embed
-            embed = discord.Embed(
-                title="LOA Ended",
-                description=(
-                    f"**User:** {member.mention}\n"
-                    f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
-                    f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
-                    f"**End Reason:** Auto Ended"
-                ),
-                color=discord.Color.light_grey()
-            )
-
-            # Send Embed
             try:
-                await channel.send(embed=embed)
-            except discord.Forbidden:
-                pass
-            
-            # Notify User
-            try:
-                await member.send(f"Your LOA in **{guild.name}** has **ENDED**!")
+                await member.remove_roles(role, reason="LOA expired")
             except discord.Forbidden:
                 pass
 
-            try:
-                await member.edit(nick=record.get("nickname"))
-            except discord.Forbidden:
-                pass
-
-            await self._cleanup_record(record)
+            await self._preform_final_action(member, record, channel, guild, "LOA")
 
     async def _fetch_channel(self, guild: discord.Guild, loa_channel):
         channel = guild.get_channel(loa_channel)
@@ -151,10 +136,75 @@ class Tasks(commands.Cog):
                 return None
         return member
 
-    async def _cleanup_record(self, record: dict):
+    async def _preform_final_action(self, member: discord.Member, record: dict, channel: discord.TextChannel, guild: discord.Guild, record_type: str):
+        if record_type == "LOA":
+            embed = discord.Embed(
+                title="LOA Ended",
+                description=(
+                    f"**User:** {member.mention}\n"
+                    f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
+                    f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
+                    f"**End Reason:** Auto Ended"
+                ),
+                color=discord.Color.light_grey()
+            )
+
+            try:
+                await channel.send(embed=embed)
+            except discord.Forbidden:
+                pass
+            
+            # Notify User
+            try:
+                await member.send(f"Your LOA in **{guild.name}** has **ENDED**!")
+            except discord.Forbidden:
+                pass
+
+            try:
+                await member.edit(nick=record.get("nickname"))
+            except discord.Forbidden:
+                pass
+
+            await self._cleanup_loa_record(record)
+        elif record_type == "ROA":
+            embed = discord.Embed(
+                title="ROA Ended",
+                description=(
+                    f"**User:** {member.mention}\n"
+                    f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
+                    f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
+                    f"**End Reason:** Auto Ended"
+                ),
+                color=discord.Color.light_grey()
+            )
+            try:
+                await channel.send(embed=embed)
+            except discord.Forbidden:
+                pass
+            
+            # Notify User
+            try:
+                await member.send(f"Your ROA in **{guild.name}** has **ENDED**!")
+            except discord.Forbidden:
+                pass
+
+            try:
+                await member.edit(nick=record.get("nickname"))
+            except discord.Forbidden:
+                pass
+
+            await self._cleanup_roa_record(record)
+
+
+    async def _cleanup_loa_record(self, record: dict):
         """Archive and delete an LOA record safely."""
         await stored_loa.insert_one(record)
         await loa.delete_one({"_id": record["_id"]})
+    
+    async def _cleanup_roa_record(self, record: dict):
+        """Archive and delete a ROA record safely."""
+        await stored_roa.insert_one(record)
+        await roa.delete_one({"_id": record["_id"]})
 
     @check_loa_end_date.before_loop
     async def before_check_loa_end_date(self):

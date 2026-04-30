@@ -67,7 +67,8 @@ class EnlistmentRequestView(ui.LayoutView):
 async def handle_enlistment_decision(interaction: discord.Interaction, approved: bool):
     request_id = interaction.data["custom_id"].split(":")[1]
 
-    await has_approval_perms(interaction.user, 3)
+    if not await has_approval_perms(interaction, 3):
+        return
 
     req = await enlistment_requests.find_one({
         "_id": request_id,

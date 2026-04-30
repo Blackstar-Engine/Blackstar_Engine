@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.utils import fetch_id, fetch_profile, has_approval_perms
+from utils.utils import fetch_id, log_action, has_approval_perms
 
 from utils.constants import jail_snapshots, profiles
 
@@ -11,7 +11,8 @@ class Moderation(commands.Cog):
     
     @commands.hybrid_command(name="jail", description="Sends a user to jail")
     async def jail(self, ctx: commands.Context, user: discord.Member, reason: str = "No reason provided"):
-        await has_approval_perms(ctx.author, 4)
+        if not await has_approval_perms(ctx, 4):
+            return
 
         await ctx.defer(ephemeral=True)
 
@@ -20,12 +21,10 @@ class Moderation(commands.Cog):
 
         profile = await profiles.find_one({"user_id": user.id})
 
-        if not profile:
+        if not profile or not profile.get("codename", None):
             codename = user.name
         else:
             codename = profile.get("codename", None)
-            if not codename:
-                codename = user.name
 
         snapshot = await jail_snapshots.find_one({"id": user.id})
         if snapshot:
@@ -67,6 +66,8 @@ class Moderation(commands.Cog):
                 embed.add_field(name="I Couldn't Remove", value="\n".join(errored_roles), inline=False)
 
             await ctx.send(embed=embed, ephemeral=True)
+
+            await log_action(ctx=ctx, log_type="mod_command", command_name="jail")
         except Exception:
             embed = discord.Embed(description=f"I have failed to **jail** {user.mention}. | `{user.id}`", color=discord.Color.yellow())
             await ctx.send(embed=embed, ephemeral=True) 
@@ -77,7 +78,8 @@ class Moderation(commands.Cog):
         
     @commands.hybrid_command(name="release", description="Release a user from jail")
     async def release(self, ctx: commands.Context, user: discord.Member, reason: str = "No reason provided"):
-        await has_approval_perms(ctx.author, 4)
+        if not await has_approval_perms(ctx, 4):
+            return
 
         await ctx.defer(ephemeral=True)
 
@@ -116,10 +118,13 @@ class Moderation(commands.Cog):
         if errored_roles:
             embed.add_field(name="I Couldn't Add", value="\n".join(errored_roles), inline=False)
         await ctx.send(embed=embed, ephemeral=True)
+
+        await log_action(ctx=ctx, log_type="mod_command", command_name="release")
     
     @commands.hybrid_command(name="jailstatus", description="Check if a user is in jail or not")
     async def jailstatus(self, ctx: commands.Context, user: discord.Member):
-        await has_approval_perms(ctx.author, 4)
+        if not await has_approval_perms(ctx, 4):
+            return 
         snapshot = await jail_snapshots.find_one({"id": user.id})
         if snapshot:
             embed = discord.Embed(description=f"{user.mention} is currently **jailed**. | `{user.id}`", color=discord.Color.yellow())
@@ -137,10 +142,13 @@ class Moderation(commands.Cog):
         else:
             embed = discord.Embed(description=f"{user.mention} is not currently **jailed**. | `{user.id}`", color=discord.Color.yellow())
         await ctx.send(embed=embed, ephemeral=True)
+
+        await log_action(ctx=ctx, log_type="mod_command", command_name="jailstatus")
     
     @commands.hybrid_command(name="viewjailed", description="View all currently jailed users")
     async def viewjailed(self, ctx: commands.Context):
-        await has_approval_perms(ctx.author, 4)
+        if not await has_approval_perms(ctx, 4):
+            return
 
         await ctx.defer(ephemeral=True)
 
@@ -160,6 +168,7 @@ class Moderation(commands.Cog):
             
         embed.description = description
         await ctx.send(embed=embed, ephemeral=True)
+        await log_action(ctx=ctx, log_type="mod_command", command_name="viewjailed")
 
 
 async def setup(bot: commands.Bot):

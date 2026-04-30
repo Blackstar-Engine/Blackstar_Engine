@@ -6,7 +6,7 @@ from utils.constants import profiles
 from ui.paginator import PaginatorView
 from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
-from ui.manage_commands.views.ManageProfileButtons import ManageProfileButtons
+from ui.manage_commands.views.ManageProfileMainView import ManageProfileMainView
 from utils.utils import has_approval_perms, fetch_unit_options, fetch_id
 
 class ConfirmRemovalView(View):
@@ -133,7 +133,8 @@ class ManageCommands(commands.Cog):
     async def auto_reply(self, ctx: commands.Context):
         # User must be in foundation or site command to run this command
 
-        await has_approval_perms(ctx.author, 5)
+        if not await has_approval_perms(ctx, 5):
+            return
         
         # Find all auto replys and create the paginator view object
         items = [record for record in self.bot.auto_replys if record['guild_id'] == ctx.guild.id]
@@ -181,21 +182,22 @@ class ManageCommands(commands.Cog):
         has_drm_role = any(role.id == drm_id for role in ctx.author.roles)
         
         if not (is_bot_owner or has_drm_role):
-            await has_approval_perms(ctx.author, 4)
+            if not await has_approval_perms(ctx, 4):
+                return
 
         # check to see if they have a profile
         profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
         if not profile:
             embed = discord.Embed(title="", description="Profile Not Found", color=discord.Color.dark_embed())
-            await ctx.send(embed=embed)
-        else:
-            # Fetch active departments
-            options = fetch_unit_options(profile)
+            return await ctx.send(embed=embed)
 
-            view = ManageProfileButtons(self.bot, ctx, ctx.author, profile, options, is_owner=is_bot_owner)
+        # Fetch active departments
+        options = fetch_unit_options(profile)
 
-            # Send to the user
-            await ctx.send(view=view, ephemeral=True)
+        view = ManageProfileMainView(bot=self.bot, moderator=ctx.author, inacted_user=user, profile=profile, dept_options=options, is_owner=is_bot_owner)
+
+        # Send to the user
+        await ctx.send(view=view, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ManageCommands(bot))

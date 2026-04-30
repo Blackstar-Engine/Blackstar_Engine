@@ -16,6 +16,7 @@ class LOA(commands.Cog):
         self.bot = bot
     
     async def handle_accepted(self, ctx: commands.Context, view: RequestAcceptDenyButtons, reason: str, start_date: datetime, end_date: datetime, time: str, request_message: discord.Message):
+        moderator: discord.Member = view.action_row.kwargs.get('moderator_obj')
         loa_doc = {
                 "user_id": ctx.author.id,
                 "nickname": ctx.author.display_name,
@@ -24,7 +25,7 @@ class LOA(commands.Cog):
                 "end_date": end_date,
                 "days": time,
                 "reason": reason,
-                "moderator_id": view.action_row.kwargs.get('moderator_id')
+                "moderator_id": moderator.id
             }
         
         await loa.insert_one(loa_doc)
@@ -49,7 +50,7 @@ class LOA(commands.Cog):
             ui.TextDisplay("## Leave Of Absence Accepted"),
             ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
             ui.Separator(),
-            ui.TextDisplay(f"**Accepted By: ** {view.action_row.user.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
+            ui.TextDisplay(f"**Accepted By: ** {moderator.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
             accent_color=discord.Color.green()
 
         )
@@ -68,11 +69,12 @@ class LOA(commands.Cog):
             pass
     
     async def handle_denied(self, ctx: commands.Context, view: RequestAcceptDenyButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
+        moderator: discord.Member = view.action_row.kwargs.get('moderator_obj')
         container = ui.Container(
                 ui.TextDisplay("## Leave Of Absence Denied"),
                 ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
                 ui.Separator(),
-                ui.TextDisplay(f"**Denied By: ** {view.action_row.user.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
+                ui.TextDisplay(f"**Denied By: ** {moderator.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
                 accent_color=discord.Color.red()
 
             )
@@ -170,7 +172,8 @@ class LOA(commands.Cog):
     @loa.command(description="Get a list of all the active LOA's in the server.")
     async def active(self, ctx: commands.Context):
         # Users have to be in foundation or site command to run this command
-        await has_approval_perms(ctx.author, 5)
+        if not await has_approval_perms(ctx, 5):
+            return
         
         # Find all LOA's, create the view, create the embed, send to user
         items = await loa.find({'guild_id': ctx.guild.id}).to_list(length=None)
@@ -186,7 +189,8 @@ class LOA(commands.Cog):
             member = ctx.author
         else:
             # If they are managing another user, they need to be in foundation or site command
-            await has_approval_perms(ctx.author, 5)
+            if not await has_approval_perms(ctx, 5):
+                return
             
             member = user
 
