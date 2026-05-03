@@ -2,15 +2,16 @@ import discord
 from discord.ext import commands
 
 from utils.constants import economy_profiles
-from utils.utils import CEP, check_funds, CheckEconomyProfile
+from utils.utils import check_funds, CheckEconomyProfile
 from ui.economy.blackjack import Blackjack
 from ui.economy.minesweeper import Minesweeper
 from ui.economy.slots import Slots
 
 import random
 from datetime import datetime
+import time
 
-class Econoomy(commands.Cog):
+class Economy(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
     
@@ -96,8 +97,9 @@ class Econoomy(commands.Cog):
         else:
             embed = discord.Embed(title=f"Already Claimed", description=f"You have already claimed your daily reward today.", color=discord.Color.red())
             await ctx.send(embed=embed)
-    
+
     @commands.hybrid_command(name="steal", description="Steal money from another user")
+    @commands.cooldown(1, 1800, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, user: discord.User):
         if user == ctx.author:
             return await ctx.send("You cannot steal from yourself!", ephemeral=True)
@@ -148,6 +150,13 @@ class Econoomy(commands.Cog):
             )      
             embed = discord.Embed(title=f"You've been caught!", description=f"You have been caught by the police and lost {stolen_amount}✦", color=discord.Color.red())
             await ctx.send(embed=embed)    
+    
+    @steal.error
+    async def cooldown_error(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            expires = int(time.time() + error.retry_after)
+            embed = discord.Embed(title="Cooldown", description=f"You are currently on cooldown for robbing other users, try again in <t:{expires}:R>", color=discord.Color.red())
+            await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="balance", description="View your current amount of money")
     async def balance(self, ctx: commands.Context):
@@ -192,4 +201,4 @@ class Econoomy(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Econoomy(bot))
+    await bot.add_cog(Economy(bot))
