@@ -16,3 +16,4 @@ collections
 python-dateutil
 unicodedata
 edge_tts
+random

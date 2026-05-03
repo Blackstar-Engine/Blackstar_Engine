@@ -62,6 +62,7 @@ departments = db.departments
 ids = db.ids
 active_sessions = db.active_sessions
 jail_snapshots = db.jail_snapshots
+economy_profiles = db.economy_profiles
 
 if constants.ENVIRONMENT == "PRODUCTION":
     annoucement_role_id = 1413199178934259844
@@ -82,7 +83,8 @@ if constants.ENVIRONMENT == "PRODUCTION":
         "Omega-1":1441490947627290734,
         "Alpha-1":1427671200162779197,
         "Resh-1":1428164900823371926,
-        "Moderation Team":1456858048537559272
+        "Moderation Team":1456858048537559272,
+        "BCS Officer":1499514012701036574
     }
 
 else:
@@ -104,7 +106,8 @@ else:
         "Omega-1":1450297923991769148,
         "Alpha-1":1450297927976095838,
         "Internal Security Department":1450297930060791977,
-        "Resh-1":1450297939510689986
+        "Resh-1":1450297939510689986,
+        "BCS Officer":1500126140478525451
     }
 
 if constants.ENVIRONMENT != "PRODUCTION":

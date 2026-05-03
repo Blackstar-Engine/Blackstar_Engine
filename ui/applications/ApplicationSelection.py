@@ -11,13 +11,14 @@ class ApplicationOpen(View):
             min_values=1,
             max_values=1,
             options=[
-                discord.SelectOption(label="Intelligence Agency"),
-                discord.SelectOption(label="Internal Security Department"),
-                discord.SelectOption(label="Rapid Response Team"),
-                discord.SelectOption(label="Omega-1"),
-                discord.SelectOption(label="Alpha-1"),
-                discord.SelectOption(label="Resh-1"),
-                discord.SelectOption(label="Moderation Team")
+                discord.SelectOption(label="Intelligence Agency", emoji="🕵️"),
+                discord.SelectOption(label="Internal Security Department", emoji="🏛️"),
+                discord.SelectOption(label="Rapid Response Team", emoji="♦️"),
+                discord.SelectOption(label="Omega-1", emoji="👁️"),
+                discord.SelectOption(label="Alpha-1", emoji="🛡️"),
+                discord.SelectOption(label="Resh-1", emoji="🐺"),
+                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1500548210979115050>"),
+                discord.SelectOption(label="BCS Officer", emoji="⚔️")
             ]
         )
 
@@ -49,13 +50,14 @@ class ApplicationClose(View):
             min_values=1,
             max_values=1,
             options=[
-                discord.SelectOption(label="Intelligence Agency"),
-                discord.SelectOption(label="Internal Security Department"),
-                discord.SelectOption(label="Rapid Response Team"),
-                discord.SelectOption(label="Omega-1"),
-                discord.SelectOption(label="Alpha-1"),
-                discord.SelectOption(label="Resh-1"),
-                discord.SelectOption(label="Moderation Team")
+                discord.SelectOption(label="Intelligence Agency", emoji="🕵️"),
+                discord.SelectOption(label="Internal Security Department", emoji="🏛️"),
+                discord.SelectOption(label="Rapid Response Team", emoji="♦️"),
+                discord.SelectOption(label="Omega-1", emoji="👁️"),
+                discord.SelectOption(label="Alpha-1", emoji="🛡️"),
+                discord.SelectOption(label="Resh-1", emoji="🐺"),
+                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1500548210979115050>"),
+                discord.SelectOption(label="BCS Officer", emoji="⚔️")
             ]
         )
 
