@@ -32,6 +32,7 @@ class Slots(ui.LayoutView):
         self.add_item(self.container)
 
     async def spin_callback(self, interaction: discord.Interaction):
+        self.spin_button.disabled = True
         await interaction.response.defer()
         self.status.content = "Spinning the slots!"
         intervals = self.duration / 8
@@ -45,13 +46,13 @@ class Slots(ui.LayoutView):
 
         result = []
 
-        if roll < 0.5:
+        if roll < 0.6:
             result = random.sample(self.symbols, 3)
             self.status.content = f"You have rolled nothing (-{self.currency}✦)"
-            winnings = -{self.currency}
+            winnings = -self.currency
             self.container.accent_color = discord.Color.red()
 
-        elif roll < 0.85:
+        elif roll < 0.8:
             s = random.choice(symbols)
             other = random.choice([x for x in self.symbols if x != s])
 
@@ -69,10 +70,10 @@ class Slots(ui.LayoutView):
             self.container.accent_color = discord.Color.green()
 
         self.slots.content = "*" + " ┃ ".join(result) + "*"
-        self.spin_button.disabled = True
         await interaction.edit_original_response(view=self)
 
         await economy_profiles.update_one(
             {"user_id": interaction.user.id},
-            {"$inc": {"currency": winnings}}
-        )        
+            {"$inc": {"currency": -winnings}}
+        )
+        return        
