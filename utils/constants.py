@@ -54,6 +54,8 @@ else:
 auto_replys = db.auto_replys
 loa = db.loa
 stored_loa = db.stored_loa
+roa = db.roa
+stored_roa = db.stored_roa
 profiles = db.profiles
 promotion_requests = db.promotion_requests
 enlistment_requests = db.enlistment_requests

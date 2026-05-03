@@ -36,8 +36,6 @@ class Bot(commands.Bot):
         bypassed_users = [
             758170288566566952, #Ghost
             1371489554279825439, #Wolf
-            412192199028113408, #Maz
-            934537337113804891, #Bread
             1007353417779396709 #Option
         ]
 

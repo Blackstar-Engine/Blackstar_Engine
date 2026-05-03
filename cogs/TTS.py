@@ -11,7 +11,8 @@ class tts_system_commands(commands.Cog):
 
     @commands.hybrid_command(name="move", description="Force move the bot to a different VC.")
     async def move(self, ctx: commands.Context, channel: discord.VoiceChannel):
-        await has_approval_perms(ctx.author, 3)
+        if not await has_approval_perms(ctx, 3):
+            return
 
         if not ctx.author.voice:
             embed = discord.Embed(title="Whoops....", description="Please make sure you are in a channel!", color=discord.Color.light_grey())

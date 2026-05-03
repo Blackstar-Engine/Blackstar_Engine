@@ -67,7 +67,7 @@ class Errors(commands.Cog):
         
         elif isinstance(error, commands.CheckFailure):
             embed.description = "❌ " + str(error)
-            
+
         elif isinstance(error, commands.CommandNotFound):
             return
         
@@ -106,6 +106,9 @@ class Errors(commands.Cog):
         
         elif isinstance(error, commands.NoPrivateMessage):
             return
+        
+        elif isinstance(error, commands.CheckFailure):
+            embed.description = "❌ " + str(error)
 
         elif isinstance(error, (commands.CheckFailure, commands.CommandNotFound, commands.CommandOnCooldown)):
             return

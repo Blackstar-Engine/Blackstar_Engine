@@ -29,10 +29,15 @@ class ChangeRankRow(ui.ActionRow):
 
         self.profile["unit"][self.department]["rank"] = selection
 
-        embed = discord.Embed(title=f"{self.department} Rank Changed!", 
-                              description=f"**New Rank: **{selection}",
-                              color=discord.Color.green())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        container = ui.Container(
+            ui.TextDisplay(f"## {self.department} Rank Changed!"),
+            ui.TextDisplay(f"**New Rank: **{selection}"),
+            accent_color=discord.Color.green()
+        )
+        view = ui.LayoutView()
+        view.add_item(container)
+
+        await interaction.response.edit_message(view=view)
         self.view.stop()
 
 class ManageDepartmentRow(ui.ActionRow):
