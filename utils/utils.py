@@ -10,6 +10,7 @@ import asyncio
 from dateutil import parser
 import re
 import unicodedata
+from datetime import datetime, timedelta
 from utils.constants import (
     profiles,
     departments,
@@ -19,7 +20,8 @@ from utils.constants import (
     CHANNEL_RE,
     EMOJI_RE,
     BlackstarConstants,
-    ids
+    ids,
+    economy_profiles,
 )
 
 tts_lock = threading.Lock()
@@ -331,3 +333,21 @@ async def log_action(ctx: commands.Context, log_type: str, **kwargs):
         await channel.send(embed=log_embed)
     except Exception:
         pass
+
+async def CEP(user, guild):
+    dt = (datetime.now() - timedelta(days=1)).day
+    await economy_profiles.insert_one({"user_id":user.id, "guild_id":guild.id, "currency":500, "last_claimed":dt})
+
+async def CheckEconomyProfile(user, guild):
+    info = await economy_profiles.find_one({"user_id":user.id})
+    if not info:
+        await CEP(user, guild)
+
+async def check_funds(claim, user, guild):
+    await CheckEconomyProfile(user, guild)
+    info = await economy_profiles.find_one({"user_id":user.id})
+    currency = info.get("currency")
+    if currency >= claim:
+        return True
+    else:
+        return False

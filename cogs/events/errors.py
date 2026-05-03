@@ -70,6 +70,9 @@ class Errors(commands.Cog):
 
         elif isinstance(error, commands.CommandNotFound):
             return
+        
+        elif isinstance(error, commands.CommandOnCooldown):
+            return
 
         else:
             embed.description = "❌ Uh oh! An unexpected error occurred."
@@ -107,7 +110,7 @@ class Errors(commands.Cog):
         elif isinstance(error, commands.CheckFailure):
             embed.description = "❌ " + str(error)
 
-        elif isinstance(error, commands.CommandNotFound):
+        elif isinstance(error, (commands.CheckFailure, commands.CommandNotFound, commands.CommandOnCooldown)):
             return
 
         else:
