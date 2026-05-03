@@ -107,7 +107,9 @@ class Promotion(commands.Cog):
 
         await send_promotion_request(self.bot, channel, profile, dept_name, proof, next_rank['name'], is_appointment)
 
-        await ctx.send("Promotion request submitted.", ephemeral=True, delete_after=10)
+        embed = discord.Embed(title="Promotion Request Submitted", description="Your promotion request has been submitted for review.", color=discord.Color.green())
+
+        await ctx.send(embed=embed, ephemeral=True, delete_after=10)
 
 
 async def setup(bot: commands.Bot):

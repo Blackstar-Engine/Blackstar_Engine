@@ -31,8 +31,20 @@ def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
         raise commands.CommandError("Sorry but you can't use this button.")
 
-async def has_approval_perms(member: discord.Member, level: int) -> bool:
+async def has_approval_perms(ctx: commands.Context, level: int) -> bool:
+    if isinstance(ctx, discord.Interaction):
+        member = ctx.user
+    else:
+        member = ctx.author
+
     results = await fetch_id(member.guild.id, ["foundation_command", "site_command", "high_command", "central_command", "ia_id", "drm_id", "ghost_id", "option_id", "wolf_id"])
+
+    if member.id == results["wolf_id"]:
+        return True
+    
+    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
+        return True
+    
     match level:
         case 1:
             allowed_roles = {
@@ -72,20 +84,18 @@ async def has_approval_perms(member: discord.Member, level: int) -> bool:
             allowed_roles = {
                 results["foundation_command"]
             }
-
-
-    if member.id == results["wolf_id"]:
-        return True
-
-    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
-        return True
     
     roles = any(role.id in allowed_roles for role in member.roles)
-    if not roles:
-        raise commands.CheckFailure("You don't have permission to use this command.")
-    elif roles:
+    if roles:
         return True
     else:
+        if isinstance(ctx, discord.Interaction):
+            try:
+                await ctx.response.send_message("You do not have the required permissions to use this command.", ephemeral=True)
+            except discord.HTTPException:
+                await ctx.followup.send("You do not have the required permissions to use this command.", ephemeral=True)
+        else:
+            await ctx.send("You do not have the required permissions to use this command.")
         return False
 
 async def fetch_profile(ctx: commands.Context, send_message: bool = True):
@@ -110,7 +120,13 @@ async def fetch_department(ctx: commands.Context, department: str):
     
     if not department_doc:
         embed = discord.Embed(title="", description="Department not found.", color=discord.Color.dark_embed())
-        await ctx.send(embed=embed)
+        if isinstance(ctx, discord.Interaction):
+            try:
+                await ctx.response.send_message(embed=embed, ephemeral=True)
+            except discord.HTTPException:
+                await ctx.followup.send(embed=embed, ephemeral=True)
+        else:
+            await ctx.send(embed=embed, ephemeral=True)
         return False
     
     return department_doc

@@ -62,7 +62,12 @@ class PaginatorView(View):
                 key=key.replace("_id", "")
                 key=key.replace("_", " ")
                 if isinstance(value, int):
-                    embed.add_field(name=key.title(), value=f"<@{value}>", inline=True)
+                    if "timestamp" in key.lower():
+                        value = f"<t:{value}:R>"
+                    elif "id" in key.lower() or "user" in key.lower() or "moderator" in key.lower():
+                        value = f"<@{value}>"
+
+                    embed.add_field(name=key.title(), value=value, inline=True)
                 elif isinstance(value, list):
                     des = ""
                     for v in value:

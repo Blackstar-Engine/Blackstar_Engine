@@ -114,7 +114,8 @@ class Points(commands.Cog):
         )
 
         # Check to make sure they can run this command
-        await has_approval_perms(ctx.author, 3)
+        if not await has_approval_perms(ctx, 3):
+            return
 
         # Command parsing checks
         if ctx.author.id == user.id:

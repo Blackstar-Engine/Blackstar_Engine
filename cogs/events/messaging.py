@@ -67,8 +67,8 @@ class Messaging(commands.Cog):
             for mention in message.mentions:
                 result = await loa.find_one({"guild_id": message.guild.id, "user_id": mention.id})
                 if result:
-                    embed = discord.Embed(title="On LOA", description=f"Please refrain from pinging **{mention.name}**", color=discord.Color.dark_embed())
-                    await message.reply(embed=embed)
+                    embed = discord.Embed(title="On LOA", description=f"Please refrain from pinging **{mention.display_name}**", color=discord.Color.dark_embed())
+                    await message.channel.send(embed=embed)
                 else:
                     return
     
@@ -134,7 +134,7 @@ class Messaging(commands.Cog):
     async def on_message(self, message: discord.Message):
         await self.bot.wait_until_ready()
         
-        if message.author == self.bot.user:
+        if message.author == self.bot.user or message.author.bot:
             return
         
         # Checking for LOA Pings

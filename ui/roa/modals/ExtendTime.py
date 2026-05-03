@@ -3,15 +3,15 @@ from discord import ui
 from discord.ext import commands
 import re
 from datetime import timedelta
-from utils.constants import LOARegFormat, loa
+from utils.constants import LOARegFormat, roa
 from ui.AcceptDenyButtons import AcceptDenyButtons
 from utils.utils import fetch_id
 
 class AddTimeModal(discord.ui.Modal):
-    def __init__(self, bot: commands.Bot, active_loa: dict, user: discord.Member, member: discord.Member):
-        super().__init__(title="LOA Time Addition")
+    def __init__(self, bot: commands.Bot, active_roa: dict, user: discord.Member, member: discord.Member):
+        super().__init__(title="ROA Time Addition")
         self.bot = bot
-        self.active_loa = active_loa
+        self.active_roa = active_roa
         self.user = user
         self.member = member
 
@@ -47,16 +47,16 @@ class AddTimeModal(discord.ui.Modal):
 
         time_delta = timedelta(days=years * 365 + months * 30 + weeks * 7 + days, hours=hours)
 
-        new_end_date = self.active_loa["end_date"] + time_delta
+        new_end_date = self.active_roa["end_date"] + time_delta
         results = await fetch_id(interaction.guild.id, ["loa_channel"])
         loa_channel = results["loa_channel"]
 
-        if self.member == self.user:  # If managing your own LOA
+        if self.member == self.user:  # If managing your own ROA
             channel = await interaction.guild.fetch_channel(loa_channel)
 
             action_row = AcceptDenyButtons(bot = self.bot, user=interaction.user, permission_level=3)
             container = ui.Container(
-                ui.TextDisplay("## LOA Extension Requested"),
+                ui.TextDisplay("## ROA Extension Requested"),
                 ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
                 ui.Separator(),
                 action_row,
@@ -68,8 +68,8 @@ class AddTimeModal(discord.ui.Modal):
             request_message = await channel.send(view=view)
 
             extend_embed = discord.Embed(
-                title="LOA Extention",
-                description=f"Successfully sent the request. The LOA will end at {discord.utils.format_dt(new_end_date)}",
+                title="ROA Extention",
+                description=f"Successfully sent the request. The ROA will end at {discord.utils.format_dt(new_end_date)}",
                 color=discord.Color.green()
             )
 
@@ -80,14 +80,14 @@ class AddTimeModal(discord.ui.Modal):
             if not action_row.is_accepted:
                 try:
                     embed = discord.Embed(
-                        title="LOA Extension Denied",
-                        description=f"Your request to extend your LOA to {discord.utils.format_dt(new_end_date)} has been **DENIED**.\n**Reason: ** {action_row.kwargs.get('reason', 'No reason provided.')} ",
+                        title="ROA Extension Denied",
+                        description=f"Your request to extend your ROA to {discord.utils.format_dt(new_end_date)} has been **DENIED**.\n**Reason: ** {action_row.kwargs.get('reason', 'No reason provided.')} ",
                         color=discord.Color.red()
                     )
                     await self.user.send(embed=embed)
 
                     container = ui.Container(
-                        ui.TextDisplay("## LOA Extension Denied"),
+                        ui.TextDisplay("## ROA Extension Denied"),
                         ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
                         ui.Separator(),
                         ui.TextDisplay(f"**Denied By: ** {interaction.user.mention}\n**Reason: ** {action_row.kwargs.get('reason', 'No reason provided.')}"),
@@ -100,18 +100,18 @@ class AddTimeModal(discord.ui.Modal):
                 except discord.Forbidden:
                     pass
             else:
-                await loa.update_one(self.active_loa, {'$set': {'end_date': new_end_date}})
+                await roa.update_one(self.active_roa, {'$set': {'end_date': new_end_date}})
 
                 try:
                     embed = discord.Embed(
-                        title="LOA Extension Accepted",
-                        description=f"Your request to extend your LOA to {discord.utils.format_dt(new_end_date)} has been **ACCEPTED**.",
+                        title="ROA Extension Accepted",
+                        description=f"Your request to extend your ROA to {discord.utils.format_dt(new_end_date)} has been **ACCEPTED**.",
                         color=discord.Color.green()
                     )
                     await self.user.send(embed=embed)
 
                     container = ui.Container(
-                        ui.TextDisplay("## LOA Extension Accepted"),
+                        ui.TextDisplay("## ROA Extension Accepted"),
                         ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
                         ui.Separator(),
                         ui.TextDisplay(f"**Accepted By: ** {interaction.user.mention}"),
@@ -126,22 +126,22 @@ class AddTimeModal(discord.ui.Modal):
 
                 
 
-        else:  # If managing someone else's LOA
-            await loa.update_one(self.active_loa, {'$set': {'end_date': new_end_date}})
+        else:  # If managing someone else's ROA
+            await roa.update_one(self.active_roa, {'$set': {'end_date': new_end_date}})
 
             channel = await interaction.guild.fetch_channel(loa_channel)
 
             log_embed = discord.Embed(
-                title="LOA Extended By Moderator",
-                description=f"**User: ** <@{self.active_loa.get("user_id")}>\n**Start Time: ** {self.active_loa.get('start_date')}\n**End Date: ** {new_end_date}\n**End Reason: ** {reason}",
+                title="ROA Extended By Moderator",
+                description=f"**User: ** <@{self.active_roa.get("user_id")}>\n**Start Time: ** {self.active_roa.get('start_date')}\n**End Date: ** {new_end_date}\n**End Reason: ** {reason}",
                 color=discord.Color.light_grey()
             )
 
             await channel.send(embed=log_embed)
 
             extend_embed = discord.Embed(
-                title="LOA Extention",
-                description=f"Successfully extended {self.member.mention}'s LOA. The LOA will end at {discord.utils.format_dt(new_end_date)}",
+                title="ROA Extention",
+                description=f"Successfully extended {self.member.mention}'s ROA. The ROA will end at {discord.utils.format_dt(new_end_date)}",
                 color=discord.Color.green()
             )
 

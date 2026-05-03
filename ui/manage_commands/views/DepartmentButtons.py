@@ -1,4 +1,5 @@
 import discord
+from discord.ext import commands
 from discord import ui
 from utils.utils import fetch_department, has_approval_perms, log_action
 from ui.PointsRemoval import PointsRemovalModal
@@ -6,10 +7,11 @@ from utils.constants import profiles
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
 
 class DepartmentButtons(ui.ActionRow):
-    def __init__(self, bot, user, unit, profile):
+    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, unit: str):
         super().__init__()
         self.bot = bot
-        self.user = user
+        self.moderator = moderator
+        self.inacted_user = inacted_user
         self.profile = profile
         self.unit = unit
 
@@ -35,12 +37,12 @@ class DepartmentButtons(ui.ActionRow):
         ranks = dept.get("ranks", [])
 
         view = discord.ui.LayoutView()
-        action_row = discord.ui.ActionRow(ReturnButton(self.bot, self.user))
+        action_row = discord.ui.ActionRow(ReturnButton(self.bot, self.moderator, self.inacted_user))
         container = discord.ui.Container(
             discord.ui.TextDisplay(f"**Selected Unit:** {self.unit}\n**Current Rank:** {current_rank}"),
             discord.ui.Separator(),
             discord.ui.TextDisplay("Select the new rank to demote to:"),
-            DemoteRankView(self.bot, self.user, self.profile, self.unit, ranks, current_rank),
+            DemoteRankView(self.bot, self.moderator, self.inacted_user, self.profile, self.unit, ranks, current_rank),
             action_row,
             accent_color=discord.Color.yellow()
         )
@@ -57,9 +59,9 @@ class DepartmentButtons(ui.ActionRow):
 
         points = modal.data
 
-        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.user.id, points=points, command_name="manage profile")
+        await log_action(ctx=interaction, log_type="point_deduction", user_id=self.moderator.id, points=points, command_name="manage profile")
 
-        await profiles.update_one({"guild_id": interaction.guild.id, "user_id": self.user.id}, {"$inc": {f"unit.{self.unit}.current_points": -float(points)}})
+        await profiles.update_one({"guild_id": interaction.guild.id, "user_id": self.inacted_user.id}, {"$inc": {f"unit.{self.unit}.current_points": -float(points)}})
 
         confirm_view = ui.LayoutView()
         container = ui.Container(
@@ -79,13 +81,14 @@ class DepartmentButtons(ui.ActionRow):
             ui.TextDisplay(f"## {self.unit} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
             ui.Separator(),
-            DepartmentButtons(self.bot, self.user, self.unit, self.profile),
+            DepartmentButtons(self.bot, self.moderator, self.inacted_user, self.profile, self.unit),
             accent_color=discord.Color.light_grey()
         )
 
         is_bot_owner = await self.bot.is_owner(interaction.user)
         if is_bot_owner:
-            await has_approval_perms(self.user, 6)
+            if not await has_approval_perms(interaction, 6):
+                return
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))
 

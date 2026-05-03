@@ -14,7 +14,8 @@ class Applications(commands.Cog):
 
     @applications.command(name="open", description="Opens a private departments application")
     async def open_applications(self, ctx: commands.Context):
-        await has_approval_perms(ctx.author, 6)
+        if not await has_approval_perms(ctx, 6):
+            return
 
         view = ApplicationOpen()
         embed = discord.Embed(title="Applications", description="Please select one of the following departments to open applications for.", color=discord.Color.light_gray())
@@ -23,7 +24,8 @@ class Applications(commands.Cog):
 
     @applications.command(name="close", description="Closes a private departments application")
     async def close_applications(self, ctx: commands.Context):
-        await has_approval_perms(ctx.author, 6)
+        if not await has_approval_perms(ctx, 6):
+            return
 
         view = ApplicationClose()
         embed = discord.Embed(title="Applications", description="Please select one of the following departments to close applications for.", color=discord.Color.light_gray())
