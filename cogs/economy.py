@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from utils.constants import economy_profiles
-from utils.utils import check_funds, CheckEconomyProfile
+from utils.utils import check_funds, CheckEconomyProfile, get_max
 from ui.economy.blackjack import Blackjack
 from ui.economy.minesweeper import Minesweeper
 from ui.economy.slots import Slots
@@ -16,8 +16,15 @@ class Economy(commands.Cog):
         self.bot = bot
     
     @commands.hybrid_command(name="coinflip", description="Gamble currency in a coinflip")
-    async def coinflip(self, ctx: commands.Context, choice: str, currency: int):
+    async def coinflip(self, ctx: commands.Context, choice: str, currency):
         await CheckEconomyProfile(ctx.author, ctx.guild)
+        if isinstance(currency, int):
+            pass
+        else:
+            if currency.lower() == "max" or "all":
+                currency = await get_max(ctx.author, ctx.guild)
+            else:
+                return await ctx.send("Please enter a valid bet.")
 
         info = await economy_profiles.find_one({'user_id': ctx.author.id})
 
@@ -168,7 +175,15 @@ class Economy(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="blackjack", description="Gamble your money on a game of Blackjack")
-    async def blackjack(self, ctx: commands.Context, currency: int):
+    async def blackjack(self, ctx: commands.Context, currency):
+        if isinstance(currency, int):
+            pass
+        else:
+            if currency.lower() == "max" or "all":
+                currency = await get_max(ctx.author, ctx.guild)
+            else:
+                return await ctx.send("Please enter a valid bet.")
+            
         await CheckEconomyProfile(ctx.author, ctx.guild)
         if not await check_funds(currency, ctx.author, ctx.guild):
             return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
@@ -176,7 +191,14 @@ class Economy(commands.Cog):
         await ctx.send(view=view)
 
     @commands.hybrid_command(name="minesweeper", description="Gamble your money on a game of minesweeper")
-    async def minesweeper(self, ctx: commands.Context, currency: int):
+    async def minesweeper(self, ctx: commands.Context, currency):
+        if isinstance(currency, int):
+            pass
+        else:
+            if currency.lower() == "max" or "all":
+                currency = await get_max(ctx.author, ctx.guild)
+            else:
+                return await ctx.send("Please enter a valid bet.")
         await CheckEconomyProfile(ctx.author, ctx.guild)
         if not await check_funds(currency, ctx.author, ctx.guild):
             return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
@@ -184,8 +206,15 @@ class Economy(commands.Cog):
         await ctx.send(view=view)
 
     @commands.hybrid_command(name="slots", description="Gamble your money on a game of slots")
-    async def slots(self, ctx: commands.Context, currency: int):
+    async def slots(self, ctx: commands.Context, currency):
         await CheckEconomyProfile(ctx.author, ctx.guild)
+        if isinstance(currency, int):
+            pass
+        else:
+            if currency.lower() == "max" or "all":
+                currency = await get_max(ctx.author, ctx.guild)
+            else:
+                return await ctx.send("Please enter a valid bet.")
         if not await check_funds(currency, ctx.author, ctx.guild):
             return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
         view = Slots(currency)

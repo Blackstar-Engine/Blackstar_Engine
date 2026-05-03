@@ -351,3 +351,8 @@ async def check_funds(claim, user, guild):
         return True
     else:
         return False
+    
+async def get_max(user, guild):
+    await CheckEconomyProfile(user, guild)
+    info = await economy_profiles.find_one({"user_id":user.id})
+    return info.get("currency")
