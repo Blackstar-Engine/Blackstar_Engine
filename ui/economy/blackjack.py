@@ -12,6 +12,7 @@ class Blackjack(ui.LayoutView):
         super().__init__(timeout=None)
         self.currency = currency
         self.user = user
+
         self.emoji_dict = {
             0:"<:Unknown:1499985461106446448> ",
             1:"<:AceSpades:1499248426590933032>",
@@ -33,10 +34,13 @@ class Blackjack(ui.LayoutView):
         self.player_cards = [random.randint(1, 13)]
 
         self.dealer_display = ui.TextDisplay(
-            " ".join(self.emoji_dict[c] for c in self.dealer_cards) + f" `[{sum(self.dealer_cards)}]`"
+            " ".join(self.emoji_dict[c] for c in self.dealer_cards) +
+            f" `[{sum(self.get_card_value(c) for c in self.dealer_cards)}]`"
         )
+
         self.player_display = ui.TextDisplay(
-            " ".join(self.emoji_dict[c] for c in self.player_cards) + f" `[{sum(self.player_cards)}]`"
+            " ".join(self.emoji_dict[c] for c in self.player_cards) +
+            f" `[{sum(self.get_card_value(c) for c in self.player_cards)}]`"
         )
 
         self.hit_button = ui.Button(label="Hit", style=discord.ButtonStyle.danger)
@@ -59,26 +63,34 @@ class Blackjack(ui.LayoutView):
         )
 
         self.container.accent_color = discord.Color.light_gray()
-
         self.add_item(self.container)
+
+    def get_card_value(self, card):
+        if card >= 11:
+            return 10
+        return card
 
     async def hit_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.user.id:
-            return await interaction.response.send_message("You do not have permisson to interact with this game!", ephemeral=True)
+            return await interaction.response.send_message(
+                "You do not have permisson to interact with this game!",
+                ephemeral=True
+            )
+
         card = random.randint(1, 13)
         self.player_cards.append(card)
 
         self.player_display.content = (
             " ".join(self.emoji_dict[c] for c in self.player_cards)
-            + f" `[{sum(self.player_cards)}]`"
+            + f" `[{sum(self.get_card_value(c) for c in self.player_cards)}]`"
         )
 
-        if sum(self.player_cards) > 21:
+        if sum(self.get_card_value(c) for c in self.player_cards) > 21:
             self.title.content = "###  Player Bust!"
             self.container.accent_color = discord.Color.red()
 
             await CheckEconomyProfile(interaction.user, interaction.guild)
-            
+
             await economy_profiles.update_one(
                 {"user_id": self.user.id},
                 {"$inc": {"currency": -self.currency}}
@@ -86,78 +98,83 @@ class Blackjack(ui.LayoutView):
 
             self.hit_button.disabled = True
             self.stand_button.disabled = True
-        
+
         await interaction.response.edit_message(view=self)
-    
+
     async def stand_callback(self, interaction: discord.Interaction):
-        while sum(self.dealer_cards) < 17:
+        while sum(self.get_card_value(c) for c in self.dealer_cards) < 17:
             card = random.randint(1, 13)
             self.dealer_cards.append(card)
-        
-        if sum(self.dealer_cards) > 21:
+
+        if sum(self.get_card_value(c) for c in self.dealer_cards) > 21:
             self.dealer_cards.remove(0)
             self.dealer_display.content = (
                 " ".join(self.emoji_dict[c] for c in self.dealer_cards)
-                + f" `[{sum(self.dealer_cards)}]`"
+                + f" `[{sum(self.get_card_value(c) for c in self.dealer_cards)}]`"
             )
+
             self.title.content = "###  Dealer Bust!"
             self.container.accent_color = discord.Color.green()
 
             await CheckEconomyProfile(interaction.user, interaction.guild)
-            
+
             await economy_profiles.update_one(
                 {"user_id": self.user.id},
                 {"$inc": {"currency": +self.currency}}
             )
 
+        elif sum(self.get_card_value(c) for c in self.dealer_cards) == sum(self.get_card_value(c) for c in self.player_cards):
+            self.dealer_cards.remove(0)
+            self.dealer_display.content = (
+                " ".join(self.emoji_dict[c] for c in self.dealer_cards)
+                + f" `[{sum(self.get_card_value(c) for c in self.dealer_cards)}]`"
+            )   
+            self.title.content = "###  Push!"         
+            self.container.accent_color = discord.Color.yellow()
+
             self.hit_button.disabled = True
             self.stand_button.disabled = True
         else:
             self.dealer_cards.remove(0)
-            player_score = sum(self.player_cards) if sum(self.player_cards) <= 21 else 0
-            dealer_score = sum(self.dealer_cards) if sum(self.dealer_cards) <= 21 else 0
+
+            player_score = sum(self.get_card_value(c) for c in self.player_cards)
+            dealer_score = sum(self.get_card_value(c) for c in self.dealer_cards)
 
             if player_score > dealer_score:
                 self.dealer_display.content = (
                     " ".join(self.emoji_dict[c] for c in self.dealer_cards)
-                    + f" `[{sum(self.dealer_cards)}]`"
+                    + f" `[{dealer_score}]`"
                 )
 
                 self.title.content = "###  Player Win!"
                 self.container.accent_color = discord.Color.green()
 
-                info = await economy_profiles.find_one({"user_id":interaction.user.id})
+                info = await economy_profiles.find_one({"user_id": interaction.user.id})
                 if not info:
                     await CEP(self.user, interaction.guild)
-                    info = await economy_profiles.find_one({"user_id":interaction.user.id})
-                
+
                 await economy_profiles.update_one(
                     {"user_id": self.user.id},
                     {"$inc": {"currency": +self.currency}}
                 )
 
-                self.hit_button.disabled = True
-                self.stand_button.disabled = True   
             else:
                 self.dealer_display.content = (
                     " ".join(self.emoji_dict[c] for c in self.dealer_cards)
-                    + f" `[{sum(self.dealer_cards)}]`"
+                    + f" `[{dealer_score}]`"
                 )
+
                 self.title.content = "###  Dealer Win!"
                 self.container.accent_color = discord.Color.red()
 
                 await CheckEconomyProfile(interaction.user, interaction.guild)
-                
+
                 await economy_profiles.update_one(
                     {"user_id": self.user.id},
                     {"$inc": {"currency": -self.currency}}
                 )
 
-                self.hit_button.disabled = True
-                self.stand_button.disabled = True                         
-        
+            self.hit_button.disabled = True
+            self.stand_button.disabled = True
+
         await interaction.response.edit_message(view=self)
-
-
-
-            
