@@ -164,6 +164,8 @@ class Economy(commands.Cog):
             expires = int(time.time() + error.retry_after)
             embed = discord.Embed(title="Cooldown", description=f"You are currently on cooldown for robbing other users, try again in <t:{expires}:R>", color=discord.Color.red())
             await ctx.send(embed=embed)
+        else:
+            ctx.command.reset_cooldown(ctx)
 
     @commands.hybrid_command(name="balance", description="View your current amount of money")
     async def balance(self, ctx: commands.Context):
