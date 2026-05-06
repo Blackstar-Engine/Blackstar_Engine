@@ -94,7 +94,7 @@ class Economy(commands.Cog):
                         "last_claimed": datetime.now().day
                     },
                     "$inc": {
-                        "currency": 250
+                        "currency": 500
                     }
                 }
             )
