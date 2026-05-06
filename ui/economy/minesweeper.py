@@ -4,12 +4,12 @@ import random
 from utils.constants import economy_profiles
 
 class MineButton(ui.Button):
-    def __init__(self, row, col, index, currency):
+    def __init__(self, row, col, index, bet):
         super().__init__(label="?", style=discord.ButtonStyle.blurple)
         self.row = row
         self.col = col
         self.index = index
-        self.currency = currency
+        self.bet = bet
 
     async def callback(self, interaction: discord.Interaction):
         view: Minesweeper = self.view
@@ -32,12 +32,8 @@ class MineButton(ui.Button):
             view.container.accent_color = discord.Color.red() 
 
             await economy_profiles.update_one(
-                {
-                    "user_id":interaction.user.id,
-                },
-                {
-                    "$inc":{"currency":-self.currency}
-                }
+                {"user_id": interaction.user.id, "guild_id": interaction.guild.id},
+                {"$inc":{"currency":-abs(self.bet)}}
             )      
 
         else:
@@ -51,11 +47,11 @@ class MineButton(ui.Button):
         await interaction.response.edit_message(view=view)
 
 class Minesweeper(ui.LayoutView):
-    def __init__(self, user, currency):
+    def __init__(self, user, bet):
         super().__init__(timeout=None)
 
         self.user = user
-        self.currency = currency
+        self.bet = bet
         self.mines = 5
         self.buttons = []
         self.game = True
@@ -78,7 +74,7 @@ class Minesweeper(ui.LayoutView):
 
             for col in range(4):
                 index = row * 4 + col
-                button = MineButton(row, col, index, self.currency)
+                button = MineButton(row, col, index, self.bet)
                 self.buttons.append(button)
                 row_buttons.append(button)
 
@@ -96,11 +92,11 @@ class Minesweeper(ui.LayoutView):
     
     def update_payout(self):
         if self.lost == True:
-            self.earnings.content = (f"Current Earnings 0.00x (-{self.currency}✦)")
+            self.earnings.content = (f"Current Earnings 0.00x (-{self.bet}✦)")
             return
         multiplier = 1 + (self.revealed * self.tile_value)
-        payout = int(self.currency * multiplier)
-        gain = payout - self.currency 
+        payout = int(self.bet * multiplier)
+        gain = payout - self.bet 
 
         self.earnings.content = (
             f"Current Earnings: {multiplier:.2f}x (+{gain}✦)"
@@ -108,26 +104,19 @@ class Minesweeper(ui.LayoutView):
 
     async def cash_out_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.user.id:
-            return await interaction.response.send_message("You do not have permisson to interact with this game!", ephemeral=True)
-        
-        multiplier = 1 + (self.revealed * self.tile_value)
-        payout = int(self.currency * multiplier)    
+            return await interaction.response.send_message("You do not have permisson to interact with this game!", ephemeral=True) 
 
         self.container.accent_color = discord.Color.green()
         self.cash_out.disabled = True
         self.end_game()
 
         multiplier = 1 + (self.revealed * self.tile_value)
-        payout = int(self.currency * multiplier)
-        gain = payout - self.currency 
+        payout = int(self.bet * multiplier)
+        gain = payout - self.bet 
 
         await economy_profiles.update_one(
-            {
-                "user_id":interaction.user.id,
-            },
-            {
-                "$inc":{"currency":+gain}
-            }
+            {"user_id": interaction.user.id, "guild_id": interaction.guild.id},
+            {"$inc":{"currency": abs(gain)}}
         )      
         await interaction.response.edit_message(view=self)
 

@@ -85,8 +85,12 @@ class Tasks(commands.Cog):
             {"end_date": {"$lte": now}}
         ).to_list(length=None)
 
-        if len(expired_loas) > 0 or len(expired_roas) > 0:
+        if len(expired_loas) > 0:
             results = await fetch_id(expired_loas[0]["guild_id"], ['loa_role', 'loa_channel', 'roa_role'])
+        elif len(expired_roas) > 0:
+            results = await fetch_id(expired_roas[0]["guild_id"], ['loa_role', 'loa_channel', 'roa_role'])
+        else:
+            return
         
         for record in expired_roas:
             # Get guild, channel, and member
@@ -98,7 +102,7 @@ class Tasks(commands.Cog):
             role = guild.get_role(results['roa_role'])
             try:
                 await member.remove_roles(role, reason="ROA expired")
-            except discord.Forbidden:
+            except (discord.Forbidden, AttributeError):
                 pass
 
             await self._preform_final_action(member, record, channel, guild, "ROA")
@@ -113,7 +117,7 @@ class Tasks(commands.Cog):
             role = guild.get_role(results['loa_role'])
             try:
                 await member.remove_roles(role, reason="LOA expired")
-            except discord.Forbidden:
+            except (discord.Forbidden, AttributeError):
                 pass
 
             await self._preform_final_action(member, record, channel, guild, "LOA")
@@ -130,10 +134,7 @@ class Tasks(commands.Cog):
     async def _fetch_member(self, guild: discord.Guild, user_id: int):
         member = guild.get_member(user_id)
         if not member:
-            try:
-                member = await self.bot.fetch_user(user_id)
-            except (discord.NotFound, discord.Forbidden):
-                return None
+            return None
         return member
 
     async def _preform_final_action(self, member: discord.Member, record: dict, channel: discord.TextChannel, guild: discord.Guild, record_type: str):

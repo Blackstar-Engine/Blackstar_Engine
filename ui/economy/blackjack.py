@@ -2,15 +2,15 @@ import discord
 from discord import ui
 from discord.ext import commands
 
-from utils.utils import CEP, CheckEconomyProfile
+from utils.utils import check_eco_profile
 from utils.constants import economy_profiles
 
 import random
 
 class Blackjack(ui.LayoutView):
-    def __init__(self, user, currency):
+    def __init__(self, user, bet):
         super().__init__(timeout=None)
-        self.currency = currency
+        self.bet = bet
         self.user = user
 
         self.emoji_dict = {
@@ -89,11 +89,11 @@ class Blackjack(ui.LayoutView):
             self.title.content = "###  Player Bust!"
             self.container.accent_color = discord.Color.red()
 
-            await CheckEconomyProfile(interaction.user, interaction.guild)
+            profile = await check_eco_profile(interaction.user, interaction.guild)
 
             await economy_profiles.update_one(
-                {"user_id": self.user.id},
-                {"$inc": {"currency": -self.currency}}
+                {"user_id": profile.get("user_id"), "guild_id": profile.get("guild_id")},
+                {"$inc": {"currency": -abs(self.bet)}}
             )
 
             self.hit_button.disabled = True
@@ -116,11 +116,11 @@ class Blackjack(ui.LayoutView):
             self.title.content = "###  Dealer Bust!"
             self.container.accent_color = discord.Color.green()
 
-            await CheckEconomyProfile(interaction.user, interaction.guild)
+            profile = await check_eco_profile(interaction.user, interaction.guild)
 
             await economy_profiles.update_one(
-                {"user_id": self.user.id},
-                {"$inc": {"currency": +self.currency}}
+                {"user_id": profile.get("user_id"), "guild_id": profile.get("guild_id")},
+                {"$inc": {"currency": abs(self.bet)}}
             )
 
         elif sum(self.get_card_value(c) for c in self.dealer_cards) == sum(self.get_card_value(c) for c in self.player_cards):
@@ -149,13 +149,11 @@ class Blackjack(ui.LayoutView):
                 self.title.content = "###  Player Win!"
                 self.container.accent_color = discord.Color.green()
 
-                info = await economy_profiles.find_one({"user_id": interaction.user.id})
-                if not info:
-                    await CEP(self.user, interaction.guild)
+                profile = await check_eco_profile(interaction.user, interaction.guild)
 
                 await economy_profiles.update_one(
-                    {"user_id": self.user.id},
-                    {"$inc": {"currency": +self.currency}}
+                    {"user_id": profile.get("user_id"), "guild_id": profile.get("guild_id")},
+                    {"$inc": {"currency": abs(self.bet)}}
                 )
 
             else:
@@ -167,11 +165,11 @@ class Blackjack(ui.LayoutView):
                 self.title.content = "###  Dealer Win!"
                 self.container.accent_color = discord.Color.red()
 
-                await CheckEconomyProfile(interaction.user, interaction.guild)
+                profile = await check_eco_profile(interaction.user, interaction.guild)
 
                 await economy_profiles.update_one(
-                    {"user_id": self.user.id},
-                    {"$inc": {"currency": -self.currency}}
+                    {"user_id": profile.get("user_id"), "guild_id": profile.get("guild_id")},
+                    {"$inc": {"currency": -abs(self.bet)}}
                 )
 
             self.hit_button.disabled = True
