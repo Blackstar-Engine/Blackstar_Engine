@@ -334,19 +334,29 @@ async def log_action(ctx: commands.Context, log_type: str, **kwargs):
     except Exception:
         pass
 
-async def CEP(user, guild):
+async def create_eco_profile(user: discord.Member, guild: discord.Guild):
     dt = (datetime.now() - timedelta(days=1)).day
-    await economy_profiles.insert_one({"user_id":user.id, "guild_id":guild.id, "currency":500, "last_claimed":dt})
+    eco_doc = {
+        "user_id":user.id, 
+        "guild_id":guild.id,
+        "currency":500, 
+        "last_claimed":dt
+    }
+    await economy_profiles.insert_one(eco_doc)
 
-async def CheckEconomyProfile(user, guild):
-    info = await economy_profiles.find_one({"user_id":user.id})
-    if not info:
-        await CEP(user, guild)
+    return eco_doc
 
-async def check_funds(claim, user, guild):
-    await CheckEconomyProfile(user, guild)
-    info = await economy_profiles.find_one({"user_id":user.id})
-    currency = info.get("currency")
+async def check_eco_profile(user: discord.Member, guild: discord.Guild):
+    profile = await economy_profiles.find_one({"user_id":user.id, "guild_id":guild.id})
+    if not profile:
+        profile = await create_eco_profile(user, guild)
+    
+    return profile
+
+async def check_funds(claim: int, user: discord.Member, guild: discord.Guild):
+    profile = await check_eco_profile(user, guild)
+    currency = profile.get("currency")
+
     if currency >= claim:
         return True
     elif currency < 0:
@@ -354,7 +364,30 @@ async def check_funds(claim, user, guild):
     else:
         return False
     
-async def get_max(user, guild):
-    await CheckEconomyProfile(user, guild)
-    info = await economy_profiles.find_one({"user_id":user.id})
-    return info.get("currency")
+async def get_max(user: discord.Member, guild: discord.Guild):
+    profile = await check_eco_profile(user, guild)
+    return profile.get("currency")
+
+async def check_currency(ctx: commands.Context, bet, user: discord.Member, guild: discord.Guild):
+    profile = await check_eco_profile(user, guild)
+
+    try:
+        bet = int(bet)
+    except ValueError:
+        if bet.lower() in ("max", "all"):
+            bet = await get_max(ctx.author, ctx.guild)
+        else:
+            await ctx.send("Please enter a valid bet.")
+            return False, profile
+    
+    bet = int(bet)
+    
+    if bet <= 0:
+        await ctx.send("Please enter a bet greater than 0.")
+        return False, profile
+
+    if not await check_funds(bet, ctx.author, ctx.guild):
+        await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
+        return False, profile
+    
+    return bet, profile

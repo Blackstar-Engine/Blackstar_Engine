@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from utils.constants import economy_profiles
-from utils.utils import check_funds, CheckEconomyProfile, get_max
+from utils.utils import check_funds, get_max, check_currency, check_eco_profile
 from ui.economy.blackjack import Blackjack
 from ui.economy.minesweeper import Minesweeper
 from ui.economy.slots import Slots
@@ -16,23 +16,10 @@ class Economy(commands.Cog):
         self.bot = bot
     
     @commands.hybrid_command(name="coinflip", description="Gamble currency in a coinflip")
-    async def coinflip(self, ctx: commands.Context, choice: str, currency):
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        try:
-            currency = int(currency)
-        except:
-            if currency.lower() in ("max", "all"):
-                currency = await get_max(ctx.author, ctx.guild)
-            else:
-                return await ctx.send("Please enter a valid bet.")
-            
-        if currency <= 0:
-            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
-
-        info = await economy_profiles.find_one({'user_id': ctx.author.id})
-
-        if not await check_funds(currency, ctx.author, ctx.guild):
-            return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
+    async def coinflip(self, ctx: commands.Context, choice: str, bet):
+        bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
+        if not bet:
+            return
             
         if choice.lower() in ("heads", "head"):
             descision = "Heads"
@@ -46,46 +33,27 @@ class Economy(commands.Cog):
         face = "Heads" if number >= 50 else "Tails"
 
         if descision == face:
-            current_currency = info.get("currency")
-            if not current_currency:
-                return await ctx.send("Failed to retrieve economy profile!", ephemeral=True)
-            else:
-                current_currency = int(info.get("currency"))
-                new_balance = current_currency + currency
-
             await economy_profiles.update_one(
                 {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
-                {"$set": {"currency": new_balance}} 
+                {"$inc": {"currency": bet}} 
             )
 
-            embed = discord.Embed(title=f"{face}!", description=f"You have earned {currency}✦", color=discord.Color.green())
+            embed = discord.Embed(title=f"{face}!", description=f"You have earned {bet}✦", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            print(descision)
-            current_currency = info.get("currency")
-            if not current_currency:
-                return await ctx.send("Failed to retrieve economy profile!", ephemeral=True)
-            else:
-                current_currency = int(info.get("currency"))
-                new_balance = current_currency - currency
-
             await economy_profiles.update_one(
                 {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
-                {"$set": {"currency": new_balance}} 
+                {"$set": {"currency": -bet}} 
             )
 
-            embed = discord.Embed(title=f"{face}!", description=f"You have lost {currency}✦", colour=discord.Color.red())
+            embed = discord.Embed(title=f"{face}!", description=f"You have lost {bet}✦", colour=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="daily", description="Get a daily reward")
     async def daily(self, ctx: commands.Context):
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        info = await economy_profiles.find_one({"user_id": ctx.author.id})
+        profile = await check_eco_profile(ctx.author, ctx.guild)
         
-        last_claimed = info.get("last_claimed")
-
-        if not last_claimed:
-            return await ctx.send("Failed to retrieve economy profile", ephemeral=True)
+        last_claimed = profile.get("last_claimed")
         
         current_date = datetime.now().day
 
@@ -97,15 +65,15 @@ class Economy(commands.Cog):
                         "last_claimed": datetime.now().day
                     },
                     "$inc": {
-                        "currency": 500
+                        "currency": 250
                     }
                 }
             )
 
-            embed = discord.Embed(title=f"Claimed!", description=f"250✦ earned from daily reward!", color=discord.Color.green())
+            embed = discord.Embed(title="Claimed!", description="250✦ earned from daily reward!", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title=f"Already Claimed", description=f"You have already claimed your daily reward today.", color=discord.Color.red())
+            embed = discord.Embed(title="Already Claimed", description="You have already claimed your daily reward today.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="steal", description="Steal money from another user")
@@ -114,16 +82,15 @@ class Economy(commands.Cog):
         if user == ctx.author:
             return await ctx.send("You cannot steal from yourself!", ephemeral=True)
         
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        author_info = await economy_profiles.find_one({"user_id": ctx.author.id})
+        author_profile = await check_eco_profile(ctx.author, ctx.guild)
 
-        await CheckEconomyProfile(user, ctx.guild)
-        user_info = await economy_profiles.find_one({"user_id": user.id})
+        user_profile = await check_eco_profile(user, ctx.guild)
+
 
         odds = random.randint(1, 100)
         if odds < 40:
             number = random.randint(20, 30)*0.01
-            user_balance = user_info.get("currency")
+            user_balance = user_profile.get("currency")
 
             stolen_amount = round(user_balance*number)
             await economy_profiles.update_one(
@@ -146,7 +113,7 @@ class Economy(commands.Cog):
             await ctx.send(embed=embed)
         else:
             number = random.randint(20, 30)*0.01
-            author_balance = author_info.get("currency")
+            author_balance = author_profile.get("currency")
 
             stolen_amount = round(author_balance*number)       
 
@@ -158,7 +125,7 @@ class Economy(commands.Cog):
                     "$inc":{"currency":-stolen_amount}
                 }
             )      
-            embed = discord.Embed(title=f"You've been caught!", description=f"You have been caught by the police and lost {stolen_amount}✦", color=discord.Color.red())
+            embed = discord.Embed(title="You've been caught!", description=f"You have been caught by the police and lost {stolen_amount}✦", color=discord.Color.red())
             await ctx.send(embed=embed)    
     
     @steal.error
@@ -172,66 +139,37 @@ class Economy(commands.Cog):
 
     @commands.hybrid_command(name="balance", description="View your current amount of money")
     async def balance(self, ctx: commands.Context):
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        author_info = await economy_profiles.find_one({"user_id": ctx.author.id})
-        balance = author_info.get("currency")
+        profile = await check_eco_profile(ctx.author, ctx.guild)
+        balance = profile.get("currency")
         
         embed = discord.Embed(description=f"You currently have {balance}✦", color=discord.Color.light_gray())
         await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="blackjack", description="Gamble your money on a game of Blackjack")
-    async def blackjack(self, ctx: commands.Context, currency):
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        try:
-            currency = int(currency)
-        except:
-            if currency.lower() in ("max", "all"):
-                currency = await get_max(ctx.author, ctx.guild)
-            else:
-                return await ctx.send("Please enter a valid bet.")
-        if currency <= 0:
-            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
-            
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        if not await check_funds(currency, ctx.author, ctx.guild):
-            return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
-        view = Blackjack(ctx.author, currency)
+    async def blackjack(self, ctx: commands.Context, bet):
+        bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
+        if not bet:
+            return
+        
+        view = Blackjack(ctx.author, bet)
         await ctx.send(view=view)
 
     @commands.hybrid_command(name="minesweeper", description="Gamble your money on a game of minesweeper")
-    async def minesweeper(self, ctx: commands.Context, currency):
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        try:
-            currency = int(currency)
-        except:
-            if currency.lower() in ("max", "all"):
-                currency = await get_max(ctx.author, ctx.guild)
-            else:
-                return await ctx.send("Please enter a valid bet.")
-        if currency <= 0:
-            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        if not await check_funds(currency, ctx.author, ctx.guild):
-            return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
-        view = Minesweeper(ctx.author, currency)
+    async def minesweeper(self, ctx: commands.Context, bet):
+        bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
+        if not bet:
+            return
+        
+        view = Minesweeper(ctx.author, bet)
         await ctx.send(view=view)
 
     @commands.hybrid_command(name="slots", description="Gamble your money on a game of slots")
-    async def slots(self, ctx: commands.Context, currency):
-        await CheckEconomyProfile(ctx.author, ctx.guild)
-        try:
-            currency = int(currency)
-        except:
-            if currency.lower() in ("max", "all"):
-                currency = await get_max(ctx.author, ctx.guild)
-            else:
-                return await ctx.send("Please enter a valid bet.")
-        if currency <= 0:
-            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
-            
-        if not await check_funds(currency, ctx.author, ctx.guild):
-            return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
-        view = Slots(currency)
+    async def slots(self, ctx: commands.Context, bet):
+        bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
+        if not bet:
+            return
+        
+        view = Slots(bet)
         await ctx.send(view=view)
 
 
