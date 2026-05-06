@@ -43,7 +43,7 @@ class Economy(commands.Cog):
         else:
             await economy_profiles.update_one(
                 {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
-                {"$set": {"currency": -bet}} 
+                {"$inc": {"currency": -bet}} 
             )
 
             embed = discord.Embed(title=f"{face}!", description=f"You have lost {bet}✦", colour=discord.Color.red())
