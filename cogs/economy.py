@@ -25,6 +25,9 @@ class Economy(commands.Cog):
                 currency = await get_max(ctx.author, ctx.guild)
             else:
                 return await ctx.send("Please enter a valid bet.")
+            
+        if currency <= 0:
+            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
 
         info = await economy_profiles.find_one({'user_id': ctx.author.id})
 
@@ -94,7 +97,7 @@ class Economy(commands.Cog):
                         "last_claimed": datetime.now().day
                     },
                     "$inc": {
-                        "currency": 250
+                        "currency": 500
                     }
                 }
             )
@@ -186,6 +189,8 @@ class Economy(commands.Cog):
                 currency = await get_max(ctx.author, ctx.guild)
             else:
                 return await ctx.send("Please enter a valid bet.")
+        if currency <= 0:
+            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
             
         await CheckEconomyProfile(ctx.author, ctx.guild)
         if not await check_funds(currency, ctx.author, ctx.guild):
@@ -203,6 +208,8 @@ class Economy(commands.Cog):
                 currency = await get_max(ctx.author, ctx.guild)
             else:
                 return await ctx.send("Please enter a valid bet.")
+        if currency <= 0:
+            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
         await CheckEconomyProfile(ctx.author, ctx.guild)
         if not await check_funds(currency, ctx.author, ctx.guild):
             return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)
@@ -219,6 +226,8 @@ class Economy(commands.Cog):
                 currency = await get_max(ctx.author, ctx.guild)
             else:
                 return await ctx.send("Please enter a valid bet.")
+        if currency <= 0:
+            return await ctx.send("Your bet must be a positive number.", ephemeral=True)
             
         if not await check_funds(currency, ctx.author, ctx.guild):
             return await ctx.send("You do not have enough money to make this bet.", ephemeral=True)

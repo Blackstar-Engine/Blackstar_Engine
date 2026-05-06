@@ -349,6 +349,8 @@ async def check_funds(claim, user, guild):
     currency = info.get("currency")
     if currency >= claim:
         return True
+    elif currency < 0:
+        return False
     else:
         return False
     
