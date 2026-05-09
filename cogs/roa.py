@@ -43,14 +43,15 @@ class ROA(commands.Cog):
 
         units = profile["unit"]
         max_points = -1
-        max_rank = None
+        max_rank = ''
         for _, value in units.items():
-            if value["total_points"] > max_points:
+            if value["total_points"] > max_points and value["is_active"]:
                 max_points = value["total_points"]
                 max_rank = value["rank"]
 
+        new_nickname = f"[ROA|{max_rank}] {codename}"
         try:
-            await ctx.author.edit(nick=f"[ROA|{max_rank}] {codename}")
+            await ctx.author.edit(nick=new_nickname[:32])
         except discord.Forbidden:
             pass
 

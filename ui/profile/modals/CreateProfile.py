@@ -43,6 +43,7 @@ class CreateProfileModal(discord.ui.Modal):
         r_name = self.roblox_name.value
         timezone = self.timezone.value
         codename = self.codename.value
+        codename = codename[:15]
 
         profanity_list = [
                         "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
@@ -65,7 +66,7 @@ class CreateProfileModal(discord.ui.Modal):
         profile = {
                 'user_id': user,
                 'guild_id': guild,
-                'codename': codename[0:15],
+                'codename': codename,
                 'roblox_name': r_name,
                 'unit': {},
                 'private_unit': [],

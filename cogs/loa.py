@@ -40,9 +40,10 @@ class LOA(commands.Cog):
         if not profile:
             return
         codename = profile.get("codename", "N/A")
+        new_nickname = f"[LOA] {codename}"
 
         try:
-            await ctx.author.edit(nick=f"[LOA] {codename}")
+            await ctx.author.edit(nick=new_nickname[:32])
         except discord.Forbidden:
             pass
 
