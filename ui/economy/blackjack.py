@@ -2,7 +2,7 @@ import discord
 from discord import ui
 import random
 
-from utils.utils import check_eco_profile
+from utils.utils import check_eco_profile, interaction_check
 from utils.constants import economy_profiles
 
 
@@ -115,16 +115,8 @@ class Blackjack(ui.LayoutView):
         self.update_displays()
         await interaction.response.edit_message(view=self)
 
-    async def interaction_check(self, interaction: discord.Interaction):
-        if interaction.user.id != self.user.id:
-            await interaction.response.send_message(
-                "You do not have permission to interact with this game!",
-                ephemeral=True
-            )
-            return False
-        return True
-
     async def hit_callback(self, interaction: discord.Interaction):
+        interaction_check(self.user, interaction.user)
         self.player_cards.append(random.randint(1, 13))
         self.update_displays()
 
@@ -142,6 +134,7 @@ class Blackjack(ui.LayoutView):
         await interaction.response.edit_message(view=self)
 
     async def stand_callback(self, interaction: discord.Interaction):
+        interaction_check(self.user, interaction.user)
         self.reveal_dealer()
 
         while self.calculate_score(self.dealer_cards) < 17:

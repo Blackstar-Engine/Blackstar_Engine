@@ -10,8 +10,8 @@ class EditProfileModal(discord.ui.Modal):
 
         self.codename = discord.ui.TextInput(
             label="Codename",
-            placeholder=str(profile.get('codename', "None"))[0:15],
-            default=str(profile.get('codename', "None"))[0:15],
+            placeholder=str(profile.get('codename', "None"))[:15],
+            default=str(profile.get('codename', "None"))[:15],
             required=True,
             max_length=25,
             style=discord.TextStyle.short
@@ -19,8 +19,8 @@ class EditProfileModal(discord.ui.Modal):
 
         self.roblox_name = discord.ui.TextInput(
             label="Roblox Username",
-            placeholder=str(profile.get('roblox_name', "None")),
-            default=str(profile.get('roblox_name', "None")),
+            placeholder=str(profile.get('roblox_name', "None"))[:32],
+            default=str(profile.get('roblox_name', "None"))[:32],
             required=True,
             max_length=32,
             style=discord.TextStyle.short
@@ -28,8 +28,8 @@ class EditProfileModal(discord.ui.Modal):
 
         self.timezone = discord.ui.TextInput(
             label="Timezone",
-            placeholder=str(profile.get('timezone', "None")),
-            default=str(profile.get('timezone', "None")),
+            placeholder=str(profile.get('timezone', "None"))[:10],
+            default=str(profile.get('timezone', "None"))[:10],
             required=True,
             max_length=10,
             style=discord.TextStyle.short
@@ -37,8 +37,8 @@ class EditProfileModal(discord.ui.Modal):
 
         self.status = discord.ui.TextInput(
             label="Status (Active|Inactive|LOA|ROA|Retired)",
-            placeholder=str(profile.get('status', "None")),
-            default=str(profile.get('status', "None")),
+            placeholder=str(profile.get('status', "None"))[:8],
+            default=str(profile.get('status', "None"))[:8],
             required=True,
             max_length=8,
             style=discord.TextStyle.short

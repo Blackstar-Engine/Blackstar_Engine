@@ -3,7 +3,7 @@ from discord.ext import commands
 from utils.constants import profiles, departments, profanity_list
 from datetime import datetime
 import re 
-from utils.utils import profile_creation_embed, fetch_id, log_action
+from utils.utils import profile_creation_embed, fetch_id
 import asyncio
 
 class ClaimButtonView(discord.ui.View):
@@ -186,6 +186,8 @@ class EnlistmentByThread(commands.Cog):
         timezone: str = results.get("Time Zone")
         subunit: str = results.get("Unit")
 
+        codename = codename[:15]
+
         # Preliminary validation for profile creation
         if codename == -1 or roblox_user == -1 or department == -1 or timezone == -1:
             embed = discord.Embed(title="Enlistment Error", description="I was unable to process your profile. **Please create your profile via `!profile`!**", color=discord.Color.red())
@@ -207,7 +209,7 @@ class EnlistmentByThread(commands.Cog):
         profile = {
                 'user_id': member.id,
                 'guild_id': guild.id,
-                'codename': codename[0:15],
+                'codename': codename,
                 'roblox_name': roblox_user,
                 'unit': units,
                 'private_unit': [],

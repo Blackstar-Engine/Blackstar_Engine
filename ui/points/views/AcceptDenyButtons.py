@@ -103,58 +103,47 @@ class PointsRequestView(ui.LayoutView):
 
 # ---------- Decision Handler ----------
 
-async def handle_points_decision(interaction: discord.Interaction, approved: bool, reason: str = None):
-    request_id = interaction.data["custom_id"].split(":")[1]
-
+async def _check_active(request_id):
     req = await point_requests.find_one({
         "_id": request_id,
         "is_active": True
     })
 
     if not req:
-        return await interaction.response.send_message(
+        return False
+    
+    return req
+
+async def handle_approved(interaction: discord.Interaction, snapshot: dict, request_id) -> True:
+    await log_action(ctx=interaction, log_type="point_addition", user_id=snapshot["user_id"], points=snapshot["points"], command_name="point request")
+    req = await _check_active(request_id)
+    if not req:
+        await interaction.response.send_message(
             "This point request is no longer active.",
             ephemeral=True
         )
+        return False
 
-    snapshot = req["snapshot"]
-    guild = interaction.guild
+    profile = await profiles.find_one({
+        "guild_id": interaction.guild.id,
+        "user_id": snapshot["user_id"]
+    })
 
-    if not await has_points_approval_perms(interaction, snapshot):
-        try:
-            return await interaction.response.send_message("❌ You do not have permission to act on this point request.", ephemeral=True) 
-        except discord.InteractionResponded:
-            return await interaction.followup.send("❌ You do not have permission to act on this point request.", ephemeral=True) 
-    
-    if approved:
-        await log_action(ctx=interaction, log_type="point_addition", user_id=snapshot["user_id"], points=snapshot["points"], command_name="point request")
+    dept = snapshot["department"]
 
-        profile = await profiles.find_one({
-            "guild_id": guild.id,
-            "user_id": snapshot["user_id"]
-        })
-
-        dept = snapshot["department"]
-
-        await profiles.update_one(
-            {"_id": profile["_id"]},
-            {
-                "$inc": {
-                    f"unit.{dept}.current_points": snapshot["points"],
-                    f"unit.{dept}.total_points": snapshot["points"]
-                }
+    await profiles.update_one(
+        {"_id": profile["_id"]},
+        {
+            "$inc": {
+                f"unit.{dept}.current_points": snapshot["points"],
+                f"unit.{dept}.total_points": snapshot["points"]
             }
-        )
-
-    # mark inactive
-    await point_requests.update_one(
-        {"_id": request_id},
-        {"$set": {"is_active": False}}
+        }
     )
 
-    # ---------- Result UI ----------
+    return True
 
-    result_view = ui.LayoutView()
+def create_container(interaction: discord.Interaction, approved: bool, snapshot: dict):
     color = discord.Color.green() if approved else discord.Color.red()
     title = "## Point Request Accepted" if approved else "## Point Request Denied"
 
@@ -180,6 +169,43 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
         accent_color=color
     )
 
+    return container, color
+
+async def handle_points_decision(interaction: discord.Interaction, approved: bool, reason: str = None):
+    request_id = interaction.data["custom_id"].split(":")[1]
+
+    req = await _check_active(request_id)
+    if not req:
+        return await interaction.response.send_message(
+            "This point request is no longer active.",
+            ephemeral=True
+        )
+
+    snapshot = req["snapshot"]
+    guild = interaction.guild
+
+    if not await has_points_approval_perms(interaction, snapshot):
+        try:
+            return await interaction.response.send_message("❌ You do not have permission to act on this point request.", ephemeral=True) 
+        except discord.InteractionResponded:
+            return await interaction.followup.send("❌ You do not have permission to act on this point request.", ephemeral=True) 
+    
+    if approved:
+        was_approved = await handle_approved(interaction, snapshot, request_id)
+        if not was_approved:
+            return
+
+    # mark inactive
+    await point_requests.update_one(
+        {"_id": request_id},
+        {"$set": {"is_active": False}}
+    )
+
+    # ---------- Result UI ----------
+
+    result_view = ui.LayoutView()
+    
+    container, color = create_container(interaction, approved, snapshot)
     if reason:
         container.add_item(ui.TextDisplay(f"> **Reason: ** {reason}"))
 

@@ -3,17 +3,18 @@ from discord import ui
 import random
 import asyncio
 from utils.constants import economy_profiles
+from utils.utils import interaction_check
 
 
 class Slots(ui.LayoutView):
-    def __init__(self, bet):
+    def __init__(self, user: discord.Member, bet: int):
         super().__init__(timeout=120)
 
         # grab currency, cymbols, and duration for the spin
         self.bet = abs(int(bet))
         self.symbols = ["🍇", "🍌", "🍎", "🍒"]
         self.duration = 5
-
+        self.user = user
         # Create the spin button and its callback
         self.spin_button = ui.Button(label="Spin!", style=discord.ButtonStyle.green)
         self.spin_button.callback = self.spin_callback
@@ -70,6 +71,7 @@ class Slots(ui.LayoutView):
         return result, winnings, message, color
 
     async def spin_callback(self, interaction: discord.Interaction):
+        interaction_check(self.user, interaction.user)
         if self.spin_button.disabled:
             await interaction.response.defer()
             return

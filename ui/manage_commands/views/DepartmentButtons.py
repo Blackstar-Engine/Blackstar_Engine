@@ -59,6 +59,10 @@ class DepartmentButtons(ui.ActionRow):
 
         points = modal.data
 
+        current_points = self.profile["units"][self.unit]["current_points"]
+        if current_points <= 0:
+            return await interaction.followup.send("This users current points are already 0 or below, sorry you can reduce points", ephemeral=True)
+
         await log_action(ctx=interaction, log_type="point_deduction", user_id=self.moderator.id, points=points, command_name="manage profile")
 
         await profiles.update_one({"guild_id": interaction.guild.id, "user_id": self.inacted_user.id}, {"$inc": {f"unit.{self.unit}.current_points": -float(points)}})
