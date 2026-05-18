@@ -105,5 +105,5 @@ class Slots(ui.LayoutView):
 
         return await economy_profiles.update_one(
             {"user_id": interaction.user.id, "guild_id": interaction.guild.id},
-            {"$inc": {"currency": winnings}}
+            {"$inc": {"currency": winnings+self.bet}}
         )     

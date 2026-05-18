@@ -39,17 +39,12 @@ class Economy(commands.Cog):
         if descision == face:
             await economy_profiles.update_one(
                 {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
-                {"$inc": {"currency": bet}} 
+                {"$inc": {"currency": bet*2}} 
             )
 
             embed = discord.Embed(title=f"{face}!", description=f"You have earned {bet}✦", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
-            await economy_profiles.update_one(
-                {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
-                {"$inc": {"currency": -bet}} 
-            )
-
             embed = discord.Embed(title=f"{face}!", description=f"You have lost {bet}✦", colour=discord.Color.red())
             await ctx.send(embed=embed)
 
@@ -91,7 +86,7 @@ class Economy(commands.Cog):
         # check the balance to see if its 0 or below
         author_balance = author_profile.get("currency", 0)
         if author_balance <= 0:
-                return await ctx.send("your balance is 0 or below, please try someone else!")
+                return await ctx.send("You are unable to steal as you have 0 dollars.")
 
         # load or create the users profile
         user_profile = await check_eco_profile(user, ctx.guild)
@@ -104,21 +99,14 @@ class Economy(commands.Cog):
 
         number = random.randint(20, 30)*0.01 # randomly gen a % from 20 to 30%
         stolen_amount = abs(round(user_balance*number)) # calc the stolen amount by taking the % from the users profile, makeing sure its > 0
+        lost_amount = abs(round(author_balance*number))
         if odds < 40: # if its below 40% they win
             await economy_profiles.update_one(
                 {
                     "user_id":user.id,
                 },
                 {
-                    "$inc": {"currency": -stolen_amount}
-                }
-            )
-            await economy_profiles.update_one(
-                {
-                    "user_id":ctx.author.id,
-                },
-                {
-                    "$inc":{"currency":+stolen_amount}
+                    "$inc": {"currency": +stolen_amount}
                 }
             )
             embed = discord.Embed(title=f"Robbed {user.name}!", description=f"You have stolen {stolen_amount}✦ from {user.name}!", color=discord.Color.green())
@@ -129,10 +117,10 @@ class Economy(commands.Cog):
                     "user_id":ctx.author.id,
                 },
                 {
-                    "$inc":{"currency":-stolen_amount}
+                    "$inc":{"currency":-lost_amount}
                 }
             )      
-            embed = discord.Embed(title="You've been caught!", description=f"You have been caught by the police and lost {stolen_amount}✦", color=discord.Color.red())
+            embed = discord.Embed(title="You've been caught!", description=f"You have been caught by the police and lost {lost_amount}✦", color=discord.Color.red())
             await ctx.send(embed=embed)    
     
     @steal.error
@@ -187,6 +175,11 @@ class Economy(commands.Cog):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
             return
+    
+        await economy_profiles.update_one(
+            {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
+            {"$inc": {"currency": -bet}}
+        )    
         
         view = Blackjack(ctx.author, bet)
         await ctx.send(view=view)
@@ -196,6 +189,18 @@ class Economy(commands.Cog):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
             return
+             
+        await economy_profiles.update_one(
+            {
+                "user_id": ctx.author.id,
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$inc": {
+                    "currency": -bet
+                }
+            }
+        )
         
         view = Minesweeper(ctx.author, bet)
         await ctx.send(view=view)
@@ -206,9 +211,35 @@ class Economy(commands.Cog):
         if not bet:
             return
         
+        await economy_profiles.update_one(
+            {
+                "user_id": ctx.author.id,
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$inc": {
+                    "currency": -bet
+                }
+            }
+        )
+        
         view = Slots(ctx.author, bet)
         await ctx.send(view=view)
 
+    @eco_main.command(name="test", description="test")
+    async def test(self, ctx: commands.Context, amount: int):
+        await economy_profiles.update_one(
+            {
+                "user_id": ctx.author.id,
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$set": {
+                    "currency":amount
+                }
+            }
+        )        
+        await ctx.send('done')
 
 
 

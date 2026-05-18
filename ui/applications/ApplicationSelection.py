@@ -56,7 +56,7 @@ class ApplicationClose(View):
                 discord.SelectOption(label="Omega-1", emoji="👁️"),
                 discord.SelectOption(label="Alpha-1", emoji="🛡️"),
                 discord.SelectOption(label="Resh-1", emoji="🐺"),
-                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1500548210979115050>"),
+                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1505755025803317388>"),
                 discord.SelectOption(label="BCS Officer", emoji="⚔️")
             ]
         )
