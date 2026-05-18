@@ -101,7 +101,7 @@ class Blackjack(ui.LayoutView):
 
         await economy_profiles.update_one(
             {"user_id": profile["user_id"], "guild_id": profile["guild_id"]},
-            {"$inc": {"currency": amount}}
+            {"$inc": {"currency": amount+self.bet}}
         )
 
     async def end_game(self, interaction, title, color, payout=0):
@@ -127,7 +127,7 @@ class Blackjack(ui.LayoutView):
                 interaction,
                 "### Player Bust!",
                 discord.Color.red(),
-                -abs(self.bet)
+                0
             )
             return
 
@@ -171,5 +171,5 @@ class Blackjack(ui.LayoutView):
                 interaction,
                 "### Dealer Win!",
                 discord.Color.red(),
-                -abs(self.bet)
+                0
             )

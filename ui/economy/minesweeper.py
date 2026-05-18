@@ -30,11 +30,6 @@ class MineButton(ui.Button):
             view.game_over = True
             view.container.accent_color = discord.Color.red()
 
-            await economy_profiles.update_one(
-                {"user_id": interaction.user.id, "guild_id": interaction.guild.id},
-                {"$inc": {"currency": -abs(view.bet)}}
-            )
-
             view.update_payout()
             view.end_game()
 
@@ -56,6 +51,8 @@ class Minesweeper(ui.LayoutView):
         self.user = user
         self.bet = bet
         self.mines = 5
+
+        self.winnings = 0
 
         self.game_over = False
         self.revealed = set()
@@ -125,7 +122,7 @@ class Minesweeper(ui.LayoutView):
 
         await economy_profiles.update_one(
             {"user_id": interaction.user.id, "guild_id": interaction.guild.id},
-            {"$inc": {"currency": abs(gain)}}
+            {"$inc": {"currency": abs(gain)+self.bet}}
         )
 
         self.end_game()
