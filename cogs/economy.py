@@ -39,14 +39,21 @@ class Economy(commands.Cog):
         if descision == face:
             await economy_profiles.update_one(
                 {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
-                {"$inc": {"currency": bet*2}} 
+                {"$inc": {"currency": +bet}} 
             )
 
             embed = discord.Embed(title=f"{face}!", description=f"You have earned {bet}✦", color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
+            await economy_profiles.update_one(
+                {"user_id": ctx.author.id, "guild_id": ctx.guild.id},
+                {"$inc": {"currency": -bet}} 
+            )
+
+
             embed = discord.Embed(title=f"{face}!", description=f"You have lost {bet}✦", colour=discord.Color.red())
             await ctx.send(embed=embed)
+
 
     @eco_main.command(name="daily", description="Get a daily reward")
     async def daily(self, ctx: commands.Context):
