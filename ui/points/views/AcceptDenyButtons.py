@@ -24,7 +24,7 @@ async def has_points_approval_perms(interaction: discord.Interaction, snapshot: 
         if not await has_approval_perms(interaction, 3):
             return False
     elif 2 < points <= 7.99:
-        if not await has_approval_perms(interaction, 5):
+        if not await has_approval_perms(interaction, 4):
             return False
     elif points >= 8:
         if not await has_approval_perms(interaction, 6):

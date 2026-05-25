@@ -5,6 +5,7 @@ from utils.utils import tts_to_file, tts_match_object, tts_logic, fetch_id
 import os
 import asyncio
 import time
+from datetime import datetime, UTC
 
 class Messaging(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -62,16 +63,6 @@ class Messaging(commands.Cog):
         except Exception as e:
             print(f"TTS player crashed in guild {guild.id}: {e}")
     
-    async def LOA_Event(self, message: discord.Message):
-        if message.mentions != []:
-            for mention in message.mentions:
-                result = await loa.find_one({"guild_id": message.guild.id, "user_id": mention.id})
-                if result:
-                    embed = discord.Embed(title="On LOA", description=f"Please refrain from pinging **{mention.display_name}**", color=discord.Color.dark_embed())
-                    await message.channel.send(embed=embed)
-                else:
-                    return
-    
     async def Auto_Reply_Event(self, message: discord.Message):
         try:
             for auto_reply in self.bot.auto_replys:
@@ -110,23 +101,54 @@ class Messaging(commands.Cog):
     
     async def React_To_Message(self, message: discord.Message):
         try:
-            results = await fetch_id(message.guild.id, ["sessions_channel_id", "event_channel_id", "mission_channel_id", "training_channel_id"])
+            results = await fetch_id(message.guild.id, ["sessions_channel_id",
+                                                        "event_channel_id",
+                                                        "mission_channel_id",
+                                                        "training_channel_id",
+                                                        "a1_events",
+                                                        "b7_events",
+                                                        "nu7_events",
+                                                        "e11_events",
+                                                        "mtf_events",
+                                                        "ci_events",
+                                                        "md_events"])
 
-            valid_channels = [results["sessions_channel_id"], results["event_channel_id"], results["mission_channel_id"], results["training_channel_id"]]
+            valid_channels = [results.get("sessions_channel_id", 0),
+                                results.get("event_channel_id", 0),
+                                results.get("mission_channel_id", 0), 
+                                results.get("training_channel_id", 0),
+                                results.get("a1_events", 0),
+                                results.get("b7_events", 0),
+                                results.get("nu7_events", 0),
+                                results.get("e11_events", 0),
+                                results.get("mtf_events", 0),
+                                results.get("ci_events", 0),
+                                results.get("md_events", 0)]
+            
             if message.channel.id in valid_channels and MESSAGE_CODE_RE.search(message.content):
+                session_document = {
+                    "guild_id": message.guild.id,
+                    "channel_id": message.channel.id,
+                    "message_id": message.id,
+                    "host_id": message.author.id,
+                    "created_at": datetime.now(UTC),
+                    "started_at": None,
+                    "ended_at": None,
+                    "vc_channel_id": None,
+                    "game_link": None,
+                    "status": "waiting",
+                    "rsvp": {
+                        "green": [],
+                        "yellow": []
+                    },
+                    "attendance": {}
+                }
+
+                await active_sessions.insert_one(session_document)
+
                 await message.add_reaction("\U0001F7E9") # Green Square
                 await message.add_reaction("\U0001F7E8") # Yellow Square
                 await message.add_reaction("\U0001F7E5") # Red Square
-
-                await active_sessions.update_one(
-                {"guild_id": message.guild.id},
-                {
-                    "$set": {
-                        f"active_votes.{message.channel.id}": message.id
-                    }
-                },
-                upsert=True
-            )
         except Exception:
             pass
 
@@ -136,9 +158,6 @@ class Messaging(commands.Cog):
         
         if message.author == self.bot.user or message.author.bot:
             return
-        
-        # Checking for LOA Pings
-        await self.LOA_Event(message)
 
         # Auto Reply System
         await self.Auto_Reply_Event(message)

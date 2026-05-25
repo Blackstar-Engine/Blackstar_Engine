@@ -31,7 +31,7 @@ def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
         raise commands.CommandError("Sorry but you can't use this button.")
 
-async def has_approval_perms(ctx: commands.Context, level: int) -> bool:
+async def has_approval_perms(ctx: commands.Context, level: int, send_message: bool = True) -> bool:
     if isinstance(ctx, discord.Interaction):
         member = ctx.user
     else:
@@ -88,7 +88,8 @@ async def has_approval_perms(ctx: commands.Context, level: int) -> bool:
     roles = any(role.id in allowed_roles for role in member.roles)
     if roles:
         return True
-    else:
+    
+    if send_message:
         if isinstance(ctx, discord.Interaction):
             try:
                 await ctx.response.send_message("You do not have the required permissions to use this command.", ephemeral=True)
@@ -96,7 +97,8 @@ async def has_approval_perms(ctx: commands.Context, level: int) -> bool:
                 await ctx.followup.send("You do not have the required permissions to use this command.", ephemeral=True)
         else:
             await ctx.send("You do not have the required permissions to use this command.")
-        return False
+    
+    return False
 
 async def fetch_profile(ctx: commands.Context, send_message: bool = True):
     profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': ctx.author.id})
@@ -324,7 +326,7 @@ async def log_action(ctx: commands.Context, log_type: str, **kwargs):
         case "mod_command":
             results = await fetch_id(ctx.guild.id, ["mod_command_log"])
             log_embed.title = "Mod Command Used"
-            log_embed.description = f"**Moderator:** {author.mention}\n**Command:** {kwargs['command_name']}"
+            log_embed.description = f"**Moderator:** {author.mention}\n**Command:** {kwargs['command_name']}\n\n**Arguments:** {kwargs['arguments']}"
     
     try:
         _, first_value = next(iter(results.items()), None)
@@ -391,3 +393,21 @@ async def check_currency(ctx: commands.Context, bet, user: discord.Member, guild
         return False, profile
     
     return bet, profile
+
+async def get_limit(ctx: commands.Context, results):
+        limit = None
+        if ctx.author.id == 1371489554279825439:
+                limit = 999999999999999
+        elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
+            limit = 5
+        elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
+            limit = 3
+        elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
+            limit = 2
+        elif ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
+            limit = 1
+        else:
+            await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
+            return False
+        
+        return limit

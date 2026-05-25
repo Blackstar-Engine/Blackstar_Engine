@@ -32,9 +32,7 @@ class Economy(commands.Cog):
         else:
             return await ctx.send("Please choose either heads or tails.", ephemeral=True)
         
-        number = random.randint(1, 100)
-
-        face = "Heads" if number >= 50 else "Tails"
+        face = random.choice(["Heads", "Tails"])
 
         if descision == face:
             await economy_profiles.update_one(
@@ -86,25 +84,25 @@ class Economy(commands.Cog):
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, user: discord.User):
         if user == ctx.author:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("You cannot steal from yourself!", ephemeral=True)
         
         # load or create the authors profile
         author_profile = await check_eco_profile(ctx.author, ctx.guild)
         # check the balance to see if its 0 or below
         author_balance = author_profile.get("currency", 0)
-        if author_balance <= 0:
-                return await ctx.send("You are unable to steal as you have 0 dollars.")
 
         # load or create the users profile
         user_profile = await check_eco_profile(user, ctx.guild)
         # check the balance to see if its 0 or below
         user_balance = user_profile.get("currency", 0)
         if user_balance <= 0:
+                ctx.command.reset_cooldown(ctx)
                 return await ctx.send("This users balance is 0 or below, please try someone else!")
 
         odds = random.randint(1, 100) # randomly gen odds from 1 to 100
 
-        number = random.randint(20, 30)*0.01 # randomly gen a % from 20 to 30%
+        number = random.randint(10, 30)*0.01 # randomly gen a % from 10 to 30%
         stolen_amount = abs(round(user_balance*number)) # calc the stolen amount by taking the % from the users profile, makeing sure its > 0
         lost_amount = abs(round(author_balance*number))
         if odds < 40: # if its below 40% they win

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from ui.applications.ApplicationSelection import ApplicationOpen, ApplicationClose
+from ui.applications.views.ApplicationSelection import ApplicationOpen, ApplicationClose
 from utils.constants import application_channels
 from utils.utils import has_approval_perms
 

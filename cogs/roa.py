@@ -2,7 +2,7 @@ import discord
 from discord import ui
 from discord.ext import commands
 import re
-from utils.constants import roa, stored_roa, loa, LOARegFormat
+from utils.constants import roa, stored_roa, loa, LOARegFormat, profiles
 from datetime import datetime, timedelta
 from ui.paginator import PaginatorView
 from ui.roa.views.RequestButtons import RequestButtons
@@ -30,8 +30,8 @@ class ROA(commands.Cog):
         
         await roa.insert_one(loa_doc)
 
-        results = await fetch_id(ctx.guild.id, ["loa_role"])
-        loa_role = results["loa_role"]
+        results = await fetch_id(ctx.guild.id, ["roa_role"])
+        loa_role = results["roa_role"]
 
         role = ctx.guild.get_role(loa_role)
         await ctx.author.add_roles(role)
@@ -39,6 +39,8 @@ class ROA(commands.Cog):
         profile = await fetch_profile(ctx)
         if not profile:
             return
+        
+        await profiles.update_one({"user_id": profile.get("user_id"), "guild_id": profile.get("guild_id")}, {"$set": {"status": "ROA"}})
         codename = profile.get("codename", "N/A")
 
         units = profile["unit"]

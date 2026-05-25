@@ -2,7 +2,7 @@ import discord
 from discord import ui
 from discord.ext import commands
 import re
-from utils.constants import loa, stored_loa, roa, LOARegFormat
+from utils.constants import loa, stored_loa, roa, LOARegFormat, profiles
 from datetime import datetime, timedelta
 from ui.paginator import PaginatorView
 from ui.loa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
@@ -39,6 +39,8 @@ class LOA(commands.Cog):
         profile = await fetch_profile(ctx)
         if not profile:
             return
+        
+        await profiles.update_one({"user_id": profile.get("user_id"), "guild_id": profile.get("guild_id")}, {"$set": {"status": "LOA"}})
         codename = profile.get("codename", "N/A")
         new_nickname = f"[LOA] {codename}"
 
