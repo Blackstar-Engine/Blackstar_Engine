@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, time
-from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger
+from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, profiles
 from utils.utils import fetch_id
 
 constants = BlackstarConstants()
@@ -138,6 +138,11 @@ class Tasks(commands.Cog):
         return member
 
     async def _preform_final_action(self, member: discord.Member, record: dict, channel: discord.TextChannel, guild: discord.Guild, record_type: str):
+        try:
+            await profiles.update_one({"user_id": member.id, "guild_id": guild.id}, {"$set": {"status": "Active"}})
+        except Exception:
+            pass
+
         if record_type == "LOA":
             embed = discord.Embed(
                 title="LOA Ended",

@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.points.views.UnitSelect import UnitSelectView
-from utils.utils import fetch_profile, fetch_unit_options, fetch_department, generate_timestamp, fetch_id, has_approval_perms, log_action
+from utils.utils import fetch_profile, fetch_unit_options, fetch_department, generate_timestamp, fetch_id, has_approval_perms, log_action, get_limit
 import uuid
 from utils.constants import point_requests, profiles
 from datetime import datetime
@@ -37,24 +37,6 @@ async def send_points_request(channel, profile, dept_name, points, proof):
 class Points(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    async def _get_limit(self, ctx: commands.Context, results):
-        limit = None
-        if ctx.author.id == 1371489554279825439:
-                limit = 999999999999999
-        elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
-            limit = 5
-        elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
-            limit = 3
-        elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
-            limit = 2
-        elif ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
-            limit = 1
-        else:
-            await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
-            return False
-        
-        return limit
 
     @commands.hybrid_group(name="points")
     async def points(self, ctx: commands.Context):
@@ -124,7 +106,7 @@ class Points(commands.Cog):
             return await ctx.send("You must gift a positive number of points.", ephemeral=True)
 
         # Calculate the gifting point limit
-        limit = await self._get_limit(ctx, results)
+        limit = await get_limit(ctx, results)
         if not limit:
             return
 

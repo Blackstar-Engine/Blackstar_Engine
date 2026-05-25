@@ -31,19 +31,23 @@ class DeptSelect(ui.Select):
         await interaction.followup.send(embed=embed, ephemeral=True)
 
 class UnitSelectView(ui.LayoutView):
-    def __init__(self, bot, options, profile):
+    def __init__(self, bot, options, profile, limit=None):
         super().__init__(timeout=300)
         self.bot = bot
         self.profile = profile
 
         action_row = ui.ActionRow(DeptSelect(options))
         private_unit = ", ".join(profile.get('private_unit', []))
-
+        if limit:
+            text = f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}\n**Gifting This Month: **{self.profile.get("gifted", {"gifted_points": 0})["gifted_points"]}/{limit} points"
+        else:
+            text = f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}"
+        
         container = ui.Container(
             ui.TextDisplay('## Profile Information'),
             action_row,
             ui.Separator(),
-            ui.TextDisplay(f"**Codename: **{profile.get('codename')}\n**Roblox Name: **{profile.get('roblox_name')}\n**Timezone: **{profile.get('timezone')}\n**Private Unit(s): **{private_unit}\n**Join Date: ** {profile.get('join_date')}\n**Status: ** {profile.get('status')}"),
+            ui.TextDisplay(text),
             ui.Separator(),
             accent_color=discord.Color.light_grey()
         )

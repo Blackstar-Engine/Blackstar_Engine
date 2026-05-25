@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import ui
 from utils.constants import active_sessions
 from utils.utils import interaction_check
+from datetime import datetime, UTC
 
 class VCSelect(ui.ChannelSelect):
     def __init__(self, game_link, user):
@@ -36,38 +37,39 @@ class VCSelect(ui.ChannelSelect):
             send_message += " ".join(str(v) for v in values)
             send_message += "\n"
         
-        return send_message
+        return send_message, users
 
     async def callback(self, interaction: discord.Interaction):
         interaction_check(self.user, interaction.user)
 
         vc = interaction.guild.get_channel(int(self.values[0].id))
 
-        data = await active_sessions.find_one({"guild_id": interaction.guild.id})
+        data = await active_sessions.find_one({"guild_id": interaction.guild.id, "channel_id": interaction.channel.id, "status": "waiting"})
 
         view = ui.LayoutView()
         container = ui.Container()
 
         if not data:
-            container.add_item(ui.TextDisplay("No active votes found."))
+            container.add_item(ui.TextDisplay("No active votes found in this channel."))
             view.add_item(container)
             return await interaction.response.edit_message(view=view)
 
-        message_id = data.get("active_votes", {}).get(str(interaction.channel.id))
-
-        if not message_id:
-            container.add_item(ui.TextDisplay("No active vote in this channel."))
-            view.add_item(container)
-            return await interaction.response.edit_message(view=view)
+        message_id = data.get("message_id")
 
         try:
             message = await interaction.channel.fetch_message(message_id)
         except discord.NotFound:
-            container.add_item(ui.TextDisplay("Vote message was deleted."))
+            container.add_item(ui.TextDisplay("This message could not be found."))
             view.add_item(container)
             return await interaction.response.edit_message(view=view)
         
-        send_message = await self._build_message(interaction, message, view, container, vc)
+        try:
+            await interaction.response.defer()
+            await interaction.message.delete()
+        except Exception:
+            pass
+        
+        send_message, users = await self._build_message(interaction, message, view, container, vc)
 
         await message.reply(send_message)
 
@@ -77,15 +79,20 @@ class VCSelect(ui.ChannelSelect):
             pass
 
         await active_sessions.update_one(
-            {"guild_id": interaction.guild.id},
+            {"guild_id": interaction.guild.id, "channel_id": interaction.channel.id, "status": "waiting"},
             {
-                "$unset": {
-                    f"active_votes.{str(interaction.channel.id)}": ""
+                "$set": {
+                    "vc_channel_id": vc.id,
+                    "game_link": self.game_link,
+                    "status": "active",
+                    "started_at": datetime.now(UTC),
+                    "rsvp": {
+                        "green": users.get("\U0001F7E9", []),
+                        "yellow": users.get("\U0001F7E8", [])
+                        }
                 }
             }
         )
-
-        await interaction.message.delete()
 
 class VCChannelSelectView(ui.LayoutView):
     def __init__(self, game_link, user):

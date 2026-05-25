@@ -67,7 +67,7 @@ class Moderation(commands.Cog):
 
             await ctx.send(embed=embed, ephemeral=True)
 
-            await log_action(ctx=ctx, log_type="mod_command", command_name="jail")
+            await log_action(ctx=ctx, log_type="mod_command", command_name="jail", arguments=f"user={user.mention}\nreason={reason}")
         except Exception:
             embed = discord.Embed(description=f"I have failed to **jail** {user.mention}. | `{user.id}`", color=discord.Color.yellow())
             await ctx.send(embed=embed, ephemeral=True) 
@@ -119,7 +119,7 @@ class Moderation(commands.Cog):
             embed.add_field(name="I Couldn't Add", value="\n".join(errored_roles), inline=False)
         await ctx.send(embed=embed, ephemeral=True)
 
-        await log_action(ctx=ctx, log_type="mod_command", command_name="release")
+        await log_action(ctx=ctx, log_type="mod_command", command_name="release", arguments=f"user={user.mention}\nreason={reason}")
     
     @commands.hybrid_command(name="jailstatus", description="Check if a user is in jail or not")
     async def jailstatus(self, ctx: commands.Context, user: discord.Member):
@@ -143,7 +143,7 @@ class Moderation(commands.Cog):
             embed = discord.Embed(description=f"{user.mention} is not currently **jailed**. | `{user.id}`", color=discord.Color.yellow())
         await ctx.send(embed=embed, ephemeral=True)
 
-        await log_action(ctx=ctx, log_type="mod_command", command_name="jailstatus")
+        await log_action(ctx=ctx, log_type="mod_command", command_name="jailstatus", arguments=f"user={user.mention}")
     
     @commands.hybrid_command(name="viewjailed", description="View all currently jailed users")
     async def viewjailed(self, ctx: commands.Context):
@@ -168,7 +168,7 @@ class Moderation(commands.Cog):
             
         embed.description = description
         await ctx.send(embed=embed, ephemeral=True)
-        await log_action(ctx=ctx, log_type="mod_command", command_name="viewjailed")
+        await log_action(ctx=ctx, log_type="mod_command", command_name="viewjailed", arguments="None")
 
 
 async def setup(bot: commands.Bot):

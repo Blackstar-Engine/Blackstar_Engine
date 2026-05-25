@@ -79,6 +79,17 @@ class PaginatorView(View):
                         embed.add_field(name=key.title(), value=discord.utils.format_dt(value), inline=True)
                     except Exception:
                         embed.add_field(name=key.title(), value=value, inline=True)
+                elif isinstance(value, dict):
+                    des = ""
+                    for k, v in value.items():
+                        if isinstance(v, dict):
+                            sub_des = ""
+                            for sub_k, sub_v in v.items():
+                                sub_des += f"**{sub_k}**: {sub_v}\n"
+                            des += f"__**{k}**__ -\n{sub_des}\n"
+                        else:
+                            des += f"**{k}**: {v}\n"
+                    embed.add_field(name=key.title(), value=des, inline=True)
                 else:
                     embed.add_field(name=key.title(), value=value, inline=True)
 

@@ -1,6 +1,7 @@
 import discord
 from discord.ui import View, Select
 from utils.constants import application_channels
+from ui.applications.modals.app_closure import ApplicationCloseModal
 
 class ApplicationOpen(View):
     def __init__(self):
@@ -17,13 +18,17 @@ class ApplicationOpen(View):
                 discord.SelectOption(label="Omega-1", emoji="👁️"),
                 discord.SelectOption(label="Alpha-1", emoji="🛡️"),
                 discord.SelectOption(label="Resh-1", emoji="🐺"),
-                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1500548210979115050>"),
+                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1505755025803317388>"),
                 discord.SelectOption(label="BCS Officer", emoji="⚔️")
             ]
         )
 
         async def dropdown_callback(interaction: discord.Interaction):
             try:
+                modal = ApplicationCloseModal()
+                await interaction.response.send_modal(modal)
+                await modal.wait()
+
                 channel_id = application_channels[dropdown.values[0]]
                 channel = await interaction.guild.fetch_channel(channel_id)
 
@@ -31,10 +36,10 @@ class ApplicationOpen(View):
                 overwrite.view_channel = True
                 overwrite.send_messages = False
                 await channel.set_permissions(interaction.guild.default_role, overwrite=overwrite)   
-                embed = discord.Embed(title="The Blackstar Corporation", description=f"`{dropdown.values[0]}` applications have been temporarily opened.", color=discord.Color.light_gray())
+                embed = discord.Embed(title="The Blackstar Corporation", description=f"`{dropdown.values[0]}` applications have been temporarily opened.\n\nApplication will be closed at {discord.utils.format_dt(modal.total_days)}.", color=discord.Color.light_grey())
                 embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
                 await channel.send(embed=embed)
-                await interaction.response.send_message("Applications have been opened!", ephemeral=True)
+                await interaction.followup.send("Applications have been opened!", ephemeral=True)
             except KeyError:
                 discord.Embed(title="The Blackstar Corporation", description="I have failed to locate this department's application channel.")
 

@@ -7,7 +7,8 @@ from ui.paginator import PaginatorView
 from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
 from ui.manage_commands.views.ManageProfileMainView import ManageProfileMainView
-from utils.utils import has_approval_perms, fetch_unit_options, fetch_id
+from ui.manage_commands.views.ManageDeptMainView import ManageDeptMainView
+from utils.utils import has_approval_perms, fetch_unit_options, fetch_id, fetch_department, fetch_profile
 
 class ConfirmRemovalView(View):
     def __init__(self, bot, user, record, index):
@@ -198,6 +199,36 @@ class ManageCommands(commands.Cog):
 
         # Send to the user
         await ctx.send(view=view, ephemeral=True)
+    
+    @manage.command(name="department", description="Manage a department")
+    async def manage_department(self, ctx: commands.Context, department_name: str):
+        await ctx.defer(ephemeral=True)
+        if not await has_approval_perms(ctx, 6):
+            return
+        
+        department_name = department_name.upper()
+        department_doc = await fetch_department(ctx, department_name)
+        if not department_doc:
+            return
+
+        profile = await fetch_profile(ctx)
+
+        grant_access = False
+        for dept, info in profile['unit'].items():
+            if dept == department_name and info.get("is_active", False):
+                grant_access = True
+                break
+        
+        if not grant_access:
+            embed = discord.Embed(title="", description="It looks like you are not apart of this department.", color=discord.Color.red())
+            return await ctx.send(embed=embed, ephemeral=True)
+        
+        view = ManageDeptMainView(bot=self.bot, user=ctx.author, department_doc=department_doc)
+        await ctx.send(view=view, ephemeral=True)
+        
+        
+        
+        
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ManageCommands(bot))
