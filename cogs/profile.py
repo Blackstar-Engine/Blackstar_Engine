@@ -8,7 +8,7 @@ class Profile(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="profile", description="View or create your profile in the server.", with_app_command=True)
+    @commands.hybrid_command(name="profile", description="View or create your profile in the server.", with_app_command=True, extras={'category': 'Profiles'})
     async def profile(self, ctx: commands.Context):
 
         # Fetch the profile and check to see if they alrady have one or not

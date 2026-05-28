@@ -107,7 +107,7 @@ class ROA(commands.Cog):
     async def roa(self, ctx: commands.Context):
         return
 
-    @roa.command(description="Request an ROA to get time off.")
+    @roa.command(description="Request an ROA to get time off.", extras={'category': 'ROA'})
     async def request(self, ctx: commands.Context, time: str, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
@@ -180,7 +180,7 @@ class ROA(commands.Cog):
         else:
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
-    @roa.command(description="Get a list of all the active ROA's in the server.")
+    @roa.command(description="Get a list of all the active ROA's in the server.", extras={'category': 'ROA'})
     async def active(self, ctx: commands.Context):
         # Users have to be in foundation or site command to run this command
         if not await has_approval_perms(ctx, 5):
@@ -193,7 +193,7 @@ class ROA(commands.Cog):
 
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @roa.command(description="Manage a staff members ROA.")
+    @roa.command(description="Manage a staff members ROA.", extras={'category': 'ROA'})
     async def manage(self, ctx: commands.Context, user: Optional[discord.Member | discord.User] = None):
         # Checking if user selected themselves
         if not user or user.id == ctx.author.id:

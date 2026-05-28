@@ -7,7 +7,7 @@ class Leaderboard(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="leaderboard", description="Leaderboard that showcases members with the highest stats")
+    @commands.hybrid_command(name="leaderboard", description="Leaderboard that showcases members with the highest stats", extras={'category': 'Other'})
     async def leaderboard(self, ctx: commands.Context):
 
         points = []

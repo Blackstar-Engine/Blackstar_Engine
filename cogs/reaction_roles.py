@@ -9,7 +9,7 @@ class ReactionRoles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         
-    @commands.command(name="send-reactions", description="This will send an embed with all reaction roles for the server.")
+    @commands.hybrid_command(name="send_reactions", description="This will send an embed with all reaction roles for the server (Foundation Command+).", extras={'category': 'Administration'})
     async def send_reaction_roles(self, ctx: commands.Context):
         if not await has_approval_perms(ctx, 6):
             return

@@ -45,7 +45,7 @@ class Promotion(commands.Cog):
     async def promotion(self, ctx: commands.Context):
         await ctx.send("Available subcommands: request")
 
-    @promotion.command(name="request", description="Request a promotion in a department.")
+    @promotion.command(name="request", description="Request a promotion in a department.", extras={'category': 'Profiles'})
     async def request(self, ctx: commands.Context, department: str, proof: discord.Attachment):
         await ctx.defer(ephemeral=True)
 

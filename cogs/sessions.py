@@ -56,7 +56,7 @@ class Sessions(commands.Cog):
         # parent command
         pass
 
-    @session.command(name="start", description="Start a new session in this channel")
+    @session.command(name="start", description="Start a new session in this channel (Central Command+).", extras={'category': 'Sessions'})
     async def session_start(self, ctx: commands.Context, game_link: str):
         if not await has_approval_perms(ctx, 3):
             return
@@ -69,7 +69,7 @@ class Sessions(commands.Cog):
         view = VCChannelSelectView(game_link, ctx.author)
         await ctx.send(view=view)
     
-    @session.command(name="end", description="End the current session in this channel")
+    @session.command(name="end", description="End the current session in this channel (Central Command+).", extras={'category': 'Sessions'})
     async def session_end(self, ctx: commands.Context):
         if not await has_approval_perms(ctx, 3):
             return

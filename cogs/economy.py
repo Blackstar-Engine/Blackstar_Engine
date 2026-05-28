@@ -19,7 +19,7 @@ class Economy(commands.Cog):
     async def eco_main(self, ctx: commands.Context):
         return
     
-    @eco_main.command(name="coinflip", description="Gamble currency in a coinflip")
+    @eco_main.command(name="coinflip", description="Gamble currency in a coinflip", extras={'category': 'Economy'})
     async def coinflip(self, ctx: commands.Context, choice: str, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
@@ -53,7 +53,7 @@ class Economy(commands.Cog):
             await ctx.send(embed=embed)
 
 
-    @eco_main.command(name="daily", description="Get a daily reward")
+    @eco_main.command(name="daily", description="Get a daily reward", extras={'category': 'Economy'})
     async def daily(self, ctx: commands.Context):
         profile = await check_eco_profile(ctx.author, ctx.guild)
         
@@ -80,7 +80,7 @@ class Economy(commands.Cog):
             embed = discord.Embed(title="Already Claimed", description="You have already claimed your daily reward today.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
-    @eco_main.command(name="steal", description="Steal money from another user")
+    @eco_main.command(name="steal", description="Steal money from another user", extras={'category': 'Economy'})
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, user: discord.User):
         if user == ctx.author:
@@ -137,7 +137,7 @@ class Economy(commands.Cog):
         else:
             ctx.command.reset_cooldown(ctx)
 
-    @eco_main.command(name="balance", description="View your current amount of money")
+    @eco_main.command(name="balance", description="View your current amount of money", extras={'category': 'Economy'})
     async def balance(self, ctx: commands.Context):
         profile = await check_eco_profile(ctx.author, ctx.guild)
         balance = profile.get("currency")
@@ -145,7 +145,7 @@ class Economy(commands.Cog):
         embed = discord.Embed(description=f"You currently have {balance}✦", color=discord.Color.light_grey())
         await ctx.send(embed=embed)
     
-    @eco_main.command(name="gift", description="Gift money to a another user")
+    @eco_main.command(name="gift", description="Gift money to a another user", extras={'category': 'Economy'})
     async def gift_points(self, ctx: commands.Context, user: discord.Member, amount: int):
         amount = abs(amount)
         author_profile = await check_eco_profile(ctx.author, ctx.guild)
@@ -175,7 +175,7 @@ class Economy(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @eco_main.command(name="blackjack", description="Gamble your money on a game of Blackjack")
+    @eco_main.command(name="blackjack", description="Gamble your money on a game of Blackjack", extras={'category': 'Economy'})
     async def blackjack(self, ctx: commands.Context, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
@@ -189,7 +189,7 @@ class Economy(commands.Cog):
         view = Blackjack(ctx.author, bet)
         await ctx.send(view=view)
 
-    @eco_main.command(name="minesweeper", description="Gamble your money on a game of minesweeper")
+    @eco_main.command(name="minesweeper", description="Gamble your money on a game of minesweeper", extras={'category': 'Economy'})
     async def minesweeper(self, ctx: commands.Context, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
@@ -210,7 +210,7 @@ class Economy(commands.Cog):
         view = Minesweeper(ctx.author, bet)
         await ctx.send(view=view)
 
-    @eco_main.command(name="slots", description="Gamble your money on a game of slots")
+    @eco_main.command(name="slots", description="Gamble your money on a game of slots", extras={'category': 'Economy'})
     async def slots(self, ctx: commands.Context, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
@@ -230,21 +230,6 @@ class Economy(commands.Cog):
         
         view = Slots(ctx.author, bet)
         await ctx.send(view=view)
-
-    @eco_main.command(name="test", description="test")
-    async def test(self, ctx: commands.Context, amount: int):
-        await economy_profiles.update_one(
-            {
-                "user_id": ctx.author.id,
-                "guild_id": ctx.guild.id
-            },
-            {
-                "$set": {
-                    "currency":amount
-                }
-            }
-        )        
-        await ctx.send('done')
 
 
 
