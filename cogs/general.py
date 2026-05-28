@@ -16,7 +16,7 @@ class General(commands.Cog):
             return False
         return True
 
-    @commands.hybrid_command(name="execute", description="Execute the user")
+    @commands.hybrid_command(name="execute", description="Execute the user (Wolf Only).", extras={'category': 'Administration'})
     async def execute_user(self, ctx: commands.Context, user: discord.Member):
         if not await self._check_if_wolf(ctx):
             return
@@ -31,7 +31,7 @@ class General(commands.Cog):
 
         await ctx.send(f"{user.mention} has been executed by the order of {ctx.author.mention}!")
 
-    @commands.hybrid_command(name="embed", description="Send an Embed")
+    @commands.hybrid_command(name="embed", description="Send an Embed (Wolf Only).", extras={'category': 'Administration'})
     async def embed(self, ctx: commands.Context, *, text: str):
         if not await self._check_if_wolf(ctx):
             return
@@ -50,7 +50,7 @@ class General(commands.Cog):
 
         await ctx.send(embed=custom_embed)
 
-    @commands.hybrid_command(name="say", description="Makes the bot say a message")
+    @commands.hybrid_command(name="say", description="Makes the bot say a message (Wolf Only).", extras={'category': 'Administration'})
     async def say(self, ctx: commands.Context, *, text: str):
         if not await self._check_if_wolf(ctx):
             return
@@ -65,7 +65,7 @@ class General(commands.Cog):
         await ctx.send(text)
 
 
-    @commands.hybrid_command(name="dm_punish", description="Notifies a user that disciplinary action has been taken")
+    @commands.hybrid_command(name="dm_punish", description="Notifies a user that disciplinary action has been taken (Junior Mod+ and Central Command+).", extras={'category': 'Administration'})
     async def dm_punish(self, ctx: commands.Context, user: discord.Member, *, text: str):
         results = await fetch_id(ctx.guild.id, ["central_command",
             "high_command",
@@ -102,7 +102,7 @@ class General(commands.Cog):
             return await ctx.send("You are not allowed to use this command!", ephemeral=True)
             
     
-    @commands.hybrid_command(name="view_high", description="View all high command team members")
+    @commands.hybrid_command(name="view_high", description="View all high command team members", extras={'category': 'Other'})
     async def view_high_members(self, ctx: commands.Context):
         results = await fetch_id(ctx.guild.id, ['high_command'])
         role_obj = ctx.guild.get_role(results["high_command"])
@@ -119,7 +119,7 @@ class General(commands.Cog):
 
         await ctx.send(embed=embed, ephemeral=True)
     
-    @commands.hybrid_command(name="view_site", description="View all site command team members")
+    @commands.hybrid_command(name="view_site", description="View all site command team members", extras={'category': 'Other'})
     async def view_site_members(self, ctx: commands.Context):
         results = await fetch_id(ctx.guild.id, ['site_command'])
         role_obj = ctx.guild.get_role(results['site_command'])
@@ -136,7 +136,7 @@ class General(commands.Cog):
 
         await ctx.send(embed=embed, ephemeral=True)
     
-    @commands.hybrid_command(name="view_foundation", description="View all foundation command team members")
+    @commands.hybrid_command(name="view_foundation", description="View all foundation command team members", extras={'category': 'Other'})
     async def view_foundation_members(self, ctx: commands.Context):
         results = await fetch_id(ctx.guild.id, ['foundation_command'])
         role_obj = ctx.guild.get_role(results['foundation_command'])

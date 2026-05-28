@@ -42,7 +42,7 @@ class Points(commands.Cog):
     async def points(self, ctx: commands.Context):
         return
 
-    @points.command(name="request", description="Request points to be added to your profile")
+    @points.command(name="request", description="Request points to be added to your profile", extras={'category': 'Profiles'})
     async def request(self, ctx: commands.Context, points: float, *, proof: str):
         if points <= 0 or not isinstance(points, float):
             return await ctx.send("Please make sure the number is positive and is an number.", ephemeral=True)
@@ -88,7 +88,7 @@ class Points(commands.Cog):
 
         await select_message.edit(view=view)
 
-    @points.command(name="gift", description="Gift points to other units")
+    @points.command(name="gift", description="Gift points to other units (Central Command+).", extras={'category': 'Profiles'})
     async def gift(self, ctx: commands.Context, user: discord.Member, points: int, *, reason: str):
         results = await fetch_id(
             ctx.guild.id,

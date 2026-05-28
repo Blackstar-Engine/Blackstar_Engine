@@ -12,7 +12,7 @@ class Applications(commands.Cog):
     async def applications(self, ctx: commands.Context):
         return
 
-    @applications.command(name="open", description="Opens a private departments application")
+    @applications.command(name="open", description="Opens a private departments application (Foundation Command).", extras={'category': 'Administration'})
     async def open_applications(self, ctx: commands.Context):
         if not await has_approval_perms(ctx, 6):
             return
@@ -22,7 +22,7 @@ class Applications(commands.Cog):
         embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @applications.command(name="close", description="Closes a private departments application")
+    @applications.command(name="close", description="Closes a private departments application (Foundation Command).", extras={'category': 'Administration'})
     async def close_applications(self, ctx: commands.Context):
         if not await has_approval_perms(ctx, 6):
             return

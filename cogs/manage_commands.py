@@ -130,7 +130,7 @@ class ManageCommands(commands.Cog):
         '''
         pass
 
-    @manage.command(name='auto_reply', description='Manage auto replys')
+    @manage.command(name='auto_reply', description='Manage auto replys (Site Command+).', extras={'category': 'Administration'})
     async def auto_reply(self, ctx: commands.Context):
         # User must be in foundation or site command to run this command
 
@@ -171,7 +171,7 @@ class ManageCommands(commands.Cog):
         embed = self.auto_reply_view.create_record_embed()
         await ctx.send(embed=embed, view=self.auto_reply_view, ephemeral=True)
 
-    @manage.command(name="profile", description="Manage a users profile")
+    @manage.command(name="profile", description="Manage a users profile (DRM/High Command+).", extras={'category': 'Administration'})
     async def manage_profile(self, ctx: commands.Context, user: discord.User = None):
         if not user:
             user = ctx.author
@@ -200,7 +200,7 @@ class ManageCommands(commands.Cog):
         # Send to the user
         await ctx.send(view=view, ephemeral=True)
     
-    @manage.command(name="department", description="Manage a department")
+    @manage.command(name="department", description="Manage a department (Foundation Command).", extras={'category': 'Administration'})
     async def manage_department(self, ctx: commands.Context, department_name: str):
         await ctx.defer(ephemeral=True)
         if not await has_approval_perms(ctx, 6):

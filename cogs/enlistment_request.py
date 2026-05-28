@@ -12,7 +12,7 @@ class DepartmentRequest(commands.Cog):
     async def enlistment(self, ctx: commands.Context):
         return
         
-    @enlistment.command(name="request", description="Send a request to join a department")
+    @enlistment.command(name="request", description="Send a request to join a department", extras={'category': 'Profiles'})
     async def enlistment_request(self, ctx: commands.Context):
         profile = await fetch_profile(ctx)
         if not profile:
