@@ -3,6 +3,7 @@ from discord.ext import commands
 from ui.SCC.views.SCCManage import CombatMain
 from utils.constants import combat_profiles, combat_classes
 from datetime import timedelta, datetime
+from utils.utils import fetch_id, has_approval_perms
 
 class SCC(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -14,8 +15,19 @@ class SCC(commands.Cog):
 
     @SCC.command(name="manage", description="Manage a user's combat classification.", extras={'category': 'Combat'})
     async def scc_manage(self, ctx: commands.Context, user: discord.Member):
+        await ctx.defer(ephemeral=True)
+
+        results = await fetch_id(ctx.guild.id, ["bcs_officer"])
+        bcs_id = results["bcs_officer"]        
+
+        has_bcs_role = any(role.id == bcs_id for role in ctx.author.roles)
+        
+        if not has_bcs_role and not await has_approval_perms(ctx, 4):
+                return
+        
+
         documents = await combat_classes.find().to_list(length=None)
-        view = CombatMain(documents, user)
+        view = CombatMain(documents, user, ctx.author)
 
         await ctx.send(view=view, ephemeral=True)
     

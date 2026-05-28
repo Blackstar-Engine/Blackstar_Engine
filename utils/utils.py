@@ -42,9 +42,6 @@ async def has_approval_perms(ctx: commands.Context, level: int, send_message: bo
     if member.id == results["wolf_id"]:
         return True
     
-    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
-        return True
-    
     match level:
         case 1:
             allowed_roles = {
