@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from ui.SCC.views.SCCManage import CombatMain
-from utils.constants import combat_profiles
+from utils.constants import combat_profiles, combat_classes
 from datetime import timedelta, datetime
 
 class SCC(commands.Cog):
@@ -14,7 +14,7 @@ class SCC(commands.Cog):
 
     @SCC.command(name="manage", description="Manage a user's combat classification.", extras={'category': 'Combat'})
     async def scc_manage(self, ctx: commands.Context, user: discord.Member):
-        documents = await combat_profiles.find().to_list(length=None)
+        documents = await combat_classes.find().to_list(length=None)
         view = CombatMain(documents, user)
 
         await ctx.send(view=view, ephemeral=True)
@@ -24,6 +24,7 @@ class SCC(commands.Cog):
         profile = await combat_profiles.find_one({"user_id": ctx.author.id}) or {}
 
         categories = {
+            "overall": "Overall Ranking",
             "short_range": "Short Range",
             "long_range": "Long Range",
             "teamwork": "Teamwork & Coordination",

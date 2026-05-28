@@ -12,7 +12,8 @@ class CombatCategories(ui.Select):
             discord.SelectOption(label="Teamwork & Coordination", value="teamwork"),
             discord.SelectOption(label="Leadership", value="leadership"),
             discord.SelectOption(label="Game Sense", value="gamesense"),
-            discord.SelectOption(label="Movement", value="movement")
+            discord.SelectOption(label="Movement", value="movement"),
+            discord.SelectOption(label="Overall Ranking", value="overall")
         ]
 
         super().__init__(
