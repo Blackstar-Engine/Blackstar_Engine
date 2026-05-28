@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.constants import profiles, departments
+from utils.constants import profiles, departments, combat_classes
 from ui.manage_commands.modals.EditProfile import EditProfileModal
 from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ManageProfileUnitsView import ProfileManageUnitsView
@@ -278,8 +278,9 @@ class ManageProfileMainView(ui.LayoutView):
                    value = "delete_profile",
                    description = "Delete the profile",
                    emoji="<:Delete_Profile_Blackstar:1499178664913272832>"
-               ),
+               )
            ]
+            
             container = ui.Container(
                 ui.TextDisplay('## Manage Profile'),
                 DepartmentSelect(bot, moderator, inacted_user, profile, dept_options),
