@@ -32,8 +32,10 @@ class SCC(commands.Cog):
         await ctx.send(view=view, ephemeral=True)
     
     @SCC.command(name="profile", description="View your SCC profile", extras={'category': 'Combat'})
-    async def scc_profile(self, ctx: commands.Context):
-        profile = await combat_profiles.find_one({"user_id": ctx.author.id}) or {}
+    async def scc_profile(self, ctx: commands.Context, user: discord.Member = None):
+        if user == None:
+            user = ctx.author
+        profile = await combat_profiles.find_one({"user_id": user.id}) or {}
 
         categories = {
             "overall": "Overall Ranking",
