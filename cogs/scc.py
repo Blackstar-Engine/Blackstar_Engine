@@ -31,7 +31,7 @@ class SCC(commands.Cog):
 
         await ctx.send(view=view, ephemeral=True)
     
-    @SCC.command(name="profile", description="View your SCC profile", extras={'category': 'Combat'})
+    @SCC.command(name="profile", description="View a SCC profile", extras={'category': 'Combat'})
     async def scc_profile(self, ctx: commands.Context, user: discord.Member = None):
         if user == None:
             user = ctx.author
