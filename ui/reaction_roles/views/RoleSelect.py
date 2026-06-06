@@ -1,6 +1,18 @@
 import discord
 from discord import ui
-from utils.constants import annoucement_role_id, dpr_display_role_id, misc_role_id, game_night_role_id, question_role_id, vote_role_id, chat_revive_role_id, raid_role_id, session_role_id, external_role_id
+from utils.constants import (annoucement_role_id,
+                            dpr_display_role_id,
+                            misc_role_id,
+                            game_night_role_id,
+                            question_role_id,
+                            vote_role_id,
+                            chat_revive_role_id,
+                            raid_role_id,
+                            session_role_id,
+                            external_role_id,
+                            birthday_role_id,
+                            giveaway_role_id
+                            )
 
 class RoleSelectRow(ui.ActionRow):
     def __init__(self):
@@ -21,7 +33,10 @@ class RoleSelectRow(ui.ActionRow):
                 discord.SelectOption(label="Chat Revive Ping", value=int(chat_revive_role_id), emoji='<:BlackStar_ChatRevive:1467561189612716205>'),
                 discord.SelectOption(label="Raid Ping", value=int(raid_role_id), emoji='<:BlackStar_Raid:1474396707780431882>'),
                 discord.SelectOption(label="Session Ping", value=int(session_role_id), emoji='<:BlackStar_Session:1474396734909190201>'),
-                discord.SelectOption(label="External Training Ping", value=int(external_role_id), emoji='<:NonSSRP_Session_Ping:1481738803482984539>')
+                discord.SelectOption(label="External Training Ping", value=int(external_role_id), emoji='<:NonSSRP_Session_Ping:1481738803482984539>'),
+                discord.SelectOption(label="Giveaway Ping", value=int(giveaway_role_id), emoji='<:NonSSRP_Session_Ping:1481738803482984539>'),
+                discord.SelectOption(label="Birthday Ping", value=int(birthday_role_id), emoji='<:NonSSRP_Session_Ping:1481738803482984539>'),
+
             ]
         )
 
@@ -63,7 +78,9 @@ class RoleSelect(discord.ui.LayoutView):
                            '> <:BlackStar_ChatRevive:1467561189612716205> | **Chat Revive Ping: ** Chat Revival\n'
                            '> <:BlackStar_Raid:1474396707780431882> | **Raid Ping: ** Server Raid notifications\n'
                            '> <:BlackStar_Session:1474396734909190201> | **Session Ping: ** SSU Notifications\n'
-                           '> <:NonSSRP_Session_Ping:1481738803482984539> | **External Training Ping: ** Other Game Trainings'
+                           '> <:NonSSRP_Session_Ping:1481738803482984539> | **External Training Ping: ** Other Game Trainings\n'
+                           '> <:NonSSRP_Session_Ping:1481738803482984539> | **Giveaway Ping: ** Giveaways\n'
+                           '> <:NonSSRP_Session_Ping:1481738803482984539> | **Birthday Ping: ** Birthday Notifications\n'
                            ),
             ui.Separator(),
             ui.TextDisplay('*Select a role below to add or remove the role.*'),

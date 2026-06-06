@@ -77,6 +77,12 @@ class AddTimeModal(discord.ui.Modal):
 
             await view.wait()
 
+            moderator_id = 0
+            try:
+                moderator_id = action_row.kwargs.get('moderator_obj', {}).id
+            except Exception:
+                pass
+
             if not action_row.is_accepted:
                 try:
                     embed = discord.Embed(
@@ -90,7 +96,7 @@ class AddTimeModal(discord.ui.Modal):
                         ui.TextDisplay("## ROA Extension Denied"),
                         ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
                         ui.Separator(),
-                        ui.TextDisplay(f"**Denied By: ** {interaction.user.mention}\n**Reason: ** {action_row.kwargs.get('reason', 'No reason provided.')}"),
+                        ui.TextDisplay(f"**Denied By: ** <@{moderator_id}>\n**Reason: ** {action_row.kwargs.get('reason', 'No reason provided.')}"),
                         accent_color=discord.Color.red()
                     )
                     view = ui.LayoutView()
@@ -114,7 +120,7 @@ class AddTimeModal(discord.ui.Modal):
                         ui.TextDisplay("## ROA Extension Accepted"),
                         ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
                         ui.Separator(),
-                        ui.TextDisplay(f"**Accepted By: ** {interaction.user.mention}"),
+                        ui.TextDisplay(f"**Accepted By: ** <@{moderator_id}>"),
                         accent_color=discord.Color.green()
                     )
                     view = ui.LayoutView()

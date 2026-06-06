@@ -79,6 +79,8 @@ if constants.ENVIRONMENT == "PRODUCTION":
     raid_role_id = 1457222250817392661
     session_role_id = 1456018515050893425
     external_role_id = 1481419195903381716
+    giveaway_role_id = 1486817352384385135
+    birthday_role_id = 1481462452301467730
 
     application_channels = {
         "Internal Security Department":1434725921537134602,
@@ -102,6 +104,8 @@ else:
     raid_role_id = 1470978604883116245
     session_role_id = 1470978602324590789
     external_role_id = 1481485568784470127
+    giveaway_role_id = 1512629470908121278
+    birthday_role_id = 1512629488402436206
 
     application_channels = {
         "Intelligence Agency":1450297920896237623,

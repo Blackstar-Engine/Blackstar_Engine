@@ -188,18 +188,20 @@ class EnlistmentByThread(commands.Cog):
 
         codename = codename[:15]
 
+        profile_check = await profiles.find_one({"guild_id": guild.id, "codename": codename})
+
         # Preliminary validation for profile creation
         if codename == -1 or roblox_user == -1 or department == -1 or timezone == -1:
             embed = discord.Embed(title="Enlistment Error", description="I was unable to process your profile. **Please create your profile via `!profile`!**", color=discord.Color.red())
             return await thread.send(embed=embed)
-
-        if any(word in codename.lower() for word in profanity_list):
+        elif any(word in codename.lower() for word in profanity_list):
             embed = discord.Embed(title="Profanity Detected", description="We do not allow any type of profanity in codenames. Please reopen another thread and choose a different codename.", color=discord.Color.red())
             return await thread.send(embed=embed) 
-        
-        profile_check = await profiles.find_one({"guild_id": guild.id, "codename": codename})
-        if profile_check:
+        elif profile_check:
             embed = discord.Embed(title="Codename Taken", description="Sorry but that codename is already taken! Please reopen another thread and choose a different codename.", color=discord.Color.red())
+            return await thread.send(embed=embed)
+        elif codename.lower() in ('kaiju', 'sunshine', 'backon2k_son'):
+            embed = discord.Embed(title="Retired Codename", description=f"{codename} has been retired and cannot be used. Please run `!profile` to create your profile manually.", color=discord.Color.red())
             return await thread.send(embed=embed)
 
         # Generating the needed variables for profile creation

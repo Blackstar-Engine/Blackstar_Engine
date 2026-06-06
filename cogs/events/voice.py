@@ -45,10 +45,11 @@ class Voice(commands.Cog):
     async def handle_session_logic(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         # if active session in the vc
         # if user joins vc, add to the attendees list and set join datetime
-        # if user leaves vc, set left datetime but keep in the list
+        # if user leaves vc, close the current period and append it to the timeline
 
         guild_id = member.guild.id
         user_key = str(member.id)
+        now = datetime.now(UTC)
 
         left_channel = before.channel
         joined_channel = after.channel
@@ -69,37 +70,36 @@ class Voice(commands.Cog):
 
                 if record and record.get("currently_in"):
 
-                    join_time = record.get("joined_at")
+                    join_time = record.get("joined_at") or session.get("started_at") or now
+                    if join_time.tzinfo is None:
+                        join_time = join_time.replace(tzinfo=UTC)
 
-                    if join_time:
+                    left_time = now
+                    duration = (left_time - join_time).total_seconds()
+                    if duration < 0:
+                        duration = 0
 
-                        if join_time.tzinfo is None:
-                            join_time = join_time.replace(tzinfo=UTC)
+                    total_seconds = record.get("total_seconds", 0) + duration
+                    period = {
+                        "joined_at": join_time,
+                        "left_at": left_time,
+                        "duration": duration
+                    }
 
-                        left_time = datetime.now(UTC)
-
-                        duration = (
-                            left_time - join_time
-                        ).total_seconds()
-
-                        previous_duration = record.get(
-                            "duration",
-                            0
-                        )
-
-                        await active_sessions.update_one(
-                            {
-                                "_id": session["_id"]
+                    await active_sessions.update_one(
+                        {"_id": session["_id"]},
+                        {
+                            "$push": {
+                                f"attendance.{user_key}.periods": period
                             },
-                            {
-                                "$set": {
-                                    f"attendance.{user_key}.left_at": left_time,
-                                    f"attendance.{user_key}.currently_in": False,
-                                    f"attendance.{user_key}.duration":
-                                        previous_duration + duration
-                                }
+                            "$set": {
+                                f"attendance.{user_key}.left_at": left_time,
+                                f"attendance.{user_key}.last_left_at": left_time,
+                                f"attendance.{user_key}.currently_in": False,
+                                f"attendance.{user_key}.total_seconds": total_seconds
                             }
-                        )
+                        }
+                    )
 
         # USER JOINED VC
         if joined_channel:
@@ -115,31 +115,33 @@ class Voice(commands.Cog):
                 attendance = session.get("attendance", {})
                 existing = attendance.get(user_key)
 
-                previous_duration = 0
+                if existing and existing.get("currently_in"):
+                    return
+
+                join_time = now
+                update_doc = {
+                    f"attendance.{user_key}.joined_at": join_time,
+                    f"attendance.{user_key}.left_at": None,
+                    f"attendance.{user_key}.currently_in": True
+                }
 
                 if existing:
-                    previous_duration = existing.get(
-                        "duration",
-                        0
-                    )
+                    if existing.get("first_joined_at") is None:
+                        update_doc[f"attendance.{user_key}.first_joined_at"] = join_time
+                    if existing.get("periods") is None:
+                        update_doc[f"attendance.{user_key}.periods"] = []
+                    if existing.get("total_seconds") is None:
+                        update_doc[f"attendance.{user_key}.total_seconds"] = 0
+                else:
+                    update_doc.update({
+                        f"attendance.{user_key}.first_joined_at": join_time,
+                        f"attendance.{user_key}.total_seconds": 0,
+                        f"attendance.{user_key}.periods": []
+                    })
 
                 await active_sessions.update_one(
-                    {
-                        "_id": session["_id"]
-                    },
-                    {
-                        "$set": {
-                            f"attendance.{user_key}.joined_at":
-                                datetime.now(UTC),
-
-                            f"attendance.{user_key}.left_at": None,
-
-                            f"attendance.{user_key}.currently_in": True,
-
-                            f"attendance.{user_key}.duration":
-                                previous_duration
-                        }
-                    }
+                    {"_id": session["_id"]},
+                    {"$set": update_doc}
                 )
 
 
