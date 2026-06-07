@@ -100,32 +100,33 @@ class Economy(commands.Cog):
                 ctx.command.reset_cooldown(ctx)
                 return await ctx.send("This users balance is 0 or below, please try someone else!")
 
-        odds = random.randint(1, 100) # randomly gen odds from 1 to 100
+        odds = random.random()
 
         number = random.randint(10, 30)*0.01 # randomly gen a % from 10 to 30%
-        stolen_amount = abs(round(user_balance*number)) # calc the stolen amount by taking the % from the users profile, makeing sure its > 0
-        lost_amount = abs(round(author_balance*number))
-        if odds < 40: # if its below 40% they win
+
+        user_bal_amt = abs(round(user_balance*number)) # calc the stolen amount by taking the % from the users profile, makeing sure its > 0
+        author_bal_amt = abs(round(author_balance*number))
+        if odds < 0.60: # 60% chance to win
             await economy_profiles.update_one(
-                {
-                    "user_id":user.id,
-                },
-                {
-                    "$inc": {"currency": +stolen_amount}
-                }
+                {"user_id": ctx.author.id},
+                {"$inc": {"currency": user_bal_amt}}
             )
-            embed = discord.Embed(title=f"Robbed {user.name}!", description=f"You have stolen {stolen_amount}✦ from {user.name}!", color=discord.Color.green())
-            await ctx.send(embed=embed)
-        else: # if its not below 40% they loose
             await economy_profiles.update_one(
-                {
-                    "user_id":ctx.author.id,
-                },
-                {
-                    "$inc":{"currency":-lost_amount}
-                }
-            )      
-            embed = discord.Embed(title="You've been caught!", description=f"You have been caught by the police and lost {lost_amount}✦", color=discord.Color.red())
+                {"user_id":user.id},
+                {"$inc": {"currency": -user_bal_amt}}
+            )
+            embed = discord.Embed(title=f"🕵️Robbed {user.name}!", description=f"You have stolen {user_bal_amt}✦ from {user.name}!", color=discord.Color.green())
+            await ctx.send(embed=embed)
+        else: # 40% chance to lose
+            await economy_profiles.update_one(
+                {"user_id": ctx.author.id},
+                {"$inc": {"currency": -author_bal_amt}}
+            )
+            await economy_profiles.update_one(
+                {"user_id":user.id},
+                {"$inc": {"currency": author_bal_amt}}
+            )     
+            embed = discord.Embed(title="👮Caught!", description=f"You have been caught by the police and lost {author_bal_amt}✦", color=discord.Color.red())
             await ctx.send(embed=embed)    
     
     @steal.error

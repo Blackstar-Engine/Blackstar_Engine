@@ -100,7 +100,7 @@ class LOA(commands.Cog):
         return
 
     @loa.command(description="Request an LOA to get time off.", extras={'category': 'LOA'})
-    async def request(self, ctx: commands.Context, time: str, reason: str):
+    async def request(self, ctx: commands.Context, time: str, *, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
             search = re.match(LOARegFormat,time_string)

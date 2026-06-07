@@ -62,6 +62,10 @@ class CreateProfileModal(discord.ui.Modal):
         if profile_check:
             await interaction.response.send_message("Sorry but that codename is already taken! Please try again with a different codename.", ephemeral=True)
             return
+        
+        elif codename.lower() in ('kaiju', 'sunshine', 'backon2k_son'):
+            embed = discord.Embed(title="Retired Codename", description=f"{codename} has been retired and cannot be used.", color=discord.Color.red())
+            return await interaction.response.send_message(embed=embed)
 
         profile = {
                 'user_id': user,

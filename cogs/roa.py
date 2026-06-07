@@ -108,7 +108,7 @@ class ROA(commands.Cog):
         return
 
     @roa.command(description="Request an ROA to get time off.", extras={'category': 'ROA'})
-    async def request(self, ctx: commands.Context, time: str, reason: str):
+    async def request(self, ctx: commands.Context, time: str, *, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
             search = re.match(LOARegFormat,time_string)

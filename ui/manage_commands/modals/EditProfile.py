@@ -52,11 +52,19 @@ class EditProfileModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         r_name = self.roblox_name.value
         timezone = self.timezone.value
-        codename = self.codename.value
+        codename = self.codename.value[0:15]
         status = self.status.value
 
         if status.lower() not in ['active', 'inactive', 'loa', 'roa', 'retired']:
             embed = discord.Embed(title="Error", description="Please make sure the status is one of below:\n\n`Active`\n`Inactive`\n`LOA`\n`ROA`\n`retired`", color=discord.Color.light_grey())
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        codename = await profiles.find_one({"guild_id": interaction.guild.id, "codename": codename})
+        if codename and codename.get("user_id") != self.profile.get("user_id"):
+            embed = discord.Embed(title="Codename Taken", description="Sorry but that codename is already taken! Please try again with a different codename.", color=discord.Color.red())
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
+        elif codename.lower() in ('kaiju', 'sunshine', 'backon2k_son'):
+            embed = discord.Embed(title="Retired Codename", description=f"{codename} has been retired and cannot be used.", color=discord.Color.red())
             return await interaction.response.send_message(embed=embed, ephemeral=True)
 
         await profiles.update_one({'user_id': self.profile.get("user_id", 0), 'guild_id': interaction.guild.id}, {'$set': {'roblox_name': r_name, 'timezone': timezone, 'codename': codename, 'status': status.title()}})

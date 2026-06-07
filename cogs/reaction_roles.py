@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 from ui.reaction_roles.views.RoleSelect import RoleSelect
 from utils.utils import has_approval_perms, fetch_id
@@ -14,11 +15,14 @@ class ReactionRoles(commands.Cog):
         if not await has_approval_perms(ctx, 6):
             return
         
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except discord.NotFound:
+            pass
 
         view = RoleSelect()
 
-        await ctx.send(view=view)
+        await ctx.channel.send(view=view)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ReactionRoles(bot))

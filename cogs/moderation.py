@@ -10,7 +10,7 @@ class Moderation(commands.Cog):
         self.bot = bot
     
     @commands.hybrid_command(name="jail", description="Sends a user to jail (High Command+).", extras={'category': 'Administration'})
-    async def jail(self, ctx: commands.Context, user: discord.Member, reason: str = "No reason provided"):
+    async def jail(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
         if not await has_approval_perms(ctx, 4):
             return
 
@@ -77,7 +77,7 @@ class Moderation(commands.Cog):
 
         
     @commands.hybrid_command(name="release", description="Release a user from jail (High Command+).", extras={'category': 'Administration'})
-    async def release(self, ctx: commands.Context, user: discord.Member, reason: str = "No reason provided"):
+    async def release(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
         if not await has_approval_perms(ctx, 4):
             return
 

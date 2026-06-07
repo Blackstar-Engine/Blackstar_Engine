@@ -155,7 +155,8 @@ class Blackjack(ui.LayoutView):
             await self.end_game(
                 interaction,
                 "### Push!",
-                discord.Color.yellow()
+                discord.Color.yellow(),
+                0
             )
 
         elif player_score > dealer_score:
