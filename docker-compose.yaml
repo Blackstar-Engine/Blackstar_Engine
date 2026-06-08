@@ -1,3 +1,4 @@
+# Retained as a fallback compose reference only. Dockerfile is the primary build/run path.
 services:
   blackstar_bot:
     build:
@@ -7,7 +8,7 @@ services:
 
     working_dir: /app
 
-    command: uv run main.py
+    command: uv run python -m main
 
     env_file:
       - .env

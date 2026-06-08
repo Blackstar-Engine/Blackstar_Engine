@@ -18,13 +18,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     ffmpeg \
     ca-certificates \
     tini \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    git && \
+    rm -rf /var/lib/apt/lists/*
+
 # ---------- Non-root runtime ----------
 RUN useradd -m -u 1000 botuser
 WORKDIR /app
 RUN chown botuser:botuser /app
-
 USER botuser
 
 # ---------- Dependency layer (for fast rebuilds) ----------
@@ -36,13 +36,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ---------- Application layer ----------
 COPY --chown=botuser:botuser . .
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
-
 # ---------- Runtime ----------
 ENTRYPOINT ["/usr/bin/tini", "--"]
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)"
-
 CMD ["uv", "run", "python", "-m", "main"]
