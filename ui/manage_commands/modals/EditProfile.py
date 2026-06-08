@@ -59,11 +59,12 @@ class EditProfileModal(discord.ui.Modal):
             embed = discord.Embed(title="Error", description="Please make sure the status is one of below:\n\n`Active`\n`Inactive`\n`LOA`\n`ROA`\n`retired`", color=discord.Color.light_grey())
             return await interaction.response.send_message(embed=embed, ephemeral=True)
         
-        codename = await profiles.find_one({"guild_id": interaction.guild.id, "codename": codename})
-        if codename and codename.get("user_id") != self.profile.get("user_id"):
+        user_codename = await profiles.find_one({"guild_id": interaction.guild.id, "codename": codename})
+        if user_codename and user_codename.get("user_id") != self.profile.get("user_id"):
             embed = discord.Embed(title="Codename Taken", description="Sorry but that codename is already taken! Please try again with a different codename.", color=discord.Color.red())
             return await interaction.response.send_message(embed=embed, ephemeral=True)
-        elif codename.lower() in ('kaiju', 'sunshine', 'backon2k_son'):
+        
+        if codename.lower() in ('kaiju', 'sunshine', 'backon2k_son'):
             embed = discord.Embed(title="Retired Codename", description=f"{codename} has been retired and cannot be used.", color=discord.Color.red())
             return await interaction.response.send_message(embed=embed, ephemeral=True)
 
