@@ -1,13 +1,14 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, time
-from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, profiles
+from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, birthdays, profiles
 from utils.utils import fetch_id
 
 constants = BlackstarConstants()
 
 utc = timezone.utc 
 enlistment_reminder_run_time = time(hour=20, minute=00, tzinfo=utc) 
+birthday_run_time = time(hour=14, minute=00, tzinfo=utc)
 
 class Tasks(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -23,10 +24,43 @@ class Tasks(commands.Cog):
             logger.info("Enlistment Reminders is running.")
         else:
             logger.error("Enlistment Reminders is not running!")
+        self.birthday.start()
+        if self.birthday.is_running():
+            logger.info("Birthday Checker is running.")
+        else:
+            logger.error("Birthday Checker is not running!")
     
     def cog_unload(self):
         self.check_loa_end_date.cancel()
         self.enlistment_reminder.cancel()
+        self.birthday.cancel()
+
+    @tasks.loop(time=birthday_run_time)
+    async def birthday(self):
+
+        if constants.ENVIRONMENT == "PRODUCTION":
+            guild_id = 1411941814923169826
+        else:
+            guild_id = 1450297281088720928
+
+        today = datetime.now(timezone.utc).strftime("%m-%d")
+
+        async for birthday in birthdays.find({"date": today}):
+            try:
+                user = await self.bot.fetch_user(birthday["user_id"])
+                results = await fetch_id(guild_id, ["misc_announcements", "birthday_ping"])
+                channel = self.bot.get_channel(results["misc_announcements"])
+
+                embed = discord.Embed(
+                    color=16087715,
+                    title="🎉 Happy Birthday!",
+                    description=f"Today is {user.mention}'s birthday, be sure to wish them a happy birthday!",
+                )
+
+                await channel.send(content=f"<@&{results['birthday_ping']}>", embed=embed)
+            except Exception as e:
+                channel = self.bot.get_channel(1464811075760427008)
+                await channel.send(f"Failed to post {user.mention}'s birthday;\n```py{e}```")
 
     @tasks.loop(time=enlistment_reminder_run_time)
     async def enlistment_reminder(self):
