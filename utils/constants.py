@@ -67,6 +67,7 @@ jail_snapshots = db.jail_snapshots
 economy_profiles = db.economy_profiles
 combat_classes = db.combat_classes
 combat_profiles = db.combat_profiles
+birthdays = db.birthdays
 
 if constants.ENVIRONMENT == "PRODUCTION":
     annoucement_role_id = 1413199178934259844
