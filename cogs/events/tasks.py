@@ -96,7 +96,7 @@ class Tasks(commands.Cog):
                     try:
                         await host.send(embed=embed, view=view)
                     except Exception:
-                        await channel.send(content=host.mention, embed=embed, view=view)
+                        await channel.send(content=f"<@{session.get("host_id", 0)}>", embed=embed, view=view)
                     
         
 
@@ -126,7 +126,7 @@ class Tasks(commands.Cog):
                     try:
                         await host.send(embed=embed, view=view)
                     except Exception:
-                        await channel.send(content=host.mention, embed=embed, view=view)
+                        await channel.send(content=f"<@{session.get("host_id", 0)}>", embed=embed, view=view)
 
     @tasks.loop(time=birthday_run_time)
     async def birthday(self):
