@@ -74,6 +74,9 @@ class Tasks(commands.Cog):
             for session in all_active_sessions:
                 started_at = session.get("started_at")
 
+                if started_at and started_at.tzinfo is None:
+                    started_at = started_at.replace(tzinfo=UTC)
+
                 # check to see if its been 12 hours past the started time
                 if started_at and (now - started_at).total_seconds() >= 4 * 3600:
                     guild = self.bot.get_guild(session.get("guild_id", 0))
@@ -82,7 +85,7 @@ class Tasks(commands.Cog):
                     message = await channel.fetch_message(session.get("message_id", 0))
                     embed = discord.Embed(
                         title="Active Session Reminder",
-                        description="Hello, you have a session thats been active for over 12 hours\n\n"
+                        description="Hello, you have a session thats been active for over 4 hours\n\n"
                                 f"> **Session Server: **{guild.name}\n"
                                 f"> **Session Channel: **{channel.mention}\n"
                                 f"> **Session Message: **{message.jump_url}\n\n" 
@@ -99,6 +102,9 @@ class Tasks(commands.Cog):
         if all_waiting_sessions:
             for session in all_waiting_sessions:
                 created_at = session.get("created_at")
+
+                if created_at and created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=UTC)
 
                 # check to see if its been 1 hour past the created time
                 if created_at and (now - created_at).total_seconds() >= 1 * 3600:
