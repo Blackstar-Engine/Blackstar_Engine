@@ -1,7 +1,8 @@
 import discord
+from discord import guild
 from discord.ext import commands, tasks
-from datetime import datetime, timezone, time
-from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, profiles
+from datetime import datetime, timezone, time, UTC
+from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, profiles, active_sessions
 from utils.utils import fetch_id
 
 constants = BlackstarConstants()
@@ -9,9 +10,27 @@ constants = BlackstarConstants()
 utc = timezone.utc 
 enlistment_reminder_run_time = time(hour=20, minute=00, tzinfo=utc) 
 
+class EndCancelSessionView(discord.ui.View):
+    def __init__(self, session: dict, session_type: str):
+        super().__init__(timeout=None)
+        self.session = session
+        self.session_type = session_type
+
+    @discord.ui.button(label="End Session", style=discord.ButtonStyle.red, custom_id="end_session_button")
+    async def end_session(self, interaction: discord.Interaction, button: discord.ui.Button):
+        session = await active_sessions.find_one({"_id": self.session.get("_id")})
+        if not session:
+            await interaction.response.send_message("Session not found or already ended/cancelled.", ephemeral=True)
+            return
+        
+        # Here you would add any additional logic needed to properly end the session
+        await active_sessions.update_one({"_id": self.session.get("_id")}, {"$set": {"status": self.session_type}})
+        await interaction.response.send_message(f"Session has been {self.session_type}.", ephemeral=True)
+
 class Tasks(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
         self.check_loa_end_date.start()
         if self.check_loa_end_date.is_running():
             logger.info("LOA End Date Checker is running.")
@@ -23,10 +42,76 @@ class Tasks(commands.Cog):
             logger.info("Enlistment Reminders is running.")
         else:
             logger.error("Enlistment Reminders is not running!")
+        
+        self.session_reminders.start()
+        if self.session_reminders.is_running():
+            logger.info("Session Reminders is running.")
+        else:
+            logger.error("Session Reminders is not running!")
     
     def cog_unload(self):
         self.check_loa_end_date.cancel()
         self.enlistment_reminder.cancel()
+        self.session_reminders.cancel()
+    
+    @tasks.loop(hours=1)
+    async def session_reminders(self):
+        now = datetime.now(UTC)
+        all_active_sessions = await active_sessions.find({"status": "active"}).to_list(length=None)
+        all_waiting_sessions = await active_sessions.find({"status": "waiting"}).to_list(length=None)
+        if not all_active_sessions and not all_waiting_sessions:
+            return
+        
+        if all_active_sessions:
+            for session in all_active_sessions:
+                started_at = session.get("started_at")
+
+                # check to see if its been 12 hours past the started time
+                if started_at and (now - started_at).total_seconds() >= 4 * 3600:
+                    guild = self.bot.get_guild(session.get("guild_id", 0))
+                    host = guild.get_member(session.get("host_id", 0))
+                    channel = guild.get_channel(session.get("channel_id", 0))
+                    message = await channel.fetch_message(session.get("message_id", 0))
+                    embed = discord.Embed(
+                        title="Active Session Reminder",
+                        description="Hello, you have a session thats been active for over 12 hours\n\n"
+                                f"> **Session Server: **{guild.name}\n"
+                                f"> **Session Channel: **{channel.mention}\n"
+                                f"> **Session Message: **{message.jump_url}\n\n" 
+                                "Please end this session if its no longer active or if it has concluded!",
+                        color=discord.Color.yellow()
+                    )
+                    view = EndCancelSessionView(session, "ended")
+                    try:
+                        await host.send(embed=embed, view=view)
+                    except discord.Forbidden:
+                        await channel.send(content=host.mention, embed=embed, view=view)
+        
+
+        if all_waiting_sessions:
+            for session in all_waiting_sessions:
+                created_at = session.get("created_at")
+
+                # check to see if its been 1 hour past the created time
+                if created_at and (now - created_at).total_seconds() >= 1 * 3600:
+                    guild = self.bot.get_guild(session.get("guild_id", 0))
+                    host = guild.get_member(session.get("host_id", 0))
+                    channel = guild.get_channel(session.get("channel_id", 0))
+                    message = await channel.fetch_message(session.get("message_id", 0))
+                    embed = discord.Embed(
+                        title="Waiting Session Reminder",
+                        description="Hello, you have a session thats been waiting for over 1 hour\n\n"
+                                f"> **Session Server: **{guild.name}\n"
+                                f"> **Session Channel: **{channel.mention}\n"
+                                f"> **Session Message: **{message.jump_url}\n\n" 
+                                "Please cancel this session if its no longer active!",
+                        color=discord.Color.yellow()
+                    )
+                    view = EndCancelSessionView(session, "cancelled")
+                    try:
+                        await host.send(embed=embed, view=view)
+                    except discord.Forbidden:
+                        await channel.send(content=host.mention, embed=embed, view=view)
 
     @tasks.loop(time=enlistment_reminder_run_time)
     async def enlistment_reminder(self):
@@ -214,6 +299,14 @@ class Tasks(commands.Cog):
 
     @check_loa_end_date.before_loop
     async def before_check_loa_end_date(self):
+        await self.bot.wait_until_ready()
+    
+    @enlistment_reminder.before_loop
+    async def before_enlistment_reminder(self):
+        await self.bot.wait_until_ready()
+    
+    @session_reminders.before_loop
+    async def before_session_reminders(self):
         await self.bot.wait_until_ready()
 
 
