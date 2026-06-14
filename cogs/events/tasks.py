@@ -95,8 +95,9 @@ class Tasks(commands.Cog):
                     view = EndCancelSessionView(session, "ended")
                     try:
                         await host.send(embed=embed, view=view)
-                    except discord.Forbidden:
+                    except Exception:
                         await channel.send(content=host.mention, embed=embed, view=view)
+                    
         
 
         if all_waiting_sessions:
@@ -124,7 +125,7 @@ class Tasks(commands.Cog):
                     view = EndCancelSessionView(session, "cancelled")
                     try:
                         await host.send(embed=embed, view=view)
-                    except discord.Forbidden:
+                    except Exception:
                         await channel.send(content=host.mention, embed=embed, view=view)
 
     @tasks.loop(time=birthday_run_time)
