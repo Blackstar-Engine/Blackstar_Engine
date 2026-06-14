@@ -45,16 +45,16 @@ class Tasks(commands.Cog):
             logger.error("Enlistment Reminders is not running!")
 
         self.session_reminders.start()
-        if self.enlistment_reminder.is_running():
+        if self.session_reminders.is_running():
             logger.info("Session Reminders is running.")
         else:
             logger.error("Session Reminders is not running!")
 
         self.birthday.start()
-        if self.enlistment_reminder.is_running():
-            logger.info("Brithdays is running.")
+        if self.birthday.is_running():
+            logger.info("Birthdays is running.")
         else:
-            logger.error("Brithdays is not running!")
+            logger.error("Birthdays is not running!")
     
     def cog_unload(self):
         self.check_loa_end_date.cancel()
@@ -120,11 +120,9 @@ class Tasks(commands.Cog):
                         await host.send(embed=embed, view=view)
                     except discord.Forbidden:
                         await channel.send(content=host.mention, embed=embed, view=view)
-        self.birthday.cancel()
 
     @tasks.loop(time=birthday_run_time)
     async def birthday(self):
-
         if constants.ENVIRONMENT == "PRODUCTION":
             guild_id = 1411941814923169826
         else:
