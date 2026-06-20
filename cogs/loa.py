@@ -5,8 +5,8 @@ import re
 from utils.constants import loa, stored_loa, roa, LOARegFormat, profiles
 from datetime import datetime, timedelta
 from ui.paginator import PaginatorView
-from ui.loa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
-from ui.loa.views.ManageExtendButtons import ManageExtendButton
+from ui.loa.views.RequestButtons import RequestAcceptDenyButtons
+from ui.loa.views.ManageButtons import ManageExtendButton
 from typing import Optional
 from utils.utils import fetch_id, has_approval_perms, fetch_profile
 
@@ -50,8 +50,12 @@ class LOA(commands.Cog):
             pass
 
         container = ui.Container(
-            ui.TextDisplay("## Leave Of Absence Accepted"),
-            ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
+            ui.TextDisplay("## LOA Accepted"),
+            ui.TextDisplay(f"**Member:** {ctx.author.mention}\n"
+                           f"**Start:** {discord.utils.format_dt(start_date)}\n"
+                           f"**End:** {discord.utils.format_dt(end_date)}\n"
+                           f"**Reason:** ``{reason}``\n"
+                           f"**Time:** ``{time}``"),
             ui.Separator(),
             ui.TextDisplay(f"**Accepted By: ** {moderator.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
             accent_color=discord.Color.green()
@@ -74,8 +78,12 @@ class LOA(commands.Cog):
     async def handle_denied(self, ctx: commands.Context, view: RequestAcceptDenyButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
         moderator: discord.Member = view.action_row.kwargs.get('moderator_obj')
         container = ui.Container(
-                ui.TextDisplay("## Leave Of Absence Denied"),
-                ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
+                ui.TextDisplay("## LOA Denied"),
+                ui.TextDisplay(f"**Member:** {ctx.author.mention}\n"
+                               f"**Start:** {discord.utils.format_dt(start_date)}\n"
+                               f"**End:** {discord.utils.format_dt(end_date)}\n"
+                               f"**Reason:** ``{reason}``\n"
+                               f"**Time:** ``{time}``"),
                 ui.Separator(),
                 ui.TextDisplay(f"**Denied By: ** {moderator.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
                 accent_color=discord.Color.red()

@@ -24,13 +24,16 @@ class ManageExtendButton(ui.LayoutView):
         action_row = ui.ActionRow(extend_button, end_button)
 
         container = ui.Container(
-            ui.TextDisplay("## Reduce of Activity Admin Panel"),
+            ui.TextDisplay("## ROA Admin Panel"),
             ui.TextDisplay(f"ROA History {member.mention}:\n{description}"), 
             accent_color=discord.Color.yellow()
         )
         if active_roa:
             container.add_item(ui.Separator())
-            container.add_item(ui.TextDisplay(f"**Started:** {discord.utils.format_dt(active_roa.get("start_date"))}\n**Ending:** {discord.utils.format_dt(active_roa.get("end_date"))}\n**Reason:** ``{active_roa.get("reason")}``\n**Moderator:** <@{active_roa.get("moderator_id")}>"))
+            container.add_item(ui.TextDisplay(f"**Started:** {discord.utils.format_dt(active_roa.get("start_date"))}\n"
+                                              f"**Ending:** {discord.utils.format_dt(active_roa.get("end_date"))}\n"
+                                              f"**Reason:** ``{active_roa.get("reason")}``\n"
+                                              f"**Moderator:** <@{active_roa.get("moderator_id")}>"))
             container.add_item(ui.Separator())
             container.add_item(action_row)
 
@@ -68,8 +71,11 @@ class ManageExtendButton(ui.LayoutView):
             pass
 
         log_embed = discord.Embed(
-            title="ROA Self Ended",
-            description=f"**User: ** <@{self.active_roa.get("user_id")}>\n**Start Time: ** {discord.utils.format_dt(self.active_roa.get('start_date'))}\n**End Date: ** {discord.utils.format_dt(self.active_roa.get('end_date'))}\n**End Reason: ** {reason}",
+            title="ROA Ended",
+            description=f"**User: ** <@{self.active_roa.get("user_id")}>\n"
+                        f"**Start Time: ** {discord.utils.format_dt(self.active_roa.get('start_date'))}\n"
+                        f"**End Date: ** {discord.utils.format_dt(self.active_roa.get('end_date'))}\n"
+                        f"**Reason: ** {reason}",
             color=discord.Color.light_grey()
         )
 
