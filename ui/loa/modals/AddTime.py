@@ -57,7 +57,10 @@ class AddTimeModal(discord.ui.Modal):
             action_row = AcceptDenyButtons(bot = self.bot, user=interaction.user, permission_level=3)
             container = ui.Container(
                 ui.TextDisplay("## LOA Extension Requested"),
-                ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),
+                ui.TextDisplay(f"**Member:** {self.member.mention}\n"
+                               f"**Requested by:** {interaction.user.mention}\n"
+                               f"**New End Date:** {discord.utils.format_dt(new_end_date)}\n"
+                               f"**Reason:** {reason}"),
                 ui.Separator(),
                 action_row,
                 accent_color=discord.Color.yellow()

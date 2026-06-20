@@ -10,20 +10,36 @@ class ClaimButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
     
-    @discord.ui.button(label="Claim Enlistment", style=discord.ButtonStyle.blurple, custom_id="enlistment_claim_button")
+    @discord.ui.button(label="Claim", style=discord.ButtonStyle.grey, custom_id="enlistment_claim_button")
     async def claim_enlistment_button(self, interaction: discord.Interaction, button: discord.Button):
         results = await fetch_id(interaction.guild.id, ['drm_id'])
         drm_role = interaction.guild.get_role(results['drm_id'])
         if drm_role not in interaction.user.roles:
             return await interaction.response.send_message("This is a D.R.M only button!", ephemeral=True)
-        embed = discord.Embed(
-            title="Claimed",
-            description=f"This enlistment has been claimed by {interaction.user.mention}",
-            color=discord.Color.green()
-        )
-        await interaction.response.edit_message(embed=embed, view=None)
-        await interaction.followup.send("You have claimed this enlistment!", ephemeral=True)
-        self.stop()
+        
+        if button.label == "Unclaim":
+            embed = discord.Embed(
+                title="Click to Claim",
+                description="D.R.M, please click this button to claim the enlistment!",
+                color=discord.Color.yellow()
+            )
+
+            button.label = "Claim"
+            button.style = discord.ButtonStyle.grey
+
+            await interaction.response.edit_message(embed=embed, view=self)
+            return await interaction.followup.send("You have unclaimed this enlistment!", ephemeral=True)
+        else:
+            embed = discord.Embed(
+                title="Claimed",
+                description=f"This enlistment has been claimed by {interaction.user.mention}",
+                color=discord.Color.green()
+            )
+            button.label = "Unclaim"
+            button.style = discord.ButtonStyle.red
+
+            await interaction.response.edit_message(embed=embed, view=self)
+            return await interaction.followup.send("You have claimed this enlistment!", ephemeral=True)
 
 class EnlistmentByThread(commands.Cog):
     def __init__(self, bot):

@@ -7,7 +7,7 @@ class HelpCommandOptions(discord.ui.LayoutView):
     def __init__(self, bot, commands_list, user):
         super().__init__(timeout=600)
 
-        self.bot = bot
+        self.bot: commands.Bot = bot
         self.commands_list = commands_list
         self.user = user
 
@@ -73,12 +73,40 @@ class HelpCommandOptions(discord.ui.LayoutView):
         await interaction.response.edit_message(
             view=view
         )
+    
+    async def _handle_group_command(self, interaction: discord.Interaction, command_name, command_data):
+        group_name = command_name.lower()
 
-    async def search_button(
-        self,
-        interaction: discord.Interaction
-    ):
+        all_commands = [
+            cmd for cmd in self.bot.walk_commands()
+            if (
+                cmd.full_parent_name
+                and cmd.full_parent_name.lower() == group_name
+            )
+        ]
+        view = discord.ui.LayoutView()
+        container = discord.ui.Container(
+            ui.TextDisplay(f"## Search Results: {command_name}"),
+            accent_color=discord.Color.light_grey()
+        )
 
+        if all_commands:
+
+            for cmd in all_commands:
+
+                container.add_item(ui.TextDisplay(f"**→** </{cmd.qualified_name}:{command_data['id']}>\n"
+                    f"> {cmd.description}\n\n"))
+
+        container.add_item(self.select_row)
+        container.add_item(ui.Separator())
+        container.add_item(self.button_row)
+
+        view.add_item(container)
+        return await interaction.edit_original_response(
+            view=view
+        )
+
+    async def search_button(self, interaction: discord.Interaction):
         modal = CustomModal(
             "Command Search",
             [
@@ -102,7 +130,6 @@ class HelpCommandOptions(discord.ui.LayoutView):
         command_ids = {}
 
         for cmd in fetched_commands:
-
             if cmd.id:
                 command_ids[str(cmd)] = {
                     "id": cmd.id,
@@ -121,74 +148,41 @@ class HelpCommandOptions(discord.ui.LayoutView):
                     }
 
         command_name = modal.command_name.value
-
         command_data = command_ids.get(command_name)
 
-        if command_data:
-
-            command = self.bot.get_command(command_name)
-
-            extras = command.extras if command else {}
-
-            category = extras.get("category")
-
-            # NORMAL COMMAND
-            if category and category not in ("Staff", "Group"):
-
-                view = discord.ui.LayoutView()
-                container = discord.ui.Container(
-                    ui.TextDisplay(f"## Search Results: {command_name}"),
-                    ui.TextDisplay(f"**→** </{command_name}:{command_data['id']}>\n> {command_data['description']}"),
-                    self.select_row,
-                    ui.Separator(),
-                    self.button_row,
-                    accent_color=discord.Color.light_grey()
-                )
-
-                view.add_item(container)
-
-                return await interaction.edit_original_response(
-                    view=view
-                )
-
-            # GROUP COMMANDS
-            if category == "Group":
-
-                group_name = command_name.lower()
-
-                all_commands = [
-                    cmd for cmd in self.bot.walk_commands()
-                    if (
-                        cmd.full_parent_name
-                        and cmd.full_parent_name.lower() == group_name
-                    )
-                ]
-                view = discord.ui.LayoutView()
-                container = discord.ui.Container(
-                    ui.TextDisplay(f"## Search Results: {command_name}"),
-                    accent_color=discord.Color.light_grey()
-                )
-
-                if all_commands:
-
-                    for cmd in all_commands:
-
-                        container.add_item(ui.TextDisplay(f"**→** </{cmd.qualified_name}:{command_data['id']}>\n"
-                            f"> {cmd.description}\n\n"))
-
-                container.add_item(self.select_row)
-                container.add_item(ui.Separator())
-                container.add_item(self.button_row)
-
-                view.add_item(container)
-                return await interaction.edit_original_response(
-                    view=view
-                )
-
-        await interaction.followup.send(
+        if not command_data:
+            return await interaction.followup.send(
             "Command not found.",
             ephemeral=True
         )
+
+        command = self.bot.get_command(command_name)
+        extras = command.extras if command else {}
+        category = extras.get("category")
+
+        # NORMAL COMMAND
+        if category and category not in ("Staff", "Group"):
+            view = discord.ui.LayoutView()
+            container = discord.ui.Container(
+                ui.TextDisplay(f"## Search Results: {command_name}"),
+                ui.TextDisplay(f"**→** </{command_name}:{command_data['id']}>\n> {command_data['description']}"),
+                self.select_row,
+                ui.Separator(),
+                self.button_row,
+                accent_color=discord.Color.light_grey()
+            )
+
+            view.add_item(container)
+
+            return await interaction.edit_original_response(
+                view=view
+            )
+
+        # GROUP COMMANDS
+        if category == "Group":
+            await self._handle_group_command(interaction, command_name, command_data)
+
+        
 
 class HelpCommand(commands.Cog):
     def __init__(self, bot):

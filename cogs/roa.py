@@ -58,8 +58,12 @@ class ROA(commands.Cog):
             pass
 
         container = ui.Container(
-            ui.TextDisplay("## Reduce of Activity Accepted"),
-            ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
+            ui.TextDisplay("## ROA Accepted"),
+            ui.TextDisplay(f"**Member:** {ctx.author.mention}\n"
+                           f"**Start:** {discord.utils.format_dt(start_date)}\n"
+                           f"**End:** {discord.utils.format_dt(end_date)}\n"
+                           f"**Reason:** ``{reason}``\n"
+                           f"**Time:** ``{time}``"),
             ui.Separator(),
             ui.TextDisplay(f"**Accepted By: ** {moderator.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
             accent_color=discord.Color.green()
@@ -82,8 +86,12 @@ class ROA(commands.Cog):
     async def handle_denied(self, ctx: commands.Context, view: RequestButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
         moderator: discord.Member = view.action_row.kwargs.get('moderator_obj')
         container = ui.Container(
-                ui.TextDisplay("## Reduce of Activity Denied"),
-                ui.TextDisplay(f"**Member:** {ctx.author.mention}\n**Start:** {discord.utils.format_dt(start_date)}\n**End:** {discord.utils.format_dt(end_date)}\n**Reason:** ``{reason}``\n**Time:** ``{time}``"),
+                ui.TextDisplay("## ROA Denied"),
+                ui.TextDisplay(f"**Member:** {ctx.author.mention}\n"
+                               f"**Start:** {discord.utils.format_dt(start_date)}\n"
+                               f"**End:** {discord.utils.format_dt(end_date)}\n"
+                               f"**Reason:** ``{reason}``\n"
+                               f"**Time:** ``{time}``"),
                 ui.Separator(),
                 ui.TextDisplay(f"**Denied By: ** {moderator.mention}\n**Reason: ** {view.action_row.kwargs.get('reason', 'No reason provided.')}"),
                 accent_color=discord.Color.red()
