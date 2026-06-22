@@ -10,6 +10,99 @@ class Voice(commands.Cog):
         super().__init__()
         self.bot = bot
     
+    def _create_join_update_doc(self, user_key, existing, join_time):
+        update_doc = {
+            f"attendance.{user_key}.joined_at": join_time,
+            f"attendance.{user_key}.left_at": None,
+            f"attendance.{user_key}.currently_in": True
+        }
+
+        if existing:
+            if existing.get("first_joined_at") is None:
+                update_doc[f"attendance.{user_key}.first_joined_at"] = join_time
+            if existing.get("periods") is None:
+                update_doc[f"attendance.{user_key}.periods"] = []
+            if existing.get("total_seconds") is None:
+                update_doc[f"attendance.{user_key}.total_seconds"] = 0
+        else:
+            update_doc.update({
+                f"attendance.{user_key}.first_joined_at": join_time,
+                f"attendance.{user_key}.total_seconds": 0,
+                f"attendance.{user_key}.periods": []
+            })
+
+        return update_doc
+
+    async def _handle_joining_vc(self, guild_id: int, joined_channel: discord.VoiceChannel, user_key, now):
+        session = await active_sessions.find_one({
+                "guild_id": guild_id,
+                "vc_channel_id": joined_channel.id,
+                "status": "active"
+        })
+
+        if not session:
+            return
+
+        attendance = session.get("attendance", {})
+        existing = attendance.get(user_key)
+
+        if existing and existing.get("currently_in"):
+            return
+
+        join_time = now
+        update_doc = self._create_join_update_doc(user_key, existing, join_time)
+
+        await active_sessions.update_one(
+            {"_id": session["_id"]},
+            {"$set": update_doc}
+        )
+    
+    async def _handle_leaving_vc(self, guild_id: int, left_channel: discord.VoiceChannel, user_key, now):
+        session = await active_sessions.find_one({
+            "guild_id": guild_id,
+            "vc_channel_id": left_channel.id,
+            "status": "active"
+        })
+
+        if session:
+
+            attendance = session.get("attendance", {})
+            record = attendance.get(user_key)
+
+            if record and record.get("currently_in"):
+
+                join_time = record.get("joined_at") or session.get("started_at") or now
+                if join_time.tzinfo is None:
+                    join_time = join_time.replace(tzinfo=UTC)
+
+                left_time = now
+                duration = (left_time - join_time).total_seconds()
+                if duration < 0:
+                    duration = 0
+
+                total_seconds = record.get("total_seconds", 0) + duration
+                period = {
+                    "joined_at": join_time,
+                    "left_at": left_time,
+                    "duration": duration
+                }
+
+                await active_sessions.update_one(
+                    {"_id": session["_id"]},
+                    {
+                        "$push": {
+                            f"attendance.{user_key}.periods": period
+                        },
+                        "$set": {
+                            f"attendance.{user_key}.left_at": left_time,
+                            f"attendance.{user_key}.last_left_at": left_time,
+                            f"attendance.{user_key}.currently_in": False,
+                            f"attendance.{user_key}.total_seconds": total_seconds
+                        }
+                    }
+                )
+
+    
     async def clear_queue(self, queue, guild_id):
         try:
             tts_system_commands._drain_queue(self, queue)
@@ -43,9 +136,11 @@ class Voice(commands.Cog):
                     return
     
     async def handle_session_logic(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-        # if active session in the vc
-        # if user joins vc, add to the attendees list and set join datetime
-        # if user leaves vc, close the current period and append it to the timeline
+        '''
+        if active session in the vc
+        if user joins vc, add to the attendees list and set join datetime
+        if user leaves vc, close the current period and append it to the timeline
+        '''
 
         guild_id = member.guild.id
         user_key = str(member.id)
@@ -56,93 +151,12 @@ class Voice(commands.Cog):
 
         # USER LEFT VC
         if left_channel:
-
-            session = await active_sessions.find_one({
-                "guild_id": guild_id,
-                "vc_channel_id": left_channel.id,
-                "status": "active"
-            })
-
-            if session:
-
-                attendance = session.get("attendance", {})
-                record = attendance.get(user_key)
-
-                if record and record.get("currently_in"):
-
-                    join_time = record.get("joined_at") or session.get("started_at") or now
-                    if join_time.tzinfo is None:
-                        join_time = join_time.replace(tzinfo=UTC)
-
-                    left_time = now
-                    duration = (left_time - join_time).total_seconds()
-                    if duration < 0:
-                        duration = 0
-
-                    total_seconds = record.get("total_seconds", 0) + duration
-                    period = {
-                        "joined_at": join_time,
-                        "left_at": left_time,
-                        "duration": duration
-                    }
-
-                    await active_sessions.update_one(
-                        {"_id": session["_id"]},
-                        {
-                            "$push": {
-                                f"attendance.{user_key}.periods": period
-                            },
-                            "$set": {
-                                f"attendance.{user_key}.left_at": left_time,
-                                f"attendance.{user_key}.last_left_at": left_time,
-                                f"attendance.{user_key}.currently_in": False,
-                                f"attendance.{user_key}.total_seconds": total_seconds
-                            }
-                        }
-                    )
+            await self._handle_leaving_vc(guild_id, left_channel, user_key, now)
 
         # USER JOINED VC
         if joined_channel:
-
-            session = await active_sessions.find_one({
-                "guild_id": guild_id,
-                "vc_channel_id": joined_channel.id,
-                "status": "active"
-            })
-
-            if session:
-
-                attendance = session.get("attendance", {})
-                existing = attendance.get(user_key)
-
-                if existing and existing.get("currently_in"):
-                    return
-
-                join_time = now
-                update_doc = {
-                    f"attendance.{user_key}.joined_at": join_time,
-                    f"attendance.{user_key}.left_at": None,
-                    f"attendance.{user_key}.currently_in": True
-                }
-
-                if existing:
-                    if existing.get("first_joined_at") is None:
-                        update_doc[f"attendance.{user_key}.first_joined_at"] = join_time
-                    if existing.get("periods") is None:
-                        update_doc[f"attendance.{user_key}.periods"] = []
-                    if existing.get("total_seconds") is None:
-                        update_doc[f"attendance.{user_key}.total_seconds"] = 0
-                else:
-                    update_doc.update({
-                        f"attendance.{user_key}.first_joined_at": join_time,
-                        f"attendance.{user_key}.total_seconds": 0,
-                        f"attendance.{user_key}.periods": []
-                    })
-
-                await active_sessions.update_one(
-                    {"_id": session["_id"]},
-                    {"$set": update_doc}
-                )
+            await self._handle_joining_vc(guild_id, joined_channel, user_key, now)
+            
 
 
         

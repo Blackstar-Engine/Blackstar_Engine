@@ -24,6 +24,20 @@ class Sessions(commands.Cog):
         return left_at
 
     async def _cleanup_user(self, session, session_end):
+        def _norm(dt):
+            if dt and dt.tzinfo is None:
+                return dt.replace(tzinfo=UTC)
+            return dt
+
+        async def _push_period(user_id, period, sets):
+            await active_sessions.update_one(
+                {"_id": session["_id"]},
+                {"$push": {f"attendance.{user_id}.periods": period}, "$set": sets}
+            )
+
+        async def _set_fields(sets):
+            await active_sessions.update_one({"_id": session["_id"]}, {"$set": sets})
+
         for user_id, info in session.get("attendance", {}).items():
             currently_in = info.get("currently_in", False)
             first_joined_at = self._fallback_first_joined(info, session)
@@ -33,82 +47,53 @@ class Sessions(commands.Cog):
 
             if currently_in:
                 join_time = info.get("joined_at") or session.get("started_at") or session_end
-                if join_time and join_time.tzinfo is None:
-                    join_time = join_time.replace(tzinfo=UTC)
+                join_time = _norm(join_time)
 
                 left_time = session_end
-                duration = (left_time - join_time).total_seconds()
-                if duration < 0:
-                    duration = 0
+                duration = max((left_time - join_time).total_seconds(), 0)
 
                 total_seconds += duration
-                period = {
-                    "joined_at": join_time,
-                    "left_at": left_time,
-                    "duration": duration
+                period = {"joined_at": join_time, "left_at": left_time, "duration": duration}
+
+                sets = {
+                    f"attendance.{user_id}.currently_in": False,
+                    f"attendance.{user_id}.first_joined_at": first_joined_at,
+                    f"attendance.{user_id}.last_left_at": left_time,
+                    f"attendance.{user_id}.left_at": left_time,
+                    f"attendance.{user_id}.total_seconds": total_seconds,
                 }
 
-                await active_sessions.update_one(
-                    {"_id": session["_id"]},
-                    {
-                        "$push": {f"attendance.{user_id}.periods": period},
-                        "$set": {
-                            f"attendance.{user_id}.currently_in": False,
-                            f"attendance.{user_id}.first_joined_at": first_joined_at,
-                            f"attendance.{user_id}.last_left_at": left_time,
-                            f"attendance.{user_id}.left_at": left_time,
-                            f"attendance.{user_id}.total_seconds": total_seconds
-                        }
-                    }
-                )
+                await _push_period(user_id, period, sets)
                 continue
 
             if not periods and info.get("joined_at") and info.get("left_at"):
-                joined_at = info.get("joined_at")
-                left_at = info.get("left_at")
-                if joined_at and joined_at.tzinfo is None:
-                    joined_at = joined_at.replace(tzinfo=UTC)
-                if left_at and left_at.tzinfo is None:
-                    left_at = left_at.replace(tzinfo=UTC)
+                joined_at = _norm(info.get("joined_at"))
+                left_at = _norm(info.get("left_at"))
 
-                duration = (left_at - joined_at).total_seconds()
-                if duration < 0:
-                    duration = 0
-
+                duration = max((left_at - joined_at).total_seconds(), 0)
                 total_seconds = max(total_seconds, duration)
-                period = {
-                    "joined_at": joined_at,
-                    "left_at": left_at,
-                    "duration": duration
+                period = {"joined_at": joined_at, "left_at": left_at, "duration": duration}
+
+                sets = {
+                    f"attendance.{user_id}.first_joined_at": first_joined_at,
+                    f"attendance.{user_id}.last_left_at": last_left_at,
+                    f"attendance.{user_id}.left_at": left_at,
+                    f"attendance.{user_id}.total_seconds": total_seconds,
                 }
 
-                await active_sessions.update_one(
-                    {"_id": session["_id"]},
-                    {
-                        "$push": {f"attendance.{user_id}.periods": period},
-                        "$set": {
-                            f"attendance.{user_id}.first_joined_at": first_joined_at,
-                            f"attendance.{user_id}.last_left_at": last_left_at,
-                            f"attendance.{user_id}.left_at": left_at,
-                            f"attendance.{user_id}.total_seconds": total_seconds
-                        }
-                    }
-                )
+                await _push_period(user_id, period, sets)
                 continue
 
-            await active_sessions.update_one(
-                {"_id": session["_id"]},
-                {
-                    "$set": {
-                        f"attendance.{user_id}.first_joined_at": first_joined_at,
-                        f"attendance.{user_id}.last_left_at": last_left_at,
-                        f"attendance.{user_id}.currently_in": False,
-                        f"attendance.{user_id}.left_at": last_left_at,
-                        f"attendance.{user_id}.total_seconds": total_seconds,
-                        f"attendance.{user_id}.periods": periods
-                    }
-                }
-            )
+            sets = {
+                f"attendance.{user_id}.first_joined_at": first_joined_at,
+                f"attendance.{user_id}.last_left_at": last_left_at,
+                f"attendance.{user_id}.currently_in": False,
+                f"attendance.{user_id}.left_at": last_left_at,
+                f"attendance.{user_id}.total_seconds": total_seconds,
+                f"attendance.{user_id}.periods": periods,
+            }
+
+            await _set_fields(sets)
 
     @commands.hybrid_group(name="session")
     async def session(self, ctx: commands.Context):
@@ -196,17 +181,29 @@ class Sessions(commands.Cog):
 
         session = await active_sessions.find_one({"_id": session["_id"]})
 
-        # Main embed: overall session info + reactions
+        main_embed = self._build_main_embed(session)
+        att_embed = self._build_attendance_embed(session)
+
+        host = self.bot.get_user(session["host_id"])
+        if host:
+            try:
+                await host.send(embeds=[main_embed, att_embed])
+            except discord.Forbidden:
+                await ctx.send("I could not send this to your dms, but here is the attendance report:", embeds=[main_embed, att_embed], ephemeral=True)
+
+    def _build_main_embed(self, session):
         green_list = session.get("rsvp", {}).get("green", [])
         yellow_list = session.get("rsvp", {}).get("yellow", [])
 
         main_embed = discord.Embed(
             title="Session Report",
-            description=f"> **Session ID: **{session['_id']}\n"
-                        f"> **Host: **<@{session['host_id']}>\n"
-                        f"> **Game Link: **{session.get('game_link', 'N/A')}\n"
-                        f"> **Started: **{discord.utils.format_dt(session.get('started_at')) if session.get('started_at') else "Unknown"}\n"
-                        f"> **Ended: **{discord.utils.format_dt(session.get('ended_at')) if session.get('ended_at') else "Unknown"}",
+            description=(
+                f"> **Session ID: **{session['_id']}\n"
+                f"> **Host: **<@{session['host_id']}>\n"
+                f"> **Game Link: **{session.get('game_link', 'N/A')}\n"
+                f"> **Started: **{discord.utils.format_dt(session.get('started_at')) if session.get('started_at') else "Unknown"}\n"
+                f"> **Ended: **{discord.utils.format_dt(session.get('ended_at')) if session.get('ended_at') else "Unknown"}"
+            ),
             color=discord.Color.light_grey()
         )
 
@@ -215,8 +212,9 @@ class Sessions(commands.Cog):
             f"\U0001F7E8: {', '.join(yellow_list) or 'None'}"
         )
         main_embed.add_field(name="Reactions", value=reacted_value, inline=False)
+        return main_embed
 
-        # Attendance embed: one line per user with discord timestamps
+    def _build_attendance_embed(self, session):
         att_lines = []
         attendance = session.get("attendance", {})
         for user_id, info in attendance.items():
@@ -231,7 +229,6 @@ class Sessions(commands.Cog):
 
             att_lines.append(f"<@{user_id}> {first_ts} -> {last_ts} ({minutes} minutes | {periods} periods)")
 
-        # Ensure not exceeding embed description limit (4096). Truncate if necessary.
         desc = "\n".join(att_lines)
         if len(desc) > 4000:
             kept_lines = []
@@ -246,18 +243,11 @@ class Sessions(commands.Cog):
                 kept_lines.append(f"... +{remaining} more")
             desc = "\n".join(kept_lines)
 
-        att_embed = discord.Embed(
+        return discord.Embed(
             title="Session Attendance",
             description=desc or "No attendance recorded.",
             color=discord.Color.light_grey()
         )
-
-        host = self.bot.get_user(session["host_id"])
-        if host:
-            try:
-                await host.send(embeds=[main_embed, att_embed])
-            except discord.Forbidden:
-                await ctx.send("I could not send this to your dms, but here is the attendance report:", embeds=[main_embed, att_embed], ephemeral=True)
 
 
 async def setup(bot: commands.Bot):

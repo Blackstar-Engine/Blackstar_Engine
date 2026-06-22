@@ -62,71 +62,48 @@ class Tasks(commands.Cog):
         self.session_reminders.cancel()
         self.birthday.cancel()
     
-    @tasks.loop(hours=1)
-    async def session_reminders(self):
-        now = datetime.now(UTC)
-        all_active_sessions = await active_sessions.find({"status": "active"}).to_list(length=None)
-        all_waiting_sessions = await active_sessions.find({"status": "waiting"}).to_list(length=None)
-        if not all_active_sessions and not all_waiting_sessions:
-            return
-        
-        if all_active_sessions:
-            for session in all_active_sessions:
-                started_at = session.get("started_at")
+    async def _handle_sessions(self, all_sessions: dict, now: datetime, use_date: str, session_type: str, end_style: str, hours: int):
+        for session in all_sessions:
+            date = session.get(use_date)
 
-                if started_at and started_at.tzinfo is None:
-                    started_at = started_at.replace(tzinfo=UTC)
+            if date and date.tzinfo is None:
+                date = date.replace(tzinfo=UTC)
+            
+            if date and (now - date).total_seconds() >= hours * 3600:
+                guild = self.bot.get_guild(session.get("guild_id", 0))
+                host = guild.get_member(session.get("host_id", 0))
+                channel = guild.get_channel(session.get("channel_id", 0))
+                message = await channel.fetch_message(session.get("message_id", 0))
 
-                # check to see if its been 12 hours past the started time
-                if started_at and (now - started_at).total_seconds() >= 4 * 3600:
-                    guild = self.bot.get_guild(session.get("guild_id", 0))
-                    host = guild.get_member(session.get("host_id", 0))
-                    channel = guild.get_channel(session.get("channel_id", 0))
-                    message = await channel.fetch_message(session.get("message_id", 0))
-                    embed = discord.Embed(
-                        title="Active Session Reminder",
-                        description="Hello, you have a session thats been active for over 4 hours\n\n"
+                embed = discord.Embed(
+                        title=f"{session_type.title()} Session Reminder",
+                        description=f"Hello, you have a session thats been active for over {hours} hours\n\n"
                                 f"> **Session Server: **{guild.name}\n"
                                 f"> **Session Channel: **{channel.mention}\n"
                                 f"> **Session Message: **{message.jump_url}\n\n" 
                                 "Please end this session if its no longer active or if it has concluded!",
                         color=discord.Color.yellow()
                     )
-                    view = EndCancelSessionView(session, "ended")
-                    try:
-                        await host.send(embed=embed, view=view)
-                    except Exception:
-                        await channel.send(content=f"<@{session.get("host_id", 0)}>", embed=embed, view=view)
-                    
+
+                view = EndCancelSessionView(session, end_style)
+                try:
+                    await host.send(embed=embed, view=view)
+                except Exception:
+                    await channel.send(content=f"<@{session.get("host_id", 0)}>", embed=embed, view=view)
+
+    @tasks.loop(hours=1)
+    async def session_reminders(self):
+        now = datetime.now(UTC)
         
-
+        all_active_sessions = await active_sessions.find({"status": "active"}).to_list(length=None)
+        all_waiting_sessions = await active_sessions.find({"status": "waiting"}).to_list(length=None)
+        
+        if all_active_sessions:
+            await self._handle_sessions(all_active_sessions, now, "started_at", "active", "ended", 4)
+                    
         if all_waiting_sessions:
-            for session in all_waiting_sessions:
-                created_at = session.get("created_at")
-
-                if created_at and created_at.tzinfo is None:
-                    created_at = created_at.replace(tzinfo=UTC)
-
-                # check to see if its been 1 hour past the created time
-                if created_at and (now - created_at).total_seconds() >= 1 * 3600:
-                    guild = self.bot.get_guild(session.get("guild_id", 0))
-                    host = guild.get_member(session.get("host_id", 0))
-                    channel = guild.get_channel(session.get("channel_id", 0))
-                    message = await channel.fetch_message(session.get("message_id", 0))
-                    embed = discord.Embed(
-                        title="Waiting Session Reminder",
-                        description="Hello, you have a session thats been waiting for over 1 hour\n\n"
-                                f"> **Session Server: **{guild.name}\n"
-                                f"> **Session Channel: **{channel.mention}\n"
-                                f"> **Session Message: **{message.jump_url}\n\n" 
-                                "Please cancel this session if its no longer active!",
-                        color=discord.Color.yellow()
-                    )
-                    view = EndCancelSessionView(session, "cancelled")
-                    try:
-                        await host.send(embed=embed, view=view)
-                    except Exception:
-                        await channel.send(content=f"<@{session.get("host_id", 0)}>", embed=embed, view=view)
+            await self._handle_sessions(all_waiting_sessions, now, "created_at", "waiting", "cancelled", 2)
+        
 
     @tasks.loop(time=birthday_run_time)
     async def birthday(self):
@@ -276,7 +253,7 @@ class Tasks(commands.Cog):
                     f"**User:** {member.mention}\n"
                     f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
                     f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
-                    f"**End Reason:** Auto Ended"
+                    f"**Reason:** Auto Ended"
                 ),
                 color=discord.Color.light_grey()
             )
@@ -305,7 +282,7 @@ class Tasks(commands.Cog):
                     f"**User:** {member.mention}\n"
                     f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
                     f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
-                    f"**End Reason:** Auto Ended"
+                    f"**Reason:** Auto Ended"
                 ),
                 color=discord.Color.light_grey()
             )

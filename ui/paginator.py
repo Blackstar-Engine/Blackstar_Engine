@@ -46,56 +46,85 @@ class PaginatorView(View):
             return discord.Embed(
                 title="No Records Found",
                 description="No records available to display.",
-                color=discord.Color.light_grey()
+                color=discord.Color.light_grey(),
             )
-        
+
         record = self.items[self.current_index]
 
         embed = discord.Embed(
             title=f"Record #{self.current_index + 1}",
             description="",
-            color=discord.Color.light_grey()
+            color=discord.Color.light_grey(),
         )
 
-        for key, value in record.items():
-            if key not in ["message_id", "channel_id", "guild_id", "created_at", "content", "attachments", "mentions", "reactions", "_id"]:
-                key=key.replace("_id", "")
-                key=key.replace("_", " ")
-                if isinstance(value, int):
-                    if "timestamp" in key.lower():
-                        value = f"<t:{value}:R>"
-                    elif "id" in key.lower() or "user" in key.lower() or "moderator" in key.lower():
-                        value = f"<@{value}>"
+        excluded = {
+            "message_id",
+            "channel_id",
+            "guild_id",
+            "created_at",
+            "content",
+            "attachments",
+            "mentions",
+            "reactions",
+            "_id",
+        }
 
-                    embed.add_field(name=key.title(), value=value, inline=True)
-                elif isinstance(value, list):
-                    des = ""
-                    for v in value:
-                        if isinstance(v, int):
-                            des += f"<@{v}>, "
-                    embed.add_field(name=key.title(), value=des, inline=True)
-                elif isinstance(value, datetime):
-                    try:
-                        embed.add_field(name=key.title(), value=discord.utils.format_dt(value), inline=True)
-                    except Exception:
-                        embed.add_field(name=key.title(), value=value, inline=True)
-                elif isinstance(value, dict):
-                    des = ""
-                    for k, v in value.items():
-                        if isinstance(v, dict):
-                            sub_des = ""
-                            for sub_k, sub_v in v.items():
-                                sub_des += f"**{sub_k}**: {sub_v}\n"
-                            des += f"__**{k}**__ -\n{sub_des}\n"
-                        else:
-                            des += f"**{k}**: {v}\n"
-                    embed.add_field(name=key.title(), value=des, inline=True)
-                else:
-                    embed.add_field(name=key.title(), value=value, inline=True)
+        for key, value in record.items():
+            if key in excluded:
+                continue
+
+            name = self._display_key(key)
+            val = self._format_value(key, value)
+            embed.add_field(name=name, value=val, inline=True)
 
         embed.set_footer(text=f"Record {self.current_index + 1} of {len(self.items)}")
-        
         return embed
+
+    def _display_key(self, k: str) -> str:
+        k = k.replace("_id", "")
+        k = k.replace("_", " ")
+        return k.title()
+
+    def _format_value(self, key: str, value):
+        if isinstance(value, int):
+            return self._format_int(key, value)
+        if isinstance(value, list):
+            return self._format_list(value)
+        if isinstance(value, datetime):
+            try:
+                return discord.utils.format_dt(value)
+            except Exception:
+                return str(value)
+        if isinstance(value, dict):
+            return self._format_dict(value)
+        return str(value)
+
+    def _format_int(self, k: str, v: int):
+        lk = k.lower()
+        if "timestamp" in lk:
+            return f"<t:{v}:R>"
+        if any(x in lk for x in ("id", "user", "moderator")):
+            return f"<@{v}>"
+        return str(v)
+
+    def _format_list(self, v: list):
+        parts = []
+        for item in v:
+            if isinstance(item, int):
+                parts.append(f"<@{item}>")
+            else:
+                parts.append(str(item))
+        return ", ".join(parts)
+
+    def _format_dict(self, d: dict):
+        parts = []
+        for k, val in d.items():
+            if isinstance(val, dict):
+                sub = [f"**{sk}**: {sv}" for sk, sv in val.items()]
+                parts.append(f"__**{k}**__ -\n" + "\n".join(sub))
+            else:
+                parts.append(f"**{k}**: {val}")
+        return "\n".join(parts)
 
     async def previous_record(self, interaction: discord.Interaction):
         interaction_check(self.user, interaction.user)
