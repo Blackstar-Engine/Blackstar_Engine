@@ -246,7 +246,7 @@ async def dm_user(interaction: discord.Interaction, guild: discord.Guild, snapsh
 async def annouce_promotion(bot, interaction: discord.Interaction, snapshot: dict, department: str, approved: bool, member: discord.Member):
     results = await fetch_id(interaction.guild.id, ["overall_promotion_channel"])
     if approved:
-        channel = bot.get_channel(results["overall_promotion_channel"])
+        channel: discord.TextChannel = bot.get_channel(results["overall_promotion_channel"])
         if channel and member:
             embed = discord.Embed(
                 title="New Promotion",
@@ -255,11 +255,15 @@ async def annouce_promotion(bot, interaction: discord.Interaction, snapshot: dic
                     f"**New Rank:** {snapshot['new_rank']}\n"
                     f"**Department:** {department}"
                 ),
-                color=discord.Color.green()
+                color=discord.Color.random() #.green()
             )
+
+            embed.description = f"{member.mention} has been promoted to **{snapshot.get('new_rank', 'Unknown')}** in **{department}**!"
             embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
             embed.set_thumbnail(url=member.display_avatar.url)
-            await channel.send(embed=embed)
+            message = await channel.send(embed=embed)
+
+            await message.add_reaction('🎉')
 
 async def handle_promotion_decision(interaction: discord.Interaction, approved: bool, reason: str = None):
     bot = interaction.client

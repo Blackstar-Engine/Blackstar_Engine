@@ -27,8 +27,26 @@ class DepartmentRequest(commands.Cog):
         options = []
         restricted_departments = ["ISD", "IA", "ScD", "RRT", "SCD", "MTF:A-1"]
 
+        disallow_mtf = False
+        for dept, info in profile["unit"].items():
+            if info["is_active"] and dept.startswith("MTF:"):
+                disallow_mtf = True
+                break
+
         for dept in dept_map:
+            dept = str(dept)
+            
             if dept in restricted_departments:
+                continue
+            # If they have the unit in there profile
+            # and the unit is active, ignore it,
+            # if its not active, add it
+            elif profile["unit"].get(dept, False) and profile["unit"][dept]["is_active"]:
+                continue
+            
+            # if they have an MTF dept with in there profile
+            # ignore all MTF units
+            elif dept.startswith("MTF:") and disallow_mtf:
                 continue
             else:
                 options.append(discord.SelectOption(label=dept))
