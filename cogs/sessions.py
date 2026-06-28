@@ -4,7 +4,11 @@ from utils.constants import MESSAGE_CODE_RE, active_sessions
 from utils.utils import has_approval_perms, fetch_id
 from ui.sessions.views.VCChannelSelect import VCChannelSelectView
 from datetime import datetime, UTC
-
+import re
+from ui.CustomModal import CustomModal
+from ui.sessions.views.SessionEnd import EnterModal
+from ui.sessions.views.MVPSelect import MVPSelectView
+from discord import app_commands
 
 class Sessions(commands.Cog):
     def __init__(self, bot):
@@ -148,8 +152,14 @@ class Sessions(commands.Cog):
         
         await message.reply(f"Session cancelled by <@{ctx.author.id}> for the following reason:\n\n{reason}")
 
-    @session.command(name="end", description="End the current session in this channel (Central Command+).", extras={'category': 'Sessions'})
-    async def session_end(self, ctx: commands.Context):
+    @session.command(name="end", description="End the current session in this channel (create_log: yes/no) (Central Command+).", extras={'category': 'Sessions'})
+    @app_commands.choices(
+        create_log = [
+            app_commands.Choice(name="Yes", value="yes"),
+            app_commands.Choice(name="No", value="no")
+        ]
+    )
+    async def session_end(self, ctx: commands.Context, create_log: str = "yes"):
         if not await has_approval_perms(ctx, 3):
             return
             
@@ -163,6 +173,54 @@ class Sessions(commands.Cog):
             return await ctx.send("No active session found in this channel.", ephemeral=True)
         
         session_end = datetime.now(UTC)
+        mvps = []
+        deploy_type = ""
+
+        if create_log.lower() in ["yes", "true", "please", 'y']:
+            message = False
+            try:
+                modal = CustomModal(
+                    "Session Ending",
+                    [
+                        (
+                            "deploy_type",
+                            discord.ui.TextInput(
+                                label="Deployment Type",
+                                placeholder="Training",
+                                required=True,
+                                max_length=500,
+                            )
+                        )
+                    ]
+                )
+                await ctx.interaction.response.send_modal(modal)
+                await modal.wait()
+
+                deploy_type = modal.deploy_type.value
+            except AttributeError:
+                modal_view = EnterModal(self.bot, session)
+                message = await ctx.send("Please click to enter the deployment type", view=modal_view, ephemeral=True)
+                await modal_view.wait()
+
+                deploy_type = modal_view.deployment_type
+            
+            user_select_view = MVPSelectView()
+            if message:
+                await message.edit(content="Please select the MVPS!", view=user_select_view)
+            else:
+                message = await ctx.send(content="Please select the MVPS!", view=user_select_view, ephemeral=True)
+            await user_select_view.wait()
+
+            try:
+                await message.delete()
+            except Exception:
+                pass
+
+            mvps = user_select_view.mvps
+            
+        session_log = await self._build_session_log(ctx, session_end, deploy_type, mvps, session)
+        if not session_log:
+            return
         
         await active_sessions.update_one(
             {"_id": session["_id"]},
@@ -185,11 +243,18 @@ class Sessions(commands.Cog):
         att_embed = self._build_attendance_embed(session)
 
         host = self.bot.get_user(session["host_id"])
+        session_log_embed = discord.Embed(
+            title="Session Log (Copy/Paste)",
+            description=session_log,
+            color=discord.Color.green()
+        )
         if host:
             try:
                 await host.send(embeds=[main_embed, att_embed])
+                await host.send(embed=session_log_embed)
             except discord.Forbidden:
                 await ctx.send("I could not send this to your dms, but here is the attendance report:", embeds=[main_embed, att_embed], ephemeral=True)
+                await ctx.send(embed=session_log_embed)
 
     def _build_main_embed(self, session):
         green_list = session.get("rsvp", {}).get("green", [])
@@ -248,6 +313,50 @@ class Sessions(commands.Cog):
             description=desc or "No attendance recorded.",
             color=discord.Color.light_grey()
         )
+    async def _build_session_log(self, ctx: commands.Context, session_end: datetime, deploy_type: str, mvps: list, session: dict):
+        host = session.get("host_id")
+        channel_id = session.get("channel_id")
+        message_id = session.get("message_id")
+        started_at = session.get("started_at")
+
+        try:
+            channel: discord.TextChannel = ctx.guild.get_channel(channel_id)
+            message: discord.Message = await channel.fetch_message(message_id)
+        except Exception:
+            await ctx.send("I could not find either the channel or message", ephemeral=True)
+            return False
+        
+        match = re.search(r"CO-HOST(?:\(S\)|S)?\s*:\s*(.+)", message.content, re.IGNORECASE)
+        if match:
+            cohosts = match.group(1).strip()
+        else:
+            cohosts = "None"
+
+        supervisor = "None"
+        if "SUPERVISOR:" in message.content:
+            supervisor = message.content.split("SUPERVISOR:", 1)[1].strip()
+
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=UTC)
+
+        duration = (session_end - started_at).total_seconds()
+        hours, remainder = divmod(int(duration), 3600)
+        minutes, _ = divmod(remainder, 60)
+
+        content =  (
+                    "```"
+                    f"**Hosts:** <@{host}>\n"
+                    f"**Co-Hosts:** {cohosts}\n"
+                    f"**Supervisors:** {supervisor}\n"
+                    f"**Duration:** {hours}h{minutes}m\n"
+                    f"**Deployment Type:** {deploy_type}\n"
+                    f"**Attendants:** {'\n'.join(f"<@{user_id}>" for user_id in session.get("attendance"))}\n"
+                    f"**MVP (+0.5 Points):** {' '.join(f"<@{user_id}>" for user_id in mvps)}\n"
+                    "```"
+                    )
+        
+        return content
+
 
 
 async def setup(bot: commands.Bot):

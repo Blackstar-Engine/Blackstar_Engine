@@ -9,6 +9,7 @@ import asyncio
 class ClaimButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.is_claimed = False
     
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.grey, custom_id="enlistment_claim_button")
     async def claim_enlistment_button(self, interaction: discord.Interaction, button: discord.Button):
@@ -17,7 +18,7 @@ class ClaimButtonView(discord.ui.View):
         if drm_role not in interaction.user.roles:
             return await interaction.response.send_message("This is a D.R.M only button!", ephemeral=True)
         
-        if button.label == "Unclaim":
+        if self.is_claimed:
             embed = discord.Embed(
                 title="Click to Claim",
                 description="D.R.M, please click this button to claim the enlistment!",
@@ -27,8 +28,10 @@ class ClaimButtonView(discord.ui.View):
             button.label = "Claim"
             button.style = discord.ButtonStyle.grey
 
+            self.is_claimed = False
             await interaction.response.edit_message(embed=embed, view=self)
             return await interaction.followup.send("You have unclaimed this enlistment!", ephemeral=True)
+        
         else:
             embed = discord.Embed(
                 title="Claimed",
@@ -38,6 +41,7 @@ class ClaimButtonView(discord.ui.View):
             button.label = "Unclaim"
             button.style = discord.ButtonStyle.red
 
+            self.is_claimed = True
             await interaction.response.edit_message(embed=embed, view=self)
             return await interaction.followup.send("You have claimed this enlistment!", ephemeral=True)
 
@@ -81,75 +85,95 @@ class EnlistmentByThread(commands.Cog):
         
         return results
 
-    async def _handle_mtf_subunits(self, subunit: str, thread: discord.Thread, units: dict) -> list:
+    async def _handle_mtf_subunits(self, subunit: str, thread: discord.Thread):
         mtf_subunits = subunit.split("/")
-        units_to_remove = []
+        units = {}
 
-        for unit in mtf_subunits:
-            unit = unit.strip().upper()
-            subunit_name = f"MTF:{unit}"
-            department_doc: dict = await departments.find_one({"display_name": subunit_name, "is_private": False})
+        if len(mtf_subunits) > 1:
+            await thread.send(embed=discord.Embed(
+                            title="Multiple MTF Units",
+                            description="We only allow people to be apart of 1 MTF Subunit, please state which subunit you would like below!",
+                            color=discord.Color.yellow()
+                        ))
+            return ["multiple"], units
 
-            if not department_doc:
-                embed = discord.Embed(title="Department Error", description=f"`{subunit_name}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
-                await thread.send(embed=embed)
-                units_to_remove.append(unit)
-            elif unit in ('A-1'):
-                embed = discord.Embed(title="Application Only Department", description=f"`{subunit_name}` can only be joined by completing an application. I am **removing** `{subunit_name}`!", color=discord.Color.yellow())
-                await thread.send(embed=embed)
-                units_to_remove.append(unit)
-            else:
-                first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
-                unit_doc = {subunit_name: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0}}
-                units.update(unit_doc)
+        unit = mtf_subunits[0].strip().upper()
+        subunit_name = f"MTF:{unit}"
+        department_doc: dict = await departments.find_one({"display_name": subunit_name, "is_private": False})
 
-        full_list = [unit for unit in mtf_subunits if unit not in units_to_remove]
 
-        return full_list
+        if not department_doc:
+            embed = discord.Embed(title="Department Error", description=f"`{subunit_name}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
+            await thread.send(embed=embed)
+            return ["error"], units
+        elif unit in ('A-1'):
+            embed = discord.Embed(title="Application Only Department", description=f"`{subunit_name}` can only be joined by completing an application. I am **removing** `{subunit_name}`!", color=discord.Color.yellow())
+            await thread.send(embed=embed)
+            return ["error"], units
 
-    async def _handle_regular_department(self, dept: str, thread: discord.Thread, units: dict) -> bool:
+        
+        first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
+        unit_doc = {subunit_name: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0}}
+        units.update(unit_doc)
+    
+        return mtf_subunits, units
+
+    async def _handle_regular_department(self, dept: str, thread: discord.Thread):
         department_doc: dict = await departments.find_one({"display_name": dept, "is_private": False})
+        unit = {}
         
         if not department_doc:
             embed = discord.Embed(title="Department Error", description=f"`{dept}` could not be resolved. Please contact **DSM** if this is incorrect!", color=discord.Color.yellow())
             await thread.send(embed=embed)
-            return False
+            return unit
         
         first_rank = department_doc["ranks"][0]["name"] if department_doc.get("ranks") else "Recruit"
         unit_doc = {dept: {'rank': first_rank, 'is_active': True, 'current_points': 0, 'total_points': 0}}
-        units.update(unit_doc)
-        return True
+        unit.update(unit_doc)
 
-    async def _generate_units(self, department: str, thread: discord.Thread, subunit):
-        departments_list = [d.strip().upper() for d in department.split("/")]
-        units = {}
-        mtf_subunits = []
-        depts_to_remove = []
+        return unit
+
+    async def _generate_units(self, thread: discord.Thread, inputed_departments: str, inputed_subunits: str):
+        departments_list = [d.strip().upper() for d in inputed_departments.split("/")]
+
+        main_units = {}
+        output_subunits = []
+        output_departments = []
 
         for dept in departments_list:
             dept = dept.strip().upper()
+
             if dept in ["RRT", "ISD", "IA", "SCD"]:
                 embed = discord.Embed(title="Application Only Department", description=f"`{dept}` can only be joined by completing an application. I am **removing** `{dept}`!", color=discord.Color.yellow())
                 await thread.send(embed=embed)
-                depts_to_remove.append(dept)
-            elif dept == "MTF":
-                if subunit == -1 or not subunit:
-                    await thread.send(embed=discord.Embed(
+            
+            elif dept == "MTF" and not inputed_subunits:
+                await thread.send(embed=discord.Embed(
                         title="Missing MTF Unit",
                         description="You must specify an MTF subunit using `Unit:`",
                         color=discord.Color.red()
                     ))
-                    continue
-                mtf_subunits = await self._handle_mtf_subunits(subunit, thread, units)
 
-                if mtf_subunits == []:
-                    depts_to_remove.append(dept)
+                output_subunits = []
+
+            elif dept == "MTF" and len(inputed_subunits) > 0 :
+                    output_subunits, mtf_unit_json = await self._handle_mtf_subunits(inputed_subunits, thread)
+
+                    if (len(output_subunits) > 0 and output_subunits[0] not in("multiple", "error") and len(mtf_unit_json) > 0) :
+                        output_departments.append(dept)
+                        main_units.update(mtf_unit_json)
+                    
+                    if output_subunits[0] in("multiple", "error"):
+                        output_subunits = []
+
             else:
-                if not await self._handle_regular_department(dept, thread, units):
-                    depts_to_remove.append(dept)
+                reg_unit_json = await self._handle_regular_department(dept, thread)
 
-        departments_list = [d for d in departments_list if d not in depts_to_remove]
-        return units, departments_list, mtf_subunits
+                if reg_unit_json != {}:
+                    output_departments.append(dept)
+                    main_units.update(reg_unit_json)
+
+        return main_units, output_departments, output_subunits
     
     @commands.Cog.listener()
     async def on_thread_create(self, thread: discord.Thread):
@@ -198,16 +222,16 @@ class EnlistmentByThread(commands.Cog):
         # Initializing variables for profile creation
         codename: str = results.get("Codename")
         roblox_user: str = results.get("Roblox User")
-        department: str = results.get("Department")
+        input_departments: str = results.get("Department")
         timezone: str = results.get("Time Zone")
-        subunit: str = results.get("Unit")
+        input_subunits: str = results.get("Unit")
 
         codename = codename[:15]
 
         profile_check = await profiles.find_one({"guild_id": guild.id, "codename": codename})
 
         # Preliminary validation for profile creation
-        if codename == -1 or roblox_user == -1 or department == -1 or timezone == -1:
+        if codename == -1 or roblox_user == -1 or input_departments == -1 or timezone == -1:
             embed = discord.Embed(title="Enlistment Error", description="I was unable to process your profile. **Please create your profile via `!profile`!**", color=discord.Color.red())
             return await thread.send(embed=embed)
         elif any(word in codename.lower() for word in profanity_list):
@@ -219,9 +243,12 @@ class EnlistmentByThread(commands.Cog):
         elif codename.lower() in ('kaiju', 'sunshine', 'backon2k_son'):
             embed = discord.Embed(title="Retired Codename", description=f"{codename} has been retired and cannot be used. Please run `!profile` to create your profile manually.", color=discord.Color.red())
             return await thread.send(embed=embed)
+        
+        if input_subunits == -1:
+            input_subunits = ""
 
         # Generating the needed variables for profile creation
-        units, departments_list, mtf_subunits = await self._generate_units(department, thread, subunit)
+        profile_units, show_departments, show_subunits = await self._generate_units(thread, input_departments, input_subunits)
 
         # Creating profile and sending confirmation message
         profile = {
@@ -229,7 +256,7 @@ class EnlistmentByThread(commands.Cog):
                 'guild_id': guild.id,
                 'codename': codename,
                 'roblox_name': roblox_user,
-                'unit': units,
+                'unit': profile_units,
                 'private_unit': [],
                 'status': 'Active',
                 'join_date': str(join_date),
@@ -245,8 +272,8 @@ class EnlistmentByThread(commands.Cog):
                                         f"**Codename:** {codename}\n"
                                         f"**Roblox Name:** {roblox_user}\n"
                                         f"**Timezone:** {timezone}\n"
-                                        f"**Departments:** {', '.join(departments_list)}\n"
-                                        f"**Subunits:** {', '.join(mtf_subunits)}\n"
+                                        f"**Departments:** {', '.join(show_departments)}\n"
+                                        f"**Subunits:** {', '.join(show_subunits)}\n"
                                         f"**Current Points:** 0\n"
                                         f"**Total Points:** 0"
                                     ),
