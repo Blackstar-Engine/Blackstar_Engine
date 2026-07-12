@@ -23,6 +23,7 @@ from utils.constants import (
     ids,
     economy_profiles,
 )
+from edge_tts.exceptions import NoAudioReceived
 
 tts_lock = threading.Lock()
 constants = BlackstarConstants()
@@ -167,8 +168,11 @@ async def tts_to_file(user: discord.Member, last_speaker, last_message_time, tex
 
     voice = "en-CA-LiamNeural"
 
-    communicate = edge_tts.Communicate(text, voice)
-    await communicate.save(filename)
+    try:
+        communicate = edge_tts.Communicate(text, voice)
+        await communicate.save(filename)
+    except NoAudioReceived:
+        pass
 
     return filename
 
@@ -399,11 +403,11 @@ async def get_limit(ctx: commands.Context, results):
         if ctx.author.id == 1371489554279825439:
                 limit = 999999999999999
         elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
-            limit = 5
+            limit = 6
         elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
-            limit = 3
+            limit = 4
         elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
-            limit = 2
+            limit = 3
         elif ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
             limit = 1
         else:
