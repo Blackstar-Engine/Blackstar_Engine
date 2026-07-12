@@ -155,7 +155,7 @@ class General(commands.Cog):
     @commands.hybrid_command(name="best_member", description="Who is the best member of the server?", extras={'category': 'Other'})
     async def best_member(self, ctx: commands.Context):
         server_members = ctx.guild.members
-        possible_members = [member for member in server_members if not member.bot]
+        possible_members = [member.display_name for member in server_members if not member.bot]
         possible_messages = [
             "The best member of the server is {}!",
             "The most active member of the server is {}!",
@@ -176,8 +176,7 @@ class General(commands.Cog):
         # use the cryptographically secure generator for selections
         best_member = secrets.choice(possible_members)
 
-        member_obj = ctx.guild.get_member(best_member.id) if hasattr(best_member, 'id') else best_member
-        message = secrets.choice(possible_messages).format(member_obj.mention)
+        message = secrets.choice(possible_messages).format(f"`{best_member}`")
 
         view = discord.ui.LayoutView()
         container = discord.ui.Container(
