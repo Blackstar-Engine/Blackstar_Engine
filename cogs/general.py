@@ -179,7 +179,9 @@ class General(commands.Cog):
             possible_members.append(member.id)
 
         best_member = random.choice(possible_members)
-        message = random.choice(possible_messages).format(f"<@{best_member}>")
+
+        member_obj = ctx.guild.get_member(best_member)
+        message = random.choice(possible_messages).format(member_obj.mention)
 
         embed = discord.Embed(title="Best Member", description=message, color=discord.Color.green())
         await ctx.send(embed=embed)
