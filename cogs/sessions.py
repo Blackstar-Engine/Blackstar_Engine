@@ -334,7 +334,7 @@ class Sessions(commands.Cog):
 
         supervisor = "None"
         if "SUPERVISOR:" in message.content:
-            supervisor = message.content.split("SUPERVISOR:", 1)[1].strip()
+            supervisor = message.content.split("SUPERVISOR:", 1)[1].split("\n", 1)[0].strip()
 
         if started_at.tzinfo is None:
             started_at = started_at.replace(tzinfo=UTC)

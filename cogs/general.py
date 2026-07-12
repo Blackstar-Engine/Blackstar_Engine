@@ -4,6 +4,8 @@ from datetime import timedelta, datetime
 from utils.constants import profiles
 from ui.leaderboard.ScrollButtons import LeaderboardView
 from utils.utils import fetch_id, log_action
+from ui.general.views.DmView import DMEmbedView
+import random
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -23,7 +25,7 @@ class General(commands.Cog):
         
         await log_action(ctx=ctx, log_type="mod_command", command_name="execute_user", arguments=f"user={user.mention}")
 
-        duration = timedelta(seconds=10)
+        duration = timedelta(seconds=5)
         try:
             await user.timeout(duration, reason="Execute Command")
         except discord.Forbidden:
@@ -66,7 +68,7 @@ class General(commands.Cog):
 
 
     @commands.hybrid_command(name="dm_punish", description="Notifies a user that disciplinary action has been taken (Junior Mod+ and Central Command+).", extras={'category': 'Administration'})
-    async def dm_punish(self, ctx: commands.Context, user: discord.Member, *, text: str):
+    async def dm_punish(self, ctx: commands.Context, user: discord.Member):
         results = await fetch_id(ctx.guild.id, ["central_command",
             "high_command",
             "site_command",
@@ -87,14 +89,10 @@ class General(commands.Cog):
             results["staff_manager"]
         ]
         if any(role.id in allowed_roles for role in ctx.author.roles):
-            await log_action(ctx=ctx, log_type="mod_command", command_name="dm_punish", arguments=f"user={user.mention}\ntext={text}")
+            await log_action(ctx=ctx, log_type="mod_command", command_name="dm_punish", arguments=f"user={user.mention}")
             try:
-                embed = discord.Embed(title="Notice of Disciplinary Action", description=text, color=discord.Color.light_grey())
-                embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
-                await user.send(embed=embed)
-                await ctx.send(content="Message sent!", ephemeral=True)
-
-
+                view = DMEmbedView(self.bot, user)
+                await ctx.send("Please click the button below to start creating the embed!", view=view, ephemeral=True)
             except discord.Forbidden:
                 embed = discord.Embed(title="Error", description="The user you are attempting to DM has their direct messages turned off.", color=discord.Color.red())
                 await ctx.send(embed=embed, ephemeral=True)
@@ -152,6 +150,39 @@ class General(commands.Cog):
         )
 
         await ctx.send(embed=embed, ephemeral=True)
+    
+    @commands.hybrid_command(name="best_member", description="Who is the best member of the server?", extras={'category': 'Other'})
+    async def best_member(self, ctx: commands.Context):
+        server_members = ctx.guild.members
+        possible_members = []
+        possible_messages = [
+            "The best member of the server is {}!",
+            "The most active member of the server is {}!",
+            "{} is better than wolf!",
+            "The most helpful member of the server is {}!",
+            "The most loyal member of the server is {}!",
+            "The most trustworthy member of the server is {}!",
+            "The most dedicated member of the server is {}!",
+            "The most reliable member of the server is {}!",
+            "The most respected member of the server is {}!",
+            "The most skilled member of the server is {}!",
+            "The most talented member of the server is {}!",
+            "I'm sorry {}, Kaiju will always be the best member!",
+            "Ethics found {} to be the best member of the server!",
+
+        ]
+
+        for member in server_members:
+            if member.bot:
+                continue
+
+            possible_members.append(member.id)
+
+        best_member = random.choice(possible_members)
+        message = random.choice(possible_messages).format(f"<@{best_member}>")
+
+        embed = discord.Embed(title="Best Member", description=message, color=discord.Color.green())
+        await ctx.send(embed=embed)
 
     
 

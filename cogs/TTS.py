@@ -126,11 +126,11 @@ class tts_system_commands(commands.Cog):
         vc = ctx.guild.voice_client
         queue = self.bot.tts_queues[guild_id]
 
-        if not vc or queue.empty():
-            return await ctx.send("There is nothing to clear!", ephemeral=True)
-
         if vc.is_playing():
             vc.stop()
+
+        if not vc or queue.empty():
+            return await ctx.send("There is nothing to clear!", ephemeral=True)
 
         self._drain_queue(queue)
         await self._cancel_tts_task(guild_id)
