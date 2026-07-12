@@ -124,15 +124,20 @@ class tts_system_commands(commands.Cog):
     async def clear(self, ctx: commands.Context):
         guild_id = ctx.guild.id
         vc = ctx.guild.voice_client
-        queue = self.bot.tts_queues[guild_id]
+        queue = self.bot.tts_queues.get(guild_id)
+
+        if not vc:
+            return await ctx.send("I'm not in a voice channel!", ephemeral=True)
+
+        if (queue is None or queue.empty()) and not vc.is_playing():
+            return await ctx.send("There is nothing to clear!", ephemeral=True)
 
         if vc.is_playing():
             vc.stop()
 
-        if not vc or queue.empty():
-            return await ctx.send("There is nothing to clear!", ephemeral=True)
+        if queue is not None:
+            self._drain_queue(queue)
 
-        self._drain_queue(queue)
         await self._cancel_tts_task(guild_id)
         self._cleanup_mp3_files()
 
