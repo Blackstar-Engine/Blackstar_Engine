@@ -5,7 +5,12 @@ import os
 import sys
 import asyncio
 from collections import defaultdict
-from utils.constants import BlackstarConstants, auto_replys, enlistment_requests, point_requests, promotion_requests, whitelisted_guilds, logger, discord_http_logger, discord_logger
+from utils.constants import (
+                            BlackstarConstants, auto_replys, enlistment_requests, point_requests,
+                            promotion_requests, whitelisted_guilds, logger, discord_http_logger,
+                            discord_logger, permission_tiers, permission_rules, permission_overrides,
+                            bypassed_users
+                            )
 from ui.promotion.views.PromotionRequest import PromotionRequestView
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.enlistment_request.views.EnlistmentRequestView import EnlistmentRequestView
@@ -33,12 +38,6 @@ class Bot(commands.Bot):
         )
     
     async def is_owner(self, user: discord.User) -> bool:
-        bypassed_users = [
-            758170288566566952, #Ghost
-            1371489554279825439, #Wolf
-            1007353417779396709 #Option
-        ]
-
         return user.id in bypassed_users
 
     async def setup_hook(self):
@@ -122,6 +121,10 @@ class Bot(commands.Bot):
             else:
                 logger.info(f'Chunked: {guild.id}')
                 await guild.chunk()
+        
+        bot.permission_tiers = await permission_tiers.find().to_list(length=None)
+        bot.permission_rules = await permission_rules.find().to_list(length=None)
+        bot.permission_overrides = await permission_overrides.find().to_list(length=None)
         
         logger.info(f'{self.user} is ready.')
 

@@ -2,9 +2,10 @@ import discord
 from discord.ui import View, Button
 from utils.utils import interaction_check
 from datetime import datetime
+from discord.ext import commands
 
 class PaginatorView(View):
-    def __init__(self, bot, user, items):
+    def __init__(self, bot: commands.Bot, user, items):
         super().__init__()
         self.bot = bot
         self.user = user
@@ -111,7 +112,7 @@ class PaginatorView(View):
         parts = []
         for item in v:
             if isinstance(item, int):
-                parts.append(f"<@{item}>")
+                parts.append(f"{item}")
             else:
                 parts.append(str(item))
         return ", ".join(parts)

@@ -212,6 +212,8 @@ class ManageCommands(commands.Cog):
             return
 
         profile = await fetch_profile(ctx)
+        if not profile:
+            return
 
         grant_access = False
         for dept, info in profile['unit'].items():

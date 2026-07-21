@@ -22,8 +22,10 @@ from utils.constants import (
     BlackstarConstants,
     ids,
     economy_profiles,
+    bypassed_users
 )
 from edge_tts.exceptions import NoAudioReceived
+from utils.custom_errors import PermissionDenied
 
 tts_lock = threading.Lock()
 constants = BlackstarConstants()
@@ -415,3 +417,95 @@ async def get_limit(ctx: commands.Context, results):
             return False
         
         return limit
+
+def permissions():
+    async def predicate(ctx: commands.Context):
+        command = ctx.command.name
+        cog = ctx.cog.qualified_name if ctx.cog else None
+        user_id = ctx.author.id
+        guild_id = ctx.guild.id
+        user_role_ids = {role.id for role in ctx.author.roles}
+
+        overrides = ctx.bot.permission_overrides
+        rules = ctx.bot.permission_rules
+        tiers = ctx.bot.permission_tiers
+
+        def find_override(scope_type, scope_key):
+            if scope_key is None:
+                return None
+            
+            scoped = [
+                r for r in overrides
+                if r.get("guild_id") == guild_id
+                and r.get("scope_type") == scope_type
+                and r.get("scope_key") == scope_key
+            ]
+
+            user_override = next(
+                (r for r in scoped if r.get("target_type") == "user" and r.get("target_id") == user_id),
+                None
+            )
+            if user_override:
+                effect = True if user_override.get("effect", False) == "allow" else False
+                return effect
+
+            role_override = next(
+                (r for r in scoped if r.get("target_type") == "role" and r.get("target_id") in user_role_ids),
+                None
+            )
+            if role_override:
+                effect = True if role_override.get("effect", False) == "allow" else False
+                return effect
+            
+        def find_rule(scope_type, scope_key):
+            if scope_key is None:
+                return None
+            
+            return next(
+                (
+                    r for r in rules
+                    if r.get("guild_id") == guild_id
+                    and r.get("scope_type") == scope_type
+                    and r.get("scope_key") == scope_key
+                ),
+                None
+            )
+        
+        def user_rank():
+            matching_ranks = [
+                t.get("rank", 0) for t in tiers
+                if t.get("guild_id") == guild_id
+                and user_role_ids & set(t.get("role_ids", []))
+            ]
+
+            return_value = int(max(matching_ranks, default=0))
+
+            return return_value
+        
+
+        command_override = find_override("command", command)
+        if command_override is not None:
+            return command_override
+        
+        cog_override = find_override("feature", cog)
+        if cog_override is not None:
+            return cog_override
+        
+        rule = find_rule("command", command)
+        if rule is None:
+            rule = find_rule("feature", cog)
+
+        
+        if rule is not None:
+            required_rank = int(rule.get("min_rank", 0))
+            if user_rank() >= required_rank:
+                return True
+            
+        if ctx.author.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and ctx.author.id in bypassed_users):
+            return True
+        
+        raise PermissionDenied("fallback")
+
+
+
+    return commands.check(predicate)

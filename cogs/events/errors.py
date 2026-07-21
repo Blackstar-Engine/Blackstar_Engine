@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from utils.constants import logger
+from utils.custom_errors import PermissionDenied
 
 def create_dev_embed(error, ctx: commands.Context):
     is_interaction = isinstance(ctx, discord.Interaction)
@@ -41,6 +42,9 @@ class Errors(commands.Cog):
 
         if isinstance(error, commands.MissingRequiredArgument):
             embed.description = f"❌ Missing argument: `{error.param.name}`."
+
+        elif isinstance(error, PermissionDenied):
+            embed.description = "❌ You don't have permission to run this command."
 
         elif isinstance(error, commands.BadArgument):
             embed.description = "❌ Invalid input. Please try again."
