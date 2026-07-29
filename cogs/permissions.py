@@ -7,6 +7,7 @@ from discord.ui import Button
 from ui.CustomModal import CustomModal
 from ui.CustomSelects import RoleView, UserView
 from ui.CustomButton import CustomButton
+from utils.utils import permissions
 
 class Permissions(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -63,6 +64,15 @@ class Permissions(commands.Cog):
                         required=True,
                         max_length=3,
                     )
+                ),
+                (
+                    "gift_amt",
+                    discord.ui.TextInput(
+                        label="How many points can they gift (blank or 0 or nothing)?",
+                        placeholder="1",
+                        required=False,
+                        max_length=25,
+                    )
                 )
             ]
         )
@@ -73,6 +83,14 @@ class Permissions(commands.Cog):
         results = await permission_tiers.find_one({"guild_id": interaction.guild.id, "name": modal.tier_name.value})
         if results:
             return await interaction.followup.send(f"It looks like theres already a tier named `{modal.tier_name.value}`", ephemeral=True)
+        
+        gift_amt = modal.gift_amt.value
+        try:
+            if gift_amt:
+                gift_amt = int(gift_amt)
+        except ValueError:
+            await interaction.channel.send(f"Failed to convert number of gift points from `{gift_amt}` to a number! Reverting to 0!")
+            gift_amt = 0
 
         view = RoleView(self.bot, min_values=1, max_values=25)
         embed = discord.Embed(title="Roles", description="Please input the roles for this permission tier", color=discord.Color.light_grey())
@@ -80,11 +98,16 @@ class Permissions(commands.Cog):
 
         await view.wait()
 
+        can_gift = True if gift_amt or gift_amt > 0 else False
+        gift_points = 0 if not gift_amt or gift_amt <= 0 else gift_amt
+
         perms_tier_doc = {
             "guild_id": interaction.guild.id,
             "name": modal.tier_name.value,
             "rank": int(modal.tier_rank.value),
-            "role_ids": [int(role.id) for role in view.roles]
+            "role_ids": [int(role.id) for role in view.roles],
+            "can_gift_points": can_gift,
+            "gift_points_amount": gift_points
         }
         await permission_tiers.insert_one(perms_tier_doc)
 
@@ -191,16 +214,17 @@ class Permissions(commands.Cog):
         await interaction.edit_original_response(embed=embed, view=self.manage_rules_view)
 
 
-    permissions = app_commands.Group(name="permissions", description="Manage permissions for commands and features.")
+    permissions_group = app_commands.Group(name="permissions", description="Manage permissions for commands and features.")
     
-    set_permissions = app_commands.Group(name="set", description="Set permissions for commands and features.", parent=permissions)
+    set_permissions = app_commands.Group(name="set", description="Set permissions for commands and features.", parent=permissions_group)
 
-    override_permissions = app_commands.Group(name="override", description="Override permissions for commands and features.", parent=permissions)
+    override_permissions = app_commands.Group(name="override", description="Override permissions for commands and features.", parent=permissions_group)
 
-    permission_tiers = app_commands.Group(name="tiers", description="Manage permission tiers.", parent=permissions)
+    permission_tiers = app_commands.Group(name="tiers", description="Manage permission tiers.", parent=permissions_group)
 
 
     @permission_tiers.command(name="manage", description="Manage permission tier.", extras={'category': 'Permissions'})
+    @permissions()
     async def manage_permissions_tiers(self, interaction: discord.Interaction):
         self.manage_permissions_tiers_view = PaginatorView(self.bot, interaction.user, self.bot.permission_tiers)
 
@@ -231,7 +255,8 @@ class Permissions(commands.Cog):
         embed = self.manage_permissions_tiers_view.create_record_embed()
         await interaction.response.send_message(view=self.manage_permissions_tiers_view, embed=embed, ephemeral=True)
     
-    @permissions.command(name="manage", description="Manage all permission rules and overrides", extras={'category': 'Permissions'})
+    @permissions_group.command(name="manage", description="Manage all permission rules and overrides", extras={'category': 'Permissions'})
+    @permissions()
     @app_commands.describe(perm_type="Would you like to manage features or commands?")
     @app_commands.choices(
         perm_level=[
@@ -264,6 +289,7 @@ class Permissions(commands.Cog):
         await interaction.response.send_message(embed=embed, view=self.manage_rules_view, ephemeral=True)
 
     @set_permissions.command(name="command", description="Set the permissions for a command.", extras={'category': 'Permissions'})
+    @permissions()
     @app_commands.describe(command="The command to set permissions for.", min_rank="The min tier required for this command.")
     @app_commands.autocomplete(command=command_autocomplete, min_rank=min_rank_autocomplete)
     async def set_command_permissions(self, interaction: discord.Interaction, command: str, min_rank: str):
@@ -303,6 +329,7 @@ class Permissions(commands.Cog):
         await interaction.response.send_message(f"Set minimum rank for command `{command}` to `{min_rank}`.", ephemeral=True)
 
     @set_permissions.command(name="feature", description="Set the permissions for a feature.", extras={'category': 'Permissions'})
+    @permissions()
     @app_commands.describe(feature="The feature to set permissions for.", min_rank="The min tier required for this feature.")
     @app_commands.autocomplete(feature=feature_autocomplete, min_rank=min_rank_autocomplete)
     async def set_feature_permissions(self, interaction: discord.Interaction, feature: str, min_rank: str):
@@ -340,6 +367,7 @@ class Permissions(commands.Cog):
         await interaction.response.send_message(f"Set minimum rank for feature `{feature}` to `{min_rank}`.", ephemeral=True)
 
     @override_permissions.command(name="command", description="Override permissions for a command.", extras={'category': 'Permissions'})
+    @permissions()
     @app_commands.describe(command="The command to set permissions for.", scope_type="Is it a role or user?", effect="Should it be allowed or denied?")
     @app_commands.choices(scope_type=[
         app_commands.Choice(name="Role", value="role"),
@@ -404,6 +432,7 @@ class Permissions(commands.Cog):
         await interaction.followup.send(f"Overwrote permissions for command `{command}` for {scope_type} `{perm_override_doc['target_id']}` with effect `{effect}`.", ephemeral=True)
 
     @override_permissions.command(name="feature", description="Override permissions for a feature.", extras={'category': 'Permissions'})
+    @permissions()
     @app_commands.describe(feature="The feature to set permissions for.", scope_type="Is it a role or user?", effect="Should it be allowed or denied?")
     @app_commands.choices(scope_type=[
         app_commands.Choice(name="Role", value="role"),

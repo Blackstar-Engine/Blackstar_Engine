@@ -8,7 +8,7 @@ from ui.paginator import PaginatorView
 from ui.roa.views.RequestButtons import RequestButtons
 from ui.roa.views.ManageButtons import ManageExtendButton
 from typing import Optional
-from utils.utils import fetch_id, has_approval_perms, fetch_profile
+from utils.utils import fetch_id, fetch_profile, permissions
 
 
 class ROA(commands.Cog):
@@ -30,8 +30,8 @@ class ROA(commands.Cog):
         
         await roa.insert_one(loa_doc)
 
-        results = await fetch_id(ctx.guild.id, ["roa_role"])
-        loa_role = results["roa_role"]
+        results = await fetch_id(ctx.guild.id, "roa")
+        loa_role = results["values"]["role"]
 
         role = ctx.guild.get_role(loa_role)
         await ctx.author.add_roles(role)
@@ -172,8 +172,8 @@ class ROA(commands.Cog):
         end_date = start_date + timedelta(days=total_days, hours=hours)
         
         # Creats the View and sends the message to the loa_channel
-        results = await fetch_id(ctx.guild.id, ["loa_channel"])
-        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["loa_channel"])
+        results = await fetch_id(ctx.guild.id, "roa")
+        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["values"]["channel"])
 
         view = RequestButtons(self.bot, ctx.author, reason, start_date, end_date, time)
         request_message = await channel.send(view=view)
@@ -189,11 +189,8 @@ class ROA(commands.Cog):
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
     @roa.command(description="Get a list of all the active ROA's in the server.", extras={'category': 'ROA'})
-    async def active(self, ctx: commands.Context):
-        # Users have to be in foundation or site command to run this command
-        if not await has_approval_perms(ctx, 5):
-            return
-        
+    @permissions()
+    async def active(self, ctx: commands.Context):        
         # Find all ROA's, create the view, create the embed, send to user
         items = await roa.find({'guild_id': ctx.guild.id}).to_list(length=None)
         view = PaginatorView(self.bot, ctx.author, items)

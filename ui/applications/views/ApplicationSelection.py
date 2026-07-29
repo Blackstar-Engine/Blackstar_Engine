@@ -4,23 +4,14 @@ from utils.constants import application_channels
 from ui.applications.modals.app_closure import ApplicationCloseModal
 
 class ApplicationOpen(View):
-    def __init__(self):
+    def __init__(self, options):
         super().__init__()
 
         dropdown = Select(
             placeholder="Select a department",
             min_values=1,
             max_values=1,
-            options=[
-                discord.SelectOption(label="Intelligence Agency", emoji="🕵️"),
-                discord.SelectOption(label="Internal Security Department", emoji="🏛️"),
-                discord.SelectOption(label="Rapid Response Team", emoji="♦️"),
-                discord.SelectOption(label="Omega-1", emoji="👁️"),
-                discord.SelectOption(label="Alpha-1", emoji="🛡️"),
-                discord.SelectOption(label="Resh-1", emoji="🐺"),
-                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1505755025803317388>"),
-                discord.SelectOption(label="BCS Officer", emoji="⚔️")
-            ]
+            options=options
         )
 
         async def dropdown_callback(interaction: discord.Interaction):
@@ -47,23 +38,14 @@ class ApplicationOpen(View):
         self.add_item(dropdown)
 
 class ApplicationClose(View):
-    def __init__(self):
+    def __init__(self, options):
         super().__init__()
 
         dropdown = Select(
             placeholder="Select a department",
             min_values=1,
             max_values=1,
-            options=[
-                discord.SelectOption(label="Intelligence Agency", emoji="🕵️"),
-                discord.SelectOption(label="Internal Security Department", emoji="🏛️"),
-                discord.SelectOption(label="Rapid Response Team", emoji="♦️"),
-                discord.SelectOption(label="Omega-1", emoji="👁️"),
-                discord.SelectOption(label="Alpha-1", emoji="🛡️"),
-                discord.SelectOption(label="Resh-1", emoji="🐺"),
-                discord.SelectOption(label="Moderation Team", emoji="<:Staff:1505755025803317388>"),
-                discord.SelectOption(label="BCS Officer", emoji="⚔️")
-            ]
+            options=options
         )
 
         async def dropdown_callback(interaction: discord.Interaction):

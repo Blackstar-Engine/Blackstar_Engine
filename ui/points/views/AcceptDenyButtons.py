@@ -229,4 +229,7 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
             color=color
         )
 
-        await member.send(embed=embed)
+        try:
+            await member.send(embed=embed)
+        except discord.Forbidden:
+            pass

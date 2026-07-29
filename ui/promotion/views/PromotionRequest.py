@@ -244,9 +244,9 @@ async def dm_user(interaction: discord.Interaction, guild: discord.Guild, snapsh
     return member
 
 async def annouce_promotion(bot, interaction: discord.Interaction, snapshot: dict, department: str, approved: bool, member: discord.Member):
-    results = await fetch_id(interaction.guild.id, ["overall_promotion_channel"])
+    results = await fetch_id(interaction.guild.id, "promotion_channel")
     if approved:
-        channel: discord.TextChannel = bot.get_channel(results["overall_promotion_channel"])
+        channel: discord.TextChannel = bot.get_channel(results["values"])
         if channel and member:
             embed = discord.Embed(
                 title="New Promotion",

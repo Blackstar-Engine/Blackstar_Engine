@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from ui.reaction_roles.views.RoleSelect import RoleSelect
-from utils.utils import has_approval_perms, fetch_id
+from utils.utils import permissions
 from utils.constants import BlackstarConstants
 
 constants = BlackstarConstants()
@@ -11,10 +11,8 @@ class ReactionRoles(commands.Cog):
         self.bot = bot
         
     @commands.hybrid_command(name="send_reactions", description="This will send an embed with all reaction roles for the server (Foundation Command+).", extras={'category': 'Administration'})
-    async def send_reaction_roles(self, ctx: commands.Context):
-        if not await has_approval_perms(ctx, 6):
-            return
-        
+    @permissions()
+    async def send_reaction_roles(self, ctx: commands.Context):        
         try:
             await ctx.message.delete()
         except discord.NotFound:

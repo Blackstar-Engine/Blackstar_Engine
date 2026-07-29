@@ -6,7 +6,7 @@ from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ManageProfileUnitsView import ProfileManageUnitsView
 from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
-from utils.utils import interaction_check, fetch_unit_options, has_approval_perms, fetch_id
+from utils.utils import interaction_check, fetch_unit_options, has_approval_perms
 from discord import ui, Interaction
 import asyncio
 from ui.manage_commands.views.ManageProfileViewRequests import ManageProfileViewRequests

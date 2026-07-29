@@ -3,17 +3,15 @@ from discord.ext import commands
 import os
 import asyncio
 from ui.tts.views.RequestButton import RequestButtonView
-from utils.utils import has_approval_perms
+from utils.utils import permissions
 
 class tts_system_commands(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
     @commands.hybrid_command(name="move", description="Force move the bot to a different VC (Central Command+).", extras={'category': 'TTS'})
+    @permissions()
     async def move(self, ctx: commands.Context, channel: discord.VoiceChannel):
-        if not await has_approval_perms(ctx, 3):
-            return
-
         if not ctx.author.voice:
             embed = discord.Embed(title="Whoops....", description="Please make sure you are in a channel!", color=discord.Color.light_grey())
             return await ctx.send(embed=embed, ephemeral=True)

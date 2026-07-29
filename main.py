@@ -9,7 +9,7 @@ from utils.constants import (
                             BlackstarConstants, auto_replys, enlistment_requests, point_requests,
                             promotion_requests, whitelisted_guilds, logger, discord_http_logger,
                             discord_logger, permission_tiers, permission_rules, permission_overrides,
-                            bypassed_users
+                            bypassed_users, ids
                             )
 from ui.promotion.views.PromotionRequest import PromotionRequestView
 from ui.points.views.AcceptDenyButtons import PointsRequestView
@@ -125,6 +125,9 @@ class Bot(commands.Bot):
         bot.permission_tiers = await permission_tiers.find().to_list(length=None)
         bot.permission_rules = await permission_rules.find().to_list(length=None)
         bot.permission_overrides = await permission_overrides.find().to_list(length=None)
+
+        bot.reaction_roles = await ids.find({"reaction_roles"}).to_list(length=None)
+
         
         logger.info(f'{self.user} is ready.')
 

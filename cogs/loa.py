@@ -8,7 +8,7 @@ from ui.paginator import PaginatorView
 from ui.loa.views.RequestButtons import RequestAcceptDenyButtons
 from ui.loa.views.ManageButtons import ManageExtendButton
 from typing import Optional
-from utils.utils import fetch_id, has_approval_perms, fetch_profile
+from utils.utils import fetch_id, fetch_profile, permissions
 
 
 class LOA(commands.Cog):
@@ -30,8 +30,9 @@ class LOA(commands.Cog):
         
         await loa.insert_one(loa_doc)
 
-        results = await fetch_id(ctx.guild.id, ["loa_role"])
-        loa_role = results["loa_role"]
+        results = await fetch_id(ctx.guild.id, "loa")
+        loa_role = results["values"]["role"]
+
 
         role = ctx.guild.get_role(loa_role)
         await ctx.author.add_roles(role)
@@ -164,8 +165,8 @@ class LOA(commands.Cog):
         end_date = start_date + timedelta(days=total_days, hours=hours)
         
         # Creats the View and sends the message to the loa_channel
-        results = await fetch_id(ctx.guild.id, ["loa_channel"])
-        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["loa_channel"])
+        results = await fetch_id(ctx.guild.id, "loa")
+        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["values"]["channel"])
 
         view = RequestAcceptDenyButtons(self.bot, ctx.author, reason, start_date, end_date, time)
         request_message = await channel.send(view=view)
@@ -181,10 +182,8 @@ class LOA(commands.Cog):
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
     @loa.command(description="Get a list of all the active LOA's in the server.", extras={'category': 'LOA'})
+    @permissions()
     async def active(self, ctx: commands.Context):
-        # Users have to be in foundation or site command to run this command
-        if not await has_approval_perms(ctx, 5):
-            return
         
         # Find all LOA's, create the view, create the embed, send to user
         items = await loa.find({'guild_id': ctx.guild.id}).to_list(length=None)
