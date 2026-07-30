@@ -2,7 +2,7 @@ import discord
 from discord import ui
 from discord.ext import commands
 from utils.constants import enlistment_requests, profiles
-from utils.utils import has_approval_perms, log_action, fetch_department
+from utils.utils import get_permission_node, log_action, fetch_department
 
 # ---------- Buttons ----------
 
@@ -15,6 +15,9 @@ class DeptAcceptButton(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        if not get_permission_node(interaction, "enlistment.accept"):
+            return False
+        
         await handle_enlistment_decision(interaction, approved=True)
 
 
@@ -27,6 +30,9 @@ class DeptDenyButton(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        if not get_permission_node(interaction, "enlistment.deny"):
+            return False
+        
         await handle_enlistment_decision(interaction, approved=False)
 
 
@@ -66,9 +72,6 @@ class EnlistmentRequestView(ui.LayoutView):
 
 async def handle_enlistment_decision(interaction: discord.Interaction, approved: bool):
     request_id = interaction.data["custom_id"].split(":")[1]
-
-    if not await has_approval_perms(interaction, 3):
-        return
 
     req = await enlistment_requests.find_one({
         "_id": request_id,

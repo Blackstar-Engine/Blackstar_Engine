@@ -68,11 +68,17 @@ PERMISSION_NODES = {
     "enlistment.deny": {
         "description": "Deny enlistments"
     },
-    "point_request.accept": {
-        "description": "Accept point requests"
+    "point_request.max_1.5": {
+        "description": "Accept/deny point requests"
     },
-    "point_request.deny": {
-        "description": "Deny point requests"
+    "point_request.max_2": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_7.99": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_8": {
+        "description": "Accept/deny point requests"
     },
     "manage_profile.admin": {
         "description": "Gain access to admin tools for any department"

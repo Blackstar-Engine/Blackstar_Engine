@@ -22,7 +22,8 @@ from utils.constants import (
     BlackstarConstants,
     ids,
     economy_profiles,
-    bypassed_users
+    bypassed_users,
+    permission_rules
 )
 from edge_tts.exceptions import NoAudioReceived
 from utils.custom_errors import PermissionDenied
@@ -81,7 +82,7 @@ def fetch_unit_options(profile):
     return options
 
 async def fetch_id(guild_id, id_key: str):
-    results = await ids.find({"guild_id": int(guild_id), "key": id_key}).to_list(length=None)
+    results = await ids.find_one({"guild_id": int(guild_id), "key": id_key})
 
     return results
 
@@ -503,3 +504,31 @@ def permissions():
 
     return commands.check(predicate)
 
+async def get_permission_node(ctx: commands.Context, key: str):
+    if not key:
+        return False
+
+    if isinstance(ctx, discord.Interaction):
+        user = ctx.user
+    else:
+        user = ctx.author
+
+    if not ctx.guild:
+        return False
+
+    if user.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and user.id in bypassed_users):
+        return True
+
+    result = await permission_rules.find_one({
+        "guild_id": ctx.guild.id,
+        "scope_type": "permission",
+        "scope_key": key
+    })
+
+    if not result:
+        return False
+
+    required_rank = int(result.get("min_rank", 0))
+    return get_user_permissions(ctx.bot, ctx, user) >= required_rank
+
+    

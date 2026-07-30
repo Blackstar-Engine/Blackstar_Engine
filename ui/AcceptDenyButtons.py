@@ -1,15 +1,16 @@
 import discord
 from discord.ext import commands
 from discord import ui
-from utils.utils import has_approval_perms
+from utils.utils import get_permission_node
 from ui.ReasonModal import ReasonModal
 
 class AcceptDenyButtons(ui.ActionRow):
-    def __init__(self, bot: commands.Bot, user: discord.Member, permission_level: int = 3, ask_reason: bool = True, **kwargs):
+    def __init__(self, bot: commands.Bot, user: discord.Member, node_accept: str, node_deny: str, ask_reason: bool = True, **kwargs):
         super().__init__()
         self.bot = bot
         self.user = user
-        self.permission_level = permission_level
+        self.node_accept = node_accept
+        self.node_deny = node_deny
         self.ask_reason = ask_reason
         self.kwargs = kwargs
 
@@ -26,7 +27,7 @@ class AcceptDenyButtons(ui.ActionRow):
 
     
     async def accept_callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction, self.permission_level):
+        if not await get_permission_node(interaction, self.node_accept):
             return
         
         await interaction.response.defer(ephemeral=True)
@@ -37,7 +38,7 @@ class AcceptDenyButtons(ui.ActionRow):
         self.view.stop()
     
     async def deny_callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction, self.permission_level):
+        if not await get_permission_node(interaction, self.node_deny):
             return
         
         if self.ask_reason:

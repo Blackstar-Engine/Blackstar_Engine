@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from utils.utils import fetch_id
 from datetime import datetime
-from utils.utils import has_approval_perms, permissions
+from utils.utils import permissions
 from utils.constants import economy_profiles
 class DevTestingCog(commands.Cog):
     def __init__(self, bot: commands.Bot):

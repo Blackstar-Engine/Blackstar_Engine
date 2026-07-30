@@ -8,7 +8,7 @@ from ui.paginator import PaginatorView
 from ui.roa.views.RequestButtons import RequestButtons
 from ui.roa.views.ManageButtons import ManageExtendButton
 from typing import Optional
-from utils.utils import fetch_id, fetch_profile, permissions
+from utils.utils import fetch_id, fetch_profile, permissions, get_permission_node
 
 
 class ROA(commands.Cog):
@@ -205,7 +205,7 @@ class ROA(commands.Cog):
             member = ctx.author
         else:
             # If they are managing another user, they need to be in foundation or site command
-            if not await has_approval_perms(ctx, 5):
+            if not await get_permission_node(ctx, "roa.manage"):
                 return
             
             member = user

@@ -2,7 +2,7 @@ import discord
 from discord import ui
 from datetime import datetime
 from utils.constants import profiles, promotion_requests
-from utils.utils import has_approval_perms, fetch_id
+from utils.utils import get_permission_node, fetch_id
 from ui.PointsRemoval import PointsRemovalModal
 from ui.ReasonModal import ReasonModal
 
@@ -17,6 +17,9 @@ class PromotionAcceptButton(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        if not await get_permission_node(interaction, "promotion.accept"):
+            return
+        
         await promotion_requests.update_one(
             {"_id": self.custom_id.split(":")[1]},
             {"$set": {"snapshot.moderator_id": interaction.user.id}}
@@ -33,6 +36,8 @@ class PromotionDenyButton(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        if not await get_permission_node(interaction, "promotion.deny"):
+                    return
         modal = ReasonModal()
         await interaction.response.send_modal(modal)
         await modal.wait()
@@ -53,7 +58,7 @@ class AppointmentVCOpen(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction, 6):
+        if not await get_permission_node(interaction, "promotion.appointment"):
             return
             
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]}, {"snapshot": 1})
@@ -96,7 +101,7 @@ class AppointmentVCClose(ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        if not await has_approval_perms(interaction, 6):
+        if not await get_permission_node(interaction, "promotion.appointment"):
             return
 
         snapshot = await promotion_requests.find_one({"_id": self.custom_id.split(":")[1]})
@@ -290,10 +295,7 @@ async def handle_promotion_decision(interaction: discord.Interaction, approved: 
     snapshot = req["snapshot"]
 
     if snapshot.get("is_appointment", False):
-        if not await has_approval_perms(interaction, 6):
-            return
-    else:
-        if not await has_approval_perms(interaction, 3):
+        if not await get_permission_node(interaction, "promotion.appointment"):
             return
             
     guild = interaction.guild

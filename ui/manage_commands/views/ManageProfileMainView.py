@@ -6,7 +6,7 @@ from ui.manage_commands.views.ConfirmRemoval import ConfirmRemovalView
 from ui.manage_commands.views.ManageProfileUnitsView import ProfileManageUnitsView
 from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
-from utils.utils import interaction_check, fetch_unit_options, has_approval_perms
+from utils.utils import interaction_check, fetch_unit_options, get_permission_node
 from discord import ui, Interaction
 import asyncio
 from ui.manage_commands.views.ManageProfileViewRequests import ManageProfileViewRequests
@@ -60,7 +60,7 @@ class DepartmentSelect(ui.ActionRow):
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, unit))
         else:
-            if not await has_approval_perms(interaction, 6):
+            if not await get_permission_node(interaction, "manage_profile.admin"):
                 return
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, unit))

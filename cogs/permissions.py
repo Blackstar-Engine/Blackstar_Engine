@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from utils.constants import permission_tiers, permission_rules, permission_overrides
+from utils.constants import permission_tiers, permission_rules, permission_overrides, PERMISSION_NODES
 from ui.paginator import PaginatorView
 from discord.ui import Button
 from ui.CustomModal import CustomModal
@@ -42,6 +42,12 @@ class Permissions(commands.Cog):
         all_ranks = [rank.get("name", "Unknown") for rank in self.bot.permission_tiers]
         matches = [rank for rank in all_ranks if current.lower() in rank.lower()]
         return [app_commands.Choice(name=rank, value=rank) for rank in matches[:25]]
+
+    async def perm_nodes_autocomplete(self, interaction: discord.Interaction, current: str):
+        '''get all permission nodes located in constants and return them as a choice'''
+        all_nodes = [node for node in PERMISSION_NODES.keys()]
+        matches = [node for node in all_nodes if current.lower() in node]
+        return [app_commands.Choice(name=node, value=node) for node in matches[:25]]
 
     async def PT_add_record(self, interaction: discord.Interaction):
         modal = CustomModal(
@@ -287,6 +293,26 @@ class Permissions(commands.Cog):
         self.manage_rules_view.update_buttons()
         embed = self.manage_rules_view.create_record_embed()
         await interaction.response.send_message(embed=embed, view=self.manage_rules_view, ephemeral=True)
+
+    @set_permissions.command(name="node", description="Set the permissions for a node.", extras={'category': 'Permissions'})
+    @permissions()
+    @app_commands.describe(node="This is the node name", min_rank="The min tier required for this command.")
+    @app_commands.autocomplete(node=perm_nodes_autocomplete, min_rank=min_rank_autocomplete)
+    async def set_command_permissions(self, interaction: discord.Interaction, node: str, min_rank: str):
+        tier_info = await permission_tiers.find_one({"guild_id": interaction.guild.id, "name": min_rank})
+        if not tier_info:
+            return await interaction.response.send_message("Failed to find tier!", ephemeral=True)
+        
+        node_doc = {
+            "guild_id": interaction.guild.id,
+            "scope_type": "permission",
+            "scope_key": node,
+            "min_rank": tier_info.get("rank")
+        }
+
+        await permission_rules.update_one(node_doc, upsert=True)
+
+        await interaction.response.send_message(f"Set permission node `{node}` to require a min rank of `{min_rank}`")
 
     @set_permissions.command(name="command", description="Set the permissions for a command.", extras={'category': 'Permissions'})
     @permissions()

@@ -8,7 +8,7 @@ from ui.paginator import PaginatorView
 from ui.loa.views.RequestButtons import RequestAcceptDenyButtons
 from ui.loa.views.ManageButtons import ManageExtendButton
 from typing import Optional
-from utils.utils import fetch_id, fetch_profile, permissions
+from utils.utils import fetch_id, fetch_profile, permissions, get_permission_node
 
 
 class LOA(commands.Cog):
@@ -199,7 +199,7 @@ class LOA(commands.Cog):
             member = ctx.author
         else:
             # If they are managing another user, they need to be in foundation or site command
-            if not await has_approval_perms(ctx, 5):
+            if not await get_permission_node(ctx, "loa.manage"):
                 return
             
             member = user

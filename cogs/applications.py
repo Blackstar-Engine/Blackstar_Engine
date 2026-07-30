@@ -15,7 +15,7 @@ class Applications(commands.Cog):
     @permissions()
     async def open_applications(self, ctx: commands.Context):
         app_channels = await fetch_id(ctx.guild.id, "application_channels")
-        options = [discord.SelectOption(label=str(key.title()), value=int(value)) for key, value in app_channels["values"].items()]
+        options = [discord.SelectOption(label=str(key.replace("_", " ").title()), value=int(value)) for key, value in app_channels["values"].items()]
 
         view = ApplicationOpen(options)
         embed = discord.Embed(title="Applications", description="Please select one of the following departments to open applications for.", color=discord.Color.light_gray())
@@ -26,9 +26,9 @@ class Applications(commands.Cog):
     @permissions()
     async def close_applications(self, ctx: commands.Context):
         app_channels = await fetch_id(ctx.guild.id, "application_channels")
-        options = [discord.SelectOption(label=str(key.title()), value=int(value)) for key, value in app_channels["values"].items()]
+        options = [discord.SelectOption(label=str(key.replace("_", " ").title()), value=int(value)) for key, value in app_channels["values"].items()]
 
-        view = ApplicationOpen(options)
+        view = ApplicationClose(options)
         embed = discord.Embed(title="Applications", description="Please select one of the following departments to close applications for.", color=discord.Color.light_gray())
         embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
         await ctx.send(embed=embed, view=view, ephemeral=True)

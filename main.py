@@ -126,7 +126,7 @@ class Bot(commands.Bot):
         bot.permission_rules = await permission_rules.find().to_list(length=None)
         bot.permission_overrides = await permission_overrides.find().to_list(length=None)
 
-        bot.reaction_roles = await ids.find({"reaction_roles"}).to_list(length=None)
+        bot.reaction_roles = await ids.find({"key": "reaction_roles"}).to_list(length=None)
 
         
         logger.info(f'{self.user} is ready.')
