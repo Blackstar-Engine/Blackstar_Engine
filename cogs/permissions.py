@@ -16,24 +16,49 @@ class Permissions(commands.Cog):
         self.manage_perm_view = None
         self.manage_perm_type = None
 
-    async def command_autocomplete(self, interaction: discord.Interaction, current: str):
-        '''Get all commands and return them as choices'''
+    async def command_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str
+    ):
+        """Get all permission-managed commands and return them as choices."""
+
         all_commands = [
-                        cmd.qualified_name
-                        for cmd in self.bot.walk_commands()
-                        if (
-                            isinstance(cmd, commands.Command)
-                            and not isinstance(cmd, (commands.Group, commands.HybridGroup))
-                            and not cmd.qualified_name.startswith("jishaku")
-                        )
-                    ]
-        
+            cmd.qualified_name
+            for cmd in self.bot.walk_commands()
+            if (
+                isinstance(cmd, commands.Command)
+                and not isinstance(cmd, (commands.Group, commands.HybridGroup))
+                and not cmd.qualified_name.startswith("jishaku")
+                and getattr(cmd.callback, "permission_managed", False)
+            )
+        ]
+
         matches = [cmd for cmd in all_commands if current.lower() in cmd.lower()]
         return [app_commands.Choice(name=cmd, value=cmd) for cmd in matches[:25]]
     
-    async def feature_autocomplete(self, interaction: discord.Interaction, current: str):
-        '''Get all cogs and return them as features'''
-        all_cogs = [cog for cog in self.bot.cogs.keys() if cog not in['jishaku']]
+    async def feature_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str
+    ):
+        """Get all cogs that contain at least one permission-managed command."""
+
+        all_cogs = []
+
+        for cog_name, cog in self.bot.cogs.items():
+            if cog_name == "jishaku":
+                continue
+
+            has_permission_command = any(
+                getattr(command.callback, "permission_managed", False)
+                for command in cog.walk_commands()
+                if isinstance(command, commands.Command)
+            )
+
+            if has_permission_command:
+                all_cogs.append(cog_name)
+
         matches = [cog for cog in all_cogs if current.lower() in cog.lower()]
         return [app_commands.Choice(name=cog, value=cog) for cog in matches[:25]]
     

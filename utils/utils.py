@@ -328,7 +328,7 @@ async def check_currency(ctx: commands.Context, bet, user: discord.Member, guild
 async def get_gift_limit(ctx: commands.Context, user: discord.Member | None = None):
     target_user = user or ctx.author
 
-    if target_user.id == 1371489554279825439:
+    if int(target_user.id) == int(ctx.guild.owner.id):
         return 999999999999999
 
     user_role_ids = {role.id for role in target_user.roles}
@@ -499,10 +499,14 @@ def permissions():
             return True
         
         raise PermissionDenied("fallback")
+    
+    check = commands.check(predicate)
 
+    def decorator(func):
+        func.permission_managed = True
+        return check(func)
 
-
-    return commands.check(predicate)
+    return decorator
 
 async def get_permission_node(ctx: commands.Context, key: str):
     if not key:

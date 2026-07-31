@@ -114,11 +114,12 @@ class Tasks(commands.Cog):
 
         today = datetime.now(timezone.utc).strftime("%m-%d")
 
+
         async for birthday in birthdays.find({"date": today}):
             try:
                 user = await self.bot.fetch_user(birthday["user_id"])
-                results = await fetch_id(guild_id, ["misc_announcements", "birthday_ping"])
-                channel = self.bot.get_channel(results["misc_announcements"])
+                results = await fetch_id(guild_id, "birthdays")
+                channel = self.bot.get_channel(int(results["values"]["channel"]))
 
                 embed = discord.Embed(
                     color=16087715,
@@ -126,7 +127,7 @@ class Tasks(commands.Cog):
                     description=f"Today is {user.mention}'s birthday, be sure to wish them a happy birthday!",
                 )
 
-                await channel.send(content=f"<@&{results['birthday_ping']}>", embed=embed)
+                await channel.send(content=f"<@&{results["values"]["role"]}>", embed=embed)
             except Exception as e:
                 channel = self.bot.get_channel(1464811075760427008)
                 await channel.send(f"Failed to post {user.mention}'s birthday;\n```py{e}```")

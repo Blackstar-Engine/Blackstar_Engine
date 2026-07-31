@@ -68,6 +68,9 @@ PERMISSION_NODES = {
     "enlistment.deny": {
         "description": "Deny enlistments"
     },
+    "enlistment.claim": {
+        "description": "Claim any enlistments"
+    },
     "point_request.max_1.5": {
         "description": "Accept/deny point requests"
     },
