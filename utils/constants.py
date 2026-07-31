@@ -86,6 +86,9 @@ PERMISSION_NODES = {
     "manage_profile.admin": {
         "description": "Gain access to admin tools for any department"
     },
+    "export_data.manage": {
+        "description": "Manage all aspects of data exports"
+    },
 
 }
 

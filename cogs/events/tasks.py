@@ -189,21 +189,22 @@ class Tasks(commands.Cog):
             {"end_date": {"$lte": now}}
         ).to_list(length=None)
 
-        if len(expired_loas) > 0:
-            results = await fetch_id(expired_loas[0]["guild_id"], ['loa_role', 'loa_channel', 'roa_role'])
-        elif len(expired_roas) > 0:
-            results = await fetch_id(expired_roas[0]["guild_id"], ['loa_role', 'loa_channel', 'roa_role'])
-        else:
+        if len(expired_loas) == 0 and len(expired_roas) == 0:
             return
+        
+        if len(expired_loas) > 0:
+            loa_results = await fetch_id(expired_loas[0]["guild_id"], "loa")
+        if len(expired_roas) > 0:
+            roa_results = await fetch_id(expired_roas[0]["guild_id"], "roa")
         
         for record in expired_roas:
             # Get guild, channel, and member
             guild = self.bot.get_guild(record.get("guild_id"))
-            channel = await self._fetch_channel(guild, results['loa_channel'])
+            channel = await self._fetch_channel(guild, roa_results["values"]['channel'])
             member = await self._fetch_member(guild, record.get("user_id"))
 
             # Remove LOA role
-            role = guild.get_role(results['roa_role'])
+            role = guild.get_role(roa_results["values"]['role'])
             try:
                 await member.remove_roles(role, reason="ROA expired")
             except (discord.Forbidden, AttributeError):
@@ -214,11 +215,11 @@ class Tasks(commands.Cog):
         for record in expired_loas:
             # Get guild, channel, and member
             guild = self.bot.get_guild(record.get("guild_id"))
-            channel = await self._fetch_channel(guild, results['loa_channel'])
+            channel = await self._fetch_channel(guild, loa_results["values"]['channel'])
             member = await self._fetch_member(guild, record.get("user_id"))
 
             # Remove LOA role
-            role = guild.get_role(results['loa_role'])
+            role = guild.get_role(loa_results["values"]['role'])
             try:
                 await member.remove_roles(role, reason="LOA expired")
             except (discord.Forbidden, AttributeError):
