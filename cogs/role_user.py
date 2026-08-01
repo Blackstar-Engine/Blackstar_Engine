@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.utils import role_user, has_approval_perms
+from utils.utils import role_user, permissions
 
 class RoleUser(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -8,10 +8,8 @@ class RoleUser(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(name="roleuser", description="Auto give a user the overall and first rank role of a unit (DRM/Central Command+).", with_app_command=True, extras={'category': 'Administration'})
+    @permissions()
     async def role_user(self, ctx: commands.Context, user: discord.Member, unit: str):
-        if not await has_approval_perms(ctx, 2):
-            return
-        
         result = await role_user(ctx, unit)
         if not result:
             return

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.utils import fetch_id, log_action, has_approval_perms
+from utils.utils import fetch_id, log_action, permissions
 
 from utils.constants import jail_snapshots, profiles
 
@@ -10,14 +10,13 @@ class Moderation(commands.Cog):
         self.bot = bot
     
     @commands.hybrid_command(name="jail", description="Sends a user to jail (High Command+).", extras={'category': 'Administration'})
+    @permissions()
     async def jail(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
-        if not await has_approval_perms(ctx, 4):
-            return
 
         await ctx.defer(ephemeral=True)
 
-        results = await fetch_id(ctx.guild.id, ["prisoner_role"])
-        prisoner_id = results["prisoner_role"]
+        results = await fetch_id(ctx.guild.id, "prisoner_role")
+        prisoner_id = results["values"]
 
         profile = await profiles.find_one({"user_id": user.id})
 
@@ -77,14 +76,13 @@ class Moderation(commands.Cog):
 
         
     @commands.hybrid_command(name="release", description="Release a user from jail (High Command+).", extras={'category': 'Administration'})
+    @permissions()
     async def release(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
-        if not await has_approval_perms(ctx, 4):
-            return
 
         await ctx.defer(ephemeral=True)
 
-        results = await fetch_id(ctx.guild.id, ["prisoner_role"])
-        prisoner_id = results["prisoner_role"]
+        results = await fetch_id(ctx.guild.id, "prisoner_role")
+        prisoner_id = results["values"]
 
         snapshot = await jail_snapshots.find_one({"id": user.id})
         if snapshot is None:
@@ -122,9 +120,8 @@ class Moderation(commands.Cog):
         await log_action(ctx=ctx, log_type="mod_command", command_name="release", arguments=f"user={user.mention}\nreason={reason}")
     
     @commands.hybrid_command(name="jailstatus", description="Check if a user is in jail or not (High Command+).", extras={'category': 'Administration'})
+    @permissions()
     async def jailstatus(self, ctx: commands.Context, user: discord.Member):
-        if not await has_approval_perms(ctx, 4):
-            return 
         snapshot = await jail_snapshots.find_one({"id": user.id})
         if snapshot:
             embed = discord.Embed(description=f"{user.mention} is currently **jailed**. | `{user.id}`", color=discord.Color.yellow())
@@ -146,9 +143,8 @@ class Moderation(commands.Cog):
         await log_action(ctx=ctx, log_type="mod_command", command_name="jailstatus", arguments=f"user={user.mention}")
     
     @commands.hybrid_command(name="viewjailed", description="View all currently jailed users (High Command+).", extras={'category': 'Administration'})
+    @permissions()
     async def viewjailed(self, ctx: commands.Context):
-        if not await has_approval_perms(ctx, 4):
-            return
 
         await ctx.defer(ephemeral=True)
 

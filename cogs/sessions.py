@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from utils.constants import MESSAGE_CODE_RE, active_sessions
-from utils.utils import has_approval_perms, fetch_id
+from utils.utils import permissions
 from ui.sessions.views.VCChannelSelect import VCChannelSelectView
 from datetime import datetime, UTC
 import re
@@ -105,9 +105,8 @@ class Sessions(commands.Cog):
         pass
 
     @session.command(name="start", description="Start a new session in this channel (Central Command+).", extras={'category': 'Sessions'})
+    @permissions()
     async def session_start(self, ctx: commands.Context, game_link: str):
-        if not await has_approval_perms(ctx, 3):
-            return
             
         try:
             await ctx.message.delete()
@@ -122,10 +121,9 @@ class Sessions(commands.Cog):
         await ctx.send(view=view)
     
     @session.command(name="cancel", description="Cancel the current session in this channel (Central Command+)", extras={'category': 'Sessions'})
+    @permissions()
     async def session_cancel(self, ctx: commands.Context, *, reason: str):
         await ctx.defer(ephemeral=True)
-        if not await has_approval_perms(ctx, 3):
-            return
         
         try:
             await ctx.message.delete()
@@ -159,9 +157,8 @@ class Sessions(commands.Cog):
             app_commands.Choice(name="No", value="no")
         ]
     )
+    @permissions()
     async def session_end(self, ctx: commands.Context, create_log: str = "yes"):
-        if not await has_approval_perms(ctx, 3):
-            return
             
         try:
             await ctx.message.delete()
@@ -334,7 +331,7 @@ class Sessions(commands.Cog):
 
         supervisor = "None"
         if "SUPERVISOR:" in message.content:
-            supervisor = message.content.split("SUPERVISOR:", 1)[1].strip()
+            supervisor = message.content.split("SUPERVISOR:", 1)[1].split("\n", 1)[0].strip()
 
         if started_at.tzinfo is None:
             started_at = started_at.replace(tzinfo=UTC)

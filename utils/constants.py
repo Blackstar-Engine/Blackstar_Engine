@@ -34,6 +34,63 @@ profanity_list = [
                     "fucking", "fucker", "fucked", "fucks", "fuk"
                 ]
 whitelisted_guilds = [1411941814923169826, 1450297281088720928, 846843382713417810]
+PERMISSION_NODES = {
+    "roa.manage": {
+        "description": "Manage other peoples roas"
+    },
+    "roa.accept": {
+        "description": "Accept roas"
+    },
+    "roa.deny": {
+        "description": "Deny roas"
+    },
+    "loa.manage": {
+        "description": "Manage other peoples loas"
+    },
+    "loa.accept": {
+        "description": "Accept loas"
+    },
+    "loa.deny": {
+        "description": "Deny loas"
+    },
+    "promotion.appointment": {
+        "description": "Be able to take appointment only promotions"
+    },
+    "promotion.accept": {
+        "description": "Accept promotions"
+    },
+    "promotion.deny": {
+        "description": "Deny promotions"
+    },
+    "enlistment.accept": {
+        "description": "Accept enlistments"
+    },
+    "enlistment.deny": {
+        "description": "Deny enlistments"
+    },
+    "enlistment.claim": {
+        "description": "Claim any enlistments"
+    },
+    "point_request.max_1.5": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_2": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_7.99": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_8": {
+        "description": "Accept/deny point requests"
+    },
+    "manage_profile.admin": {
+        "description": "Gain access to admin tools for any department"
+    },
+    "export_data.manage": {
+        "description": "Manage all aspects of data exports"
+    },
+
+}
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     constants.MONGO_URI,
@@ -68,6 +125,15 @@ economy_profiles = db.economy_profiles
 combat_classes = db.combat_classes
 combat_profiles = db.combat_profiles
 birthdays = db.birthdays
+permission_tiers = db.permission_tiers
+permission_rules = db.permission_rules
+permission_overrides = db.permission_overrides
+
+bypassed_users = [
+            758170288566566952, #Ghost
+            1371489554279825439, #Wolf
+            1007353417779396709 #Option
+        ]
 
 if constants.ENVIRONMENT == "PRODUCTION":
     annoucement_role_id = 1413199178934259844

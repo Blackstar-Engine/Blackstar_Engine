@@ -48,8 +48,8 @@ class AddTimeModal(discord.ui.Modal):
         time_delta = timedelta(days=years * 365 + months * 30 + weeks * 7 + days, hours=hours)
 
         new_end_date = self.active_loa["end_date"] + time_delta
-        results = await fetch_id(interaction.guild.id, ["loa_channel"])
-        loa_channel = results["loa_channel"]
+        results = await fetch_id(interaction.guild.id, "loa")
+        loa_channel = results["values"]["channel"]
 
         if self.member == self.user:  # If managing your own LOA
             channel = await interaction.guild.fetch_channel(loa_channel)

@@ -3,17 +3,15 @@ from discord.ext import commands
 import os
 import asyncio
 from ui.tts.views.RequestButton import RequestButtonView
-from utils.utils import has_approval_perms
+from utils.utils import permissions
 
 class tts_system_commands(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
     @commands.hybrid_command(name="move", description="Force move the bot to a different VC (Central Command+).", extras={'category': 'TTS'})
+    @permissions()
     async def move(self, ctx: commands.Context, channel: discord.VoiceChannel):
-        if not await has_approval_perms(ctx, 3):
-            return
-
         if not ctx.author.voice:
             embed = discord.Embed(title="Whoops....", description="Please make sure you are in a channel!", color=discord.Color.light_grey())
             return await ctx.send(embed=embed, ephemeral=True)
@@ -124,15 +122,20 @@ class tts_system_commands(commands.Cog):
     async def clear(self, ctx: commands.Context):
         guild_id = ctx.guild.id
         vc = ctx.guild.voice_client
-        queue = self.bot.tts_queues[guild_id]
+        queue = self.bot.tts_queues.get(guild_id)
 
-        if not vc or queue.empty():
+        if not vc:
+            return await ctx.send("I'm not in a voice channel!", ephemeral=True)
+
+        if (queue is None or queue.empty()) and not vc.is_playing():
             return await ctx.send("There is nothing to clear!", ephemeral=True)
 
         if vc.is_playing():
             vc.stop()
 
-        self._drain_queue(queue)
+        if queue is not None:
+            self._drain_queue(queue)
+
         await self._cancel_tts_task(guild_id)
         self._cleanup_mp3_files()
 
