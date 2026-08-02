@@ -41,11 +41,11 @@ class Promotion(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.hybrid_group(name="promotion", invoke_without_command=True)
+    @commands.hybrid_group(invoke_without_sub_command=True)
     async def promotion(self, ctx: commands.Context):
         await ctx.send("Available subcommands: request")
 
-    @promotion.command(name="request", description="Request a promotion in a department.", extras={'category': 'Profiles'})
+    @promotion.command(name="request", description="Request a promotion in a department.", with_app_command=True, extras={'category': 'Profiles'})
     async def request(self, ctx: commands.Context, department: str, proof: discord.Attachment):
         await ctx.defer(ephemeral=True)
 

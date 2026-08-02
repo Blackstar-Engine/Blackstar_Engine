@@ -99,12 +99,12 @@ class Sessions(commands.Cog):
 
             await _set_fields(sets)
 
-    @commands.hybrid_group(name="session")
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def session(self, ctx: commands.Context):
         # parent command
         pass
 
-    @session.command(name="start", description="Start a new session in this channel (Central Command+).", extras={'category': 'Sessions'})
+    @session.command(name="start", description="Start a new session in this channel (Central Command+).", with_app_command=True, extras={'category': 'Sessions'})
     @permissions()
     async def session_start(self, ctx: commands.Context, game_link: str):
             
@@ -120,7 +120,7 @@ class Sessions(commands.Cog):
         view = VCChannelSelectView(game_link, ctx.author)
         await ctx.send(view=view)
     
-    @session.command(name="cancel", description="Cancel the current session in this channel (Central Command+)", extras={'category': 'Sessions'})
+    @session.command(name="cancel", description="Cancel the current session in this channel (Central Command+)", with_app_command=True, extras={'category': 'Sessions'})
     @permissions()
     async def session_cancel(self, ctx: commands.Context, *, reason: str):
         await ctx.defer(ephemeral=True)
@@ -150,7 +150,7 @@ class Sessions(commands.Cog):
         
         await message.reply(f"Session cancelled by <@{ctx.author.id}> for the following reason:\n\n{reason}")
 
-    @session.command(name="end", description="End the current session in this channel (create_log: yes/no) (Central Command+).", extras={'category': 'Sessions'})
+    @session.command(name="end", description="End the current session in this channel (create_log: yes/no) (Central Command+).", with_app_command=True, extras={'category': 'Sessions'})
     @app_commands.choices(
         create_log = [
             app_commands.Choice(name="Yes", value="yes"),

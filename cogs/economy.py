@@ -15,11 +15,11 @@ class Economy(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
     
-    @commands.hybrid_group(name="economy")
+    @commands.hybrid_group(name="economy", invoke_without_sub_command=False)
     async def eco_main(self, ctx: commands.Context):
         return
     
-    @eco_main.command(name="coinflip", description="Gamble currency in a coinflip", extras={'category': 'Economy'})
+    @eco_main.command(name="coinflip", description="Gamble currency in a coinflip", with_app_command=True, extras={'category': 'Economy'})
     async def coinflip(self, ctx: commands.Context, choice: str, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
@@ -53,7 +53,7 @@ class Economy(commands.Cog):
             await ctx.send(embed=embed)
 
 
-    @eco_main.command(name="daily", description="Get a daily reward", extras={'category': 'Economy'})
+    @eco_main.command(name="daily", description="Get a daily reward", with_app_command=True, extras={'category': 'Economy'})
     async def daily(self, ctx: commands.Context):
         profile = await check_eco_profile(ctx.author, ctx.guild)
         
@@ -80,7 +80,7 @@ class Economy(commands.Cog):
             embed = discord.Embed(title="Already Claimed", description="You have already claimed your daily reward today.", color=discord.Color.red())
             await ctx.send(embed=embed)
 
-    @eco_main.command(name="steal", description="Steal money from another user", extras={'category': 'Economy'})
+    @eco_main.command(name="steal", description="Steal money from another user", with_app_command=True, extras={'category': 'Economy'})
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, user: discord.User):
         if user == ctx.author:
@@ -138,7 +138,7 @@ class Economy(commands.Cog):
         else:
             ctx.command.reset_cooldown(ctx)
 
-    @eco_main.command(name="balance", description="View your current amount of money", extras={'category': 'Economy'})
+    @eco_main.command(name="balance", description="View your current amount of money", with_app_command=True, extras={'category': 'Economy'})
     async def balance(self, ctx: commands.Context):
         profile = await check_eco_profile(ctx.author, ctx.guild)
         balance = profile.get("currency")
@@ -146,7 +146,7 @@ class Economy(commands.Cog):
         embed = discord.Embed(description=f"You currently have {balance}✦", color=discord.Color.light_grey())
         await ctx.send(embed=embed)
     
-    @eco_main.command(name="gift", description="Gift money to a another user", extras={'category': 'Economy'})
+    @eco_main.command(name="gift", description="Gift money to a another user", with_app_command=True, extras={'category': 'Economy'})
     async def gift_points(self, ctx: commands.Context, user: discord.Member, amount: int):
         amount = abs(amount)
         author_profile = await check_eco_profile(ctx.author, ctx.guild)
@@ -176,7 +176,7 @@ class Economy(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @eco_main.command(name="blackjack", description="Gamble your money on a game of Blackjack", extras={'category': 'Economy'})
+    @eco_main.command(name="blackjack", description="Gamble your money on a game of Blackjack", with_app_command=True, extras={'category': 'Economy'})
     async def blackjack(self, ctx: commands.Context, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
@@ -190,7 +190,7 @@ class Economy(commands.Cog):
         view = Blackjack(ctx.author, bet)
         await ctx.send(view=view)
 
-    @eco_main.command(name="minesweeper", description="Gamble your money on a game of minesweeper", extras={'category': 'Economy'})
+    @eco_main.command(name="minesweeper", description="Gamble your money on a game of minesweeper", with_app_command=True, extras={'category': 'Economy'})
     async def minesweeper(self, ctx: commands.Context, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:
@@ -211,7 +211,7 @@ class Economy(commands.Cog):
         view = Minesweeper(ctx.author, bet)
         await ctx.send(view=view)
 
-    @eco_main.command(name="slots", description="Gamble your money on a game of slots", extras={'category': 'Economy'})
+    @eco_main.command(name="slots", description="Gamble your money on a game of slots", with_app_command=True, extras={'category': 'Economy'})
     async def slots(self, ctx: commands.Context, bet):
         bet, _ = await check_currency(ctx, bet, ctx.author, ctx.guild)
         if not bet:

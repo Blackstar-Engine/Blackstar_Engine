@@ -104,11 +104,11 @@ class LOA(commands.Cog):
         except discord.Forbidden:
             pass
 
-    @commands.hybrid_group(name="loa", description="Create a loa", invoke_without_sub_command=False)
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def loa(self, ctx: commands.Context):
         return
 
-    @loa.command(description="Request an LOA to get time off.", extras={'category': 'LOA'})
+    @loa.command(description="Request an LOA to get time off.", with_app_command=True, extras={'category': 'LOA'})
     async def request(self, ctx: commands.Context, time: str, *, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
@@ -181,7 +181,7 @@ class LOA(commands.Cog):
         else:
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
-    @loa.command(description="Get a list of all the active LOA's in the server.", extras={'category': 'LOA'})
+    @loa.command(description="Get a list of all the active LOA's in the server.", with_app_command=True, extras={'category': 'LOA'})
     @permissions()
     async def active(self, ctx: commands.Context):
         
@@ -192,7 +192,7 @@ class LOA(commands.Cog):
 
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @loa.command(description="Manage a staff members LOA.", extras={'category': 'LOA'})
+    @loa.command(description="Manage a staff members LOA.", with_app_command=True, extras={'category': 'LOA'})
     async def manage(self, ctx: commands.Context, user: Optional[discord.Member | discord.User] = None):
         # Checking if user selected themselves
         if not user or user.id == ctx.author.id:

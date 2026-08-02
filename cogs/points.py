@@ -38,11 +38,11 @@ class Points(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group(name="points")
+    @commands.hybrid_group(invoke_without_sub_command=True)
     async def points(self, ctx: commands.Context):
         return
 
-    @points.command(name="request", description="Request points to be added to your profile", extras={'category': 'Profiles'})
+    @points.command(name="request", description="Request points to be added to your profile", with_app_command=True, extras={'category': 'Profiles'})
     async def request(self, ctx: commands.Context, points: float, *, proof: str):
         if points <= 0 or not isinstance(points, float):
             return await ctx.send("Please make sure the number is positive and is an number.", ephemeral=True)
@@ -88,7 +88,7 @@ class Points(commands.Cog):
 
         await select_message.edit(view=view)
 
-    @points.command(name="gift", description="Gift points to other units (Central Command+).", extras={'category': 'Profiles'})
+    @points.command(name="gift", description="Gift points to other units (Central Command+).", with_app_command=True, extras={'category': 'Profiles'})
     @permissions()
     async def gift(self, ctx: commands.Context, user: discord.Member, points: int, *, reason: str):
         # Command parsing checks

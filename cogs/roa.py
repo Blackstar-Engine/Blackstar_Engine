@@ -111,11 +111,11 @@ class ROA(commands.Cog):
         except discord.Forbidden:
             pass
 
-    @commands.hybrid_group(name="roa", description="Create a roa", invoke_without_sub_command=False)
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def roa(self, ctx: commands.Context):
         return
 
-    @roa.command(description="Request an ROA to get time off.", extras={'category': 'ROA'})
+    @roa.command(description="Request an ROA to get time off.", with_app_command=True, extras={'category': 'ROA'})
     async def request(self, ctx: commands.Context, time: str, *, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
@@ -188,7 +188,7 @@ class ROA(commands.Cog):
         else:
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
-    @roa.command(description="Get a list of all the active ROA's in the server.", extras={'category': 'ROA'})
+    @roa.command(description="Get a list of all the active ROA's in the server.", with_app_command=True, extras={'category': 'ROA'})
     @permissions()
     async def active(self, ctx: commands.Context):        
         # Find all ROA's, create the view, create the embed, send to user
@@ -198,7 +198,7 @@ class ROA(commands.Cog):
 
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @roa.command(description="Manage a staff members ROA.", extras={'category': 'ROA'})
+    @roa.command(description="Manage a staff members ROA.", with_app_command=True, extras={'category': 'ROA'})
     async def manage(self, ctx: commands.Context, user: Optional[discord.Member | discord.User] = None):
         # Checking if user selected themselves
         if not user or user.id == ctx.author.id:

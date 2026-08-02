@@ -19,7 +19,7 @@ class General(commands.Cog):
             return False
         return True
 
-    @commands.hybrid_command(name="execute", description="Execute the user (Wolf Only).", extras={'category': 'Administration'})
+    @commands.hybrid_command(name="execute", description="Execute the user (Wolf Only).", with_app_command=True, extras={'category': 'Administration'})
     async def execute_user(self, ctx: commands.Context, user: discord.Member):
         if not await self._check_if_bypassed(ctx):
             return
@@ -34,7 +34,7 @@ class General(commands.Cog):
 
         await ctx.send(f"{user.mention} has been executed by the order of {ctx.author.mention}!")
 
-    @commands.hybrid_command(name="embed", description="Send an Embed (Wolf Only).", extras={'category': 'Administration'})
+    @commands.hybrid_command(name="embed", description="Send an Embed (Wolf Only).", with_app_command=True, extras={'category': 'Administration'})
     async def embed(self, ctx: commands.Context, *, text: str):
         if not await self._check_if_bypassed(ctx):
             return
@@ -53,7 +53,7 @@ class General(commands.Cog):
 
         await ctx.send(embed=custom_embed)
 
-    @commands.hybrid_command(name="say", description="Makes the bot say a message (Wolf Only).", extras={'category': 'Administration'})
+    @commands.hybrid_command(name="say", description="Makes the bot say a message (Wolf Only).", with_app_command=True, extras={'category': 'Administration'})
     async def say(self, ctx: commands.Context, *, text: str):
         if not await self._check_if_bypassed(ctx):
             return
@@ -68,7 +68,7 @@ class General(commands.Cog):
         await ctx.send(text)
 
 
-    @commands.hybrid_command(name="dm_punish", description="Notifies a user that disciplinary action has been taken (Junior Mod+ and Central Command+).", extras={'category': 'Administration'})
+    @commands.hybrid_command(name="dm_punish", description="Notifies a user that disciplinary action has been taken (Junior Mod+ and Central Command+).", with_app_command=True, extras={'category': 'Administration'})
     @permissions()
     async def dm_punish(self, ctx: commands.Context, user: discord.Member):
         await log_action(ctx=ctx, log_type="mod_command", command_name="dm_punish", arguments=f"user={user.mention}")
@@ -79,7 +79,7 @@ class General(commands.Cog):
             embed = discord.Embed(title="Error", description="The user you are attempting to DM has their direct messages turned off.", color=discord.Color.red())
             await ctx.send(embed=embed, ephemeral=True)
     
-    @commands.hybrid_command(name="best_member", description="Who is the best member of the server?", extras={'category': 'Other'})
+    @commands.hybrid_command(name="best_member", description="Who is the best member of the server?", with_app_command=True, extras={'category': 'Other'})
     async def best_member(self, ctx: commands.Context):
         server_members = ctx.guild.members
         possible_members = [member.display_name for member in server_members if not member.bot]

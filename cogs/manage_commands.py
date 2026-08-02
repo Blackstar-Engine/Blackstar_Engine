@@ -123,14 +123,14 @@ class ManageCommands(commands.Cog):
         embed = self.auto_reply_view.create_record_embed()
         await interaction.edit_original_response(embed=embed, view=self.auto_reply_view)
 
-    @commands.hybrid_group(name='manage')
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def manage(self, ctx: commands.Context):
         '''
         This is the main manage command for all commands that require to be managed
         '''
         pass
 
-    @manage.command(name='auto_reply', description='Manage auto replys (Site Command+).', extras={'category': 'Administration'})
+    @manage.command(name='auto_reply', description='Manage auto replys (Site Command+).', with_app_command=True, extras={'category': 'Administration'})
     @permissions()
     async def auto_reply(self, ctx: commands.Context):
         
@@ -168,7 +168,7 @@ class ManageCommands(commands.Cog):
         embed = self.auto_reply_view.create_record_embed()
         await ctx.send(embed=embed, view=self.auto_reply_view, ephemeral=True)
 
-    @manage.command(name="profile", description="Manage a users profile (DRM/High Command+).", extras={'category': 'Administration'})
+    @manage.command(name="profile", description="Manage a users profile (DRM/High Command+).", with_app_command=True, extras={'category': 'Administration'})
     @permissions()
     async def manage_profile(self, ctx: commands.Context, user: discord.User = None):
         if not user:
@@ -190,7 +190,7 @@ class ManageCommands(commands.Cog):
         # Send to the user
         await ctx.send(view=view, ephemeral=True)
     
-    @manage.command(name="department", description="Manage a department (Foundation Command).", extras={'category': 'Administration'})
+    @manage.command(name="department", description="Manage a department (Foundation Command).", with_app_command=True, extras={'category': 'Administration'})
     @permissions()
     async def manage_department(self, ctx: commands.Context, department_name: str):
         await ctx.defer(ephemeral=True)
