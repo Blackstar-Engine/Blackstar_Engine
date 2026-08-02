@@ -27,13 +27,13 @@ ROLE_RE = re.compile(r"<@&\d{17,20}>")
 URL_RE = re.compile(r"https?://\S+")
 MESSAGE_CODE_RE = re.compile(r"^(\[[^\]]+\]|\*\*[\s\S]+?\*\*)")#  \*\*(.*?)\*\* | This will check for ****
 profanity_list = [
-                    "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
+                    "dick", "cock", "whore", "tranny", "faggot", "nigga", "fag",
                     "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
                     "cunt", "nigger", "mother fucker", "titties", "titty", "boobs", "cum",
                     "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker",
                     "fucking", "fucker", "fucked", "fucks", "fuk"
                 ]
-whitelisted_guilds = [1411941814923169826, 1450297281088720928, 846843382713417810]
+whitelisted_guilds = [1411941814923169826, 1450297281088720928]
 PERMISSION_NODES = {
     "roa.manage": {
         "description": "Manage other peoples roas"

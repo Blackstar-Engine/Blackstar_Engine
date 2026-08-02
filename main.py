@@ -14,6 +14,7 @@ from utils.constants import (
 from ui.promotion.views.PromotionRequest import PromotionRequestView
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.enlistment_request.views.EnlistmentRequestView import EnlistmentRequestView
+from utils.utils import is_whitelisted
 
 constants = BlackstarConstants()
 
@@ -89,7 +90,6 @@ class Bot(commands.Bot):
         discord_http_logger.error('Disconnected from discord gateway')
 
     async def on_shard_connect(self, shard_id: int):
-        await self.tree.sync()
         discord_http_logger.info(f'Shard {shard_id} has connected to discord gateway')
     
     async def on_shard_disconnected(self, shard_id: int):
@@ -111,16 +111,11 @@ class Bot(commands.Bot):
         await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
         for guild in bot.guilds:
-            if guild.id not in whitelisted_guilds:
-                logger.error(f"Server not found: {guild.name}({guild.id})")
-                try:
-                    await guild.leave()
-                except Exception:
-                    await guild.owner.send(f"Please remove me from **{guild.name}**, I will not work!")
-                
+            if await is_whitelisted(guild, bot):
+                await guild.chunk(cache=True)
+                logger.info(f"Chunked guild: \"{guild.name}\" ({guild.id})")
             else:
-                logger.info(f'Chunked: {guild.id}')
-                await guild.chunk()
+                logger.warning(f"I have left \"{guild.name}\" ({guild.id}) because it is not whitelisted.")
         
         bot.permission_tiers = await permission_tiers.find().to_list(length=None)
         bot.permission_rules = await permission_rules.find().to_list(length=None)
