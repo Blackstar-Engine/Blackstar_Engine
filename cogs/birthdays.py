@@ -9,11 +9,11 @@ class Birthday(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
     
-    @commands.hybrid_group(name="birthday")
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def birthday(self, ctx: commands.Context):
         return
     
-    @birthday.command(name="set", description="Set your birthday")
+    @birthday.command(name="set", description="Set your birthday", with_app_command=True)
     async def set(self, ctx: commands.Context, date):
         info = await birthdays.find_one({"user_id":ctx.author.id})
         if info:
