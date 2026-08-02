@@ -23,7 +23,8 @@ from utils.constants import (
     ids,
     economy_profiles,
     bypassed_users,
-    permission_rules
+    permission_rules,
+    whitelisted_guilds
 )
 from edge_tts.exceptions import NoAudioReceived
 from utils.custom_errors import PermissionDenied
@@ -535,4 +536,26 @@ async def get_permission_node(ctx: commands.Context, key: str):
     required_rank = int(result.get("min_rank", 0))
     return get_user_permissions(ctx.bot, ctx, user) >= required_rank
 
-    
+async def is_whitelisted(guild: discord.Guild, bot: commands.Bot):
+    if guild.id in whitelisted_guilds:
+        return True
+
+    message = "This is a whitelisted bot. You are not allowed to invite me."
+
+    try:
+        await guild.owner.send(message)
+    except (discord.Forbidden, discord.HTTPException, AttributeError):
+        me = guild.me or guild.get_member(bot.user.id)
+
+        for channel in guild.text_channels:
+            perms = channel.permissions_for(me)
+
+            if perms.view_channel and perms.send_messages:
+                try:
+                    await channel.send(message)
+                    break
+                except (discord.Forbidden, discord.HTTPException):
+                    continue
+
+    await guild.leave()
+    return False
