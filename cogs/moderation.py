@@ -6,7 +6,6 @@ from utils.constants import jail_snapshots, profiles
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
-        super().__init__()
         self.bot = bot
     
     @commands.hybrid_command(name="jail", description="Sends a user to jail (High Command+).", with_app_command=True, extras={'category': 'Administration'})

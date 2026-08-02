@@ -12,7 +12,6 @@ from discord import app_commands
 
 class Sessions(commands.Cog):
     def __init__(self, bot):
-        super().__init__()
         self.bot = bot
 
     def _fallback_first_joined(self, info, session):

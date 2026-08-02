@@ -62,6 +62,14 @@ class Bot(commands.Bot):
 
         logger.info(f"Successfully loaded {cog_counter} cog(s)")
 
+        from discord import app_commands
+
+        for command in self.tree.walk_commands():
+            app_commands.allowed_installs(guilds=True, users=False)(command)
+            app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)(command)
+
+        logger.info(f"Applied guild-only install/context to {len(list(self.tree.walk_commands()))} commands")
+
         async for req in enlistment_requests.find({"is_active": True}):
             view = EnlistmentRequestView(req["_id"], req["snapshot"])
             self.add_view(view)
