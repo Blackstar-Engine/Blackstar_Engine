@@ -10,9 +10,12 @@ class DevTestingCog(commands.Cog):
     
     @commands.command(name="testing", guild_only=True, guild_ids=[1450297281088720928])
     @commands.is_owner()
-    @permissions()
     async def testing(self, ctx: commands.Context):
-        await ctx.send("You have access")
+        self.bot.tree.clear_commands(guild=ctx.guild)
+        await ctx.send("cleared all commands")
+        await self.bot.tree.sync(guild=ctx.guild)
+
+        await ctx.send("synced commands")
 
 async def setup(bot):
     await bot.add_cog(DevTestingCog(bot=bot))
