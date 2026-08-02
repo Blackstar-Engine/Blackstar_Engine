@@ -4,7 +4,6 @@ from utils.utils import role_user, permissions
 
 class RoleUser(commands.Cog):
     def __init__(self, bot: commands.Bot):
-        super().__init__()
         self.bot = bot
 
     @commands.hybrid_command(name="roleuser", description="Auto give a user the overall and first rank role of a unit (DRM/Central Command+).", with_app_command=True, extras={'category': 'Administration'})

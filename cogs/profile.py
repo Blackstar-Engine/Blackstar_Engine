@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 from ui.profile.modals.CreateProfile import CreateProfileModal
 from ui.profile.views.UnitSelect import UnitSelectView
