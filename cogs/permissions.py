@@ -99,7 +99,7 @@ class Permissions(commands.Cog):
                 (
                     "gift_amt",
                     discord.ui.TextInput(
-                        label="How many points can they gift (blank or 0 or nothing)?",
+                        label="Point Gift Limit (blank or 0 or nothing)?",
                         placeholder="1",
                         required=False,
                         max_length=25,
@@ -111,9 +111,13 @@ class Permissions(commands.Cog):
         await interaction.response.send_modal(modal)
         await modal.wait()
 
-        results = await permission_tiers.find_one({"guild_id": interaction.guild.id, "name": modal.tier_name.value})
-        if results:
+        name_results = await permission_tiers.find_one({"guild_id": interaction.guild.id, "name": modal.tier_name.value})
+        rank_results = await permission_tiers.find_one({"guild_id": interaction.guild.id, "rank": int(modal.tier_rank.value)})
+
+        if name_results:
             return await interaction.followup.send(f"It looks like theres already a tier named `{modal.tier_name.value}`", ephemeral=True)
+        elif rank_results:
+            return await interaction.followup.send(f"It looks like theres already a tier with the rank of `{modal.tier_rank.value}`", ephemeral=True)
         
         gift_amt = modal.gift_amt.value
         try:
@@ -129,7 +133,7 @@ class Permissions(commands.Cog):
 
         await view.wait()
 
-        can_gift = True if gift_amt or gift_amt > 0 else False
+        can_gift = True if gift_amt and gift_amt > 0 else False
         gift_points = 0 if not gift_amt or gift_amt <= 0 else gift_amt
 
         perms_tier_doc = {
@@ -323,7 +327,7 @@ class Permissions(commands.Cog):
     @permissions()
     @app_commands.describe(node="This is the node name", min_rank="The min tier required for this command.")
     @app_commands.autocomplete(node=perm_nodes_autocomplete, min_rank=min_rank_autocomplete)
-    async def set_command_permissions(self, interaction: discord.Interaction, node: str, min_rank: str):
+    async def set_node_permissions(self, interaction: discord.Interaction, node: str, min_rank: str):
         tier_info = await permission_tiers.find_one({"guild_id": interaction.guild.id, "name": min_rank})
         if not tier_info:
             return await interaction.response.send_message("Failed to find tier!", ephemeral=True)
@@ -335,9 +339,9 @@ class Permissions(commands.Cog):
             "min_rank": tier_info.get("rank")
         }
 
-        await permission_rules.update_one(node_doc, upsert=True)
+        await permission_rules.update_one({"guild_id": interaction.guild.id, "scope_type": "permission", "scope_key": node}, {"$set": node_doc}, upsert=True)
 
-        await interaction.response.send_message(f"Set permission node `{node}` to require a min rank of `{min_rank}`")
+        await interaction.response.send_message(f"Set permission node `{node}` to require a min rank of `{min_rank}`", ephemeral=True)
 
     @set_permissions.command(name="command", description="Set the permissions for a command.", extras={'category': 'Permissions'})
     @permissions()

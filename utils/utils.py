@@ -474,30 +474,36 @@ def get_user_permissions(bot: commands.Bot, ctx: commands.Context, user: discord
 
 def permissions():
     async def predicate(ctx: commands.Context):
-        command = ctx.command.name
+        command = ctx.command.qualified_name
         cog = ctx.cog.qualified_name if ctx.cog else None
-        
+        print(command)
+        print(cog)
 
         command_override = find_override(ctx.bot, ctx, "command", command)
         if command_override is not None:
             return command_override
+
+        print(f"Command: {command_override}")
         
         cog_override = find_override(ctx.bot, ctx, "feature", cog)
         if cog_override is not None:
             return cog_override
+
+        print(f"Cog: {cog_override}")
         
         rule = find_rule(ctx.bot, ctx, "command", command)
         if rule is None:
             rule = find_rule(ctx.bot, ctx, "feature", cog)
 
+        print(f"Rule: {rule}")
         
         if rule is not None:
             required_rank = int(rule.get("min_rank", 0))
             if get_user_permissions(ctx.bot, ctx, ctx.author) >= required_rank:
                 return True
             
-        if ctx.author.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and ctx.author.id in bypassed_users):
-            return True
+        # if ctx.author.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and ctx.author.id in bypassed_users):
+        #     return True
         
         raise PermissionDenied("fallback")
     
@@ -515,14 +521,16 @@ async def get_permission_node(ctx: commands.Context, key: str):
 
     if isinstance(ctx, discord.Interaction):
         user = ctx.user
+        bot = ctx.client
     else:
         user = ctx.author
+        bot = ctx.bot
 
     if not ctx.guild:
         return False
 
-    if user.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and user.id in bypassed_users):
-        return True
+    # if user.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and user.id in bypassed_users):
+    #     return True
 
     result = await permission_rules.find_one({
         "guild_id": ctx.guild.id,
@@ -534,7 +542,7 @@ async def get_permission_node(ctx: commands.Context, key: str):
         return False
 
     required_rank = int(result.get("min_rank", 0))
-    return get_user_permissions(ctx.bot, ctx, user) >= required_rank
+    return get_user_permissions(bot, ctx, user) >= required_rank
 
 async def is_whitelisted(guild: discord.Guild, bot: commands.Bot):
     if guild.id in whitelisted_guilds:
