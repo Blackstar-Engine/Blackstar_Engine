@@ -56,12 +56,14 @@ class DepartmentSelect(ui.ActionRow):
             accent_color=discord.Color.light_grey()
         )
 
-        if is_owner:
-            container.add_item(ui.Separator())
-            container.add_item(ManageDepartmentRow(self.profile, unit))
-        else:
-            if not await get_permission_node(interaction, "manage_profile.admin"):
-                return
+        # if is_owner:
+        #     container.add_item(ui.Separator())
+        #     container.add_item(ManageDepartmentRow(self.profile, unit))
+        # else:
+        perms = await get_permission_node(interaction, "manage_profile.admin")
+        print(perms)
+        if perms:
+            
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, unit))
 
