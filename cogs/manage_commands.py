@@ -8,7 +8,7 @@ from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
 from ui.manage_commands.views.ManageProfileMainView import ManageProfileMainView
 from ui.manage_commands.views.ManageDeptMainView import ManageDeptMainView
-from utils.utils import has_approval_perms, fetch_unit_options, fetch_id, fetch_department, fetch_profile
+from utils.utils import fetch_unit_options, permissions, fetch_department, fetch_profile
 
 class ConfirmRemovalView(View):
     def __init__(self, bot, user, record, index):
@@ -123,19 +123,16 @@ class ManageCommands(commands.Cog):
         embed = self.auto_reply_view.create_record_embed()
         await interaction.edit_original_response(embed=embed, view=self.auto_reply_view)
 
-    @commands.hybrid_group(name='manage')
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def manage(self, ctx: commands.Context):
         '''
         This is the main manage command for all commands that require to be managed
         '''
         pass
 
-    @manage.command(name='auto_reply', description='Manage auto replys (Site Command+).', extras={'category': 'Administration'})
+    @manage.command(name='auto_reply', description='Manage auto replys (Site Command+).', with_app_command=True, extras={'category': 'Administration'})
+    @permissions()
     async def auto_reply(self, ctx: commands.Context):
-        # User must be in foundation or site command to run this command
-
-        if not await has_approval_perms(ctx, 5):
-            return
         
         # Find all auto replys and create the paginator view object
         items = [record for record in self.bot.auto_replys if record['guild_id'] == ctx.guild.id]
@@ -171,20 +168,13 @@ class ManageCommands(commands.Cog):
         embed = self.auto_reply_view.create_record_embed()
         await ctx.send(embed=embed, view=self.auto_reply_view, ephemeral=True)
 
-    @manage.command(name="profile", description="Manage a users profile (DRM/High Command+).", extras={'category': 'Administration'})
+    @manage.command(name="profile", description="Manage a users profile (DRM/High Command+).", with_app_command=True, extras={'category': 'Administration'})
+    @permissions()
     async def manage_profile(self, ctx: commands.Context, user: discord.User = None):
         if not user:
             user = ctx.author
 
-        results = await fetch_id(ctx.guild.id, ["drm_id"])
-        drm_id = results["drm_id"]
-
         is_bot_owner = await self.bot.is_owner(ctx.author)
-        has_drm_role = any(role.id == drm_id for role in ctx.author.roles)
-        
-        if not (is_bot_owner or has_drm_role):
-            if not await has_approval_perms(ctx, 4):
-                return
 
         # check to see if they have a profile
         profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
@@ -200,11 +190,10 @@ class ManageCommands(commands.Cog):
         # Send to the user
         await ctx.send(view=view, ephemeral=True)
     
-    @manage.command(name="department", description="Manage a department (Foundation Command).", extras={'category': 'Administration'})
+    @manage.command(name="department", description="Manage a department (Foundation Command).", with_app_command=True, extras={'category': 'Administration'})
+    @permissions()
     async def manage_department(self, ctx: commands.Context, department_name: str):
         await ctx.defer(ephemeral=True)
-        if not await has_approval_perms(ctx, 6):
-            return
         
         department_name = department_name.upper()
         department_doc = await fetch_department(ctx, department_name)
@@ -212,6 +201,8 @@ class ManageCommands(commands.Cog):
             return
 
         profile = await fetch_profile(ctx)
+        if not profile:
+            return
 
         grant_access = False
         for dept, info in profile['unit'].items():

@@ -1,33 +1,34 @@
 import discord
 from discord.ext import commands
 from ui.applications.views.ApplicationSelection import ApplicationOpen, ApplicationClose
-from utils.constants import application_channels
-from utils.utils import has_approval_perms
+from utils.utils import permissions, fetch_id
 
 class Applications(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group()
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def applications(self, ctx: commands.Context):
         return
 
-    @applications.command(name="open", description="Opens a private departments application (Foundation Command).", extras={'category': 'Administration'})
+    @applications.command(name="open", description="Opens a private departments application (Foundation Command).", with_app_command=True, extras={'category': 'Administration'})
+    @permissions()
     async def open_applications(self, ctx: commands.Context):
-        if not await has_approval_perms(ctx, 6):
-            return
+        app_channels = await fetch_id(ctx.guild.id, "application_channels")
+        options = [discord.SelectOption(label=str(key.replace("_", " ").title()), value=int(value)) for key, value in app_channels["values"].items()]
 
-        view = ApplicationOpen()
+        view = ApplicationOpen(options)
         embed = discord.Embed(title="Applications", description="Please select one of the following departments to open applications for.", color=discord.Color.light_gray())
         embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @applications.command(name="close", description="Closes a private departments application (Foundation Command).", extras={'category': 'Administration'})
+    @applications.command(name="close", description="Closes a private departments application (Foundation Command).", with_app_command=True, extras={'category': 'Administration'})
+    @permissions()
     async def close_applications(self, ctx: commands.Context):
-        if not await has_approval_perms(ctx, 6):
-            return
+        app_channels = await fetch_id(ctx.guild.id, "application_channels")
+        options = [discord.SelectOption(label=str(key.replace("_", " ").title()), value=int(value)) for key, value in app_channels["values"].items()]
 
-        view = ApplicationClose()
+        view = ApplicationClose(options)
         embed = discord.Embed(title="Applications", description="Please select one of the following departments to close applications for.", color=discord.Color.light_gray())
         embed.set_thumbnail(url="https://cdn.discordapp.com/avatars/1450302678524756040/3557930241bf8360a9535a5f27d42cf4.png?size=1024")
         await ctx.send(embed=embed, view=view, ephemeral=True)

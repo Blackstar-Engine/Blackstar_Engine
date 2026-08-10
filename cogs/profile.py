@@ -1,8 +1,9 @@
+import discord
 from discord.ext import commands
 from ui.profile.modals.CreateProfile import CreateProfileModal
 from ui.profile.views.UnitSelect import UnitSelectView
 from ui.profile.views.CTXCreateProfileButton import CTXCreateProfileButton
-from utils.utils import fetch_profile, fetch_unit_options, has_approval_perms, fetch_id, get_limit
+from utils.utils import fetch_profile, fetch_unit_options, get_gift_limit
 
 class Profile(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -22,19 +23,12 @@ class Profile(commands.Cog):
                 view = CTXCreateProfileButton(self.bot, ctx.author)
                 await ctx.send("Please click the button to continue!", view=view)
         else:
-            perms = await has_approval_perms(ctx, 3, False)
-            if perms:
-                results = await fetch_id(
-                    ctx.guild.id,
-                    ["central_command", "foundation_command", "high_command", "site_command"]
-                )
-
-                limit = await get_limit(ctx, results)
+            gift_amt = await get_gift_limit(ctx)
 
             # Fetch current department options
             options = fetch_unit_options(profile)
 
-            view = UnitSelectView(self.bot, options, profile, limit if perms else None)
+            view = UnitSelectView(self.bot, options, profile, gift_amt if gift_amt and gift_amt > 0 else None)
 
             await ctx.send(view=view, ephemeral=True)
 

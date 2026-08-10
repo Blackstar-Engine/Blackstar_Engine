@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.constants import whitelisted_guilds
+from utils.utils import is_whitelisted
 from datetime import datetime
 
 class Guild(commands.Cog):
@@ -9,12 +9,8 @@ class Guild(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        if guild.id not in whitelisted_guilds:
-            try:
-                await guild.owner.send("I am a whitelisted only bot, you are not allowed to invite me!")
-                await guild.leave()
-            except Exception:
-                await guild.owner.send(f"Please remove me from **{guild.name}**, I will not work!")
+        if not is_whitelisted(guild, self.bot):
+            return
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

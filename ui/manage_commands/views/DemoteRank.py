@@ -4,7 +4,7 @@ from utils.constants import profiles
 from ui.manage_commands.views.DepartmentButtons import DepartmentButtons
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
 from discord import ui
-from utils.utils import has_approval_perms
+from utils.utils import get_permission_node
 
 class DemoteRankView(ui.ActionRow):
     def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, unit: str, ranks: list, current_rank: str):
@@ -71,10 +71,8 @@ class DemoteRankView(ui.ActionRow):
         )
         
         is_bot_owner = await self.bot.is_owner(interaction.user)
-        if is_bot_owner:
-            if not await has_approval_perms(interaction, 6):
-                return
-
+        perms = await get_permission_node(interaction, "manage_profile.admin")
+        if is_bot_owner or perms:
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))
 

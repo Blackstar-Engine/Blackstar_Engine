@@ -22,8 +22,12 @@ from utils.constants import (
     BlackstarConstants,
     ids,
     economy_profiles,
+    bypassed_users,
+    permission_rules,
+    whitelisted_guilds
 )
 from edge_tts.exceptions import NoAudioReceived
+from utils.custom_errors import PermissionDenied
 
 tts_lock = threading.Lock()
 constants = BlackstarConstants()
@@ -31,75 +35,6 @@ constants = BlackstarConstants()
 def interaction_check(invoked: discord.User, interacted: discord.User):
     if invoked.id != interacted.id:
         raise commands.CommandError("Sorry but you can't use this button.")
-
-async def has_approval_perms(ctx: commands.Context, level: int, send_message: bool = True) -> bool:
-    if isinstance(ctx, discord.Interaction):
-        member = ctx.user
-    else:
-        member = ctx.author
-
-    results = await fetch_id(member.guild.id, ["foundation_command", "site_command", "high_command", "central_command", "ia_id", "drm_id", "ghost_id", "option_id", "wolf_id"])
-
-    if member.id == results["wolf_id"]:
-        return True
-    
-    if constants.ENVIRONMENT == "DEVELOPMENT" and member.id in (results["ghost_id"], results["option_id"]):
-        return True
-    
-    match level:
-        case 1:
-            allowed_roles = {
-                results["foundation_command"],
-                results["site_command"],
-                results["high_command"],
-                results["central_command"],
-                results["ia_id"]
-            }
-        case 2:
-            allowed_roles = {
-                results["foundation_command"],
-                results["site_command"],
-                results["high_command"],
-                results["central_command"],
-                results["drm_id"]
-            }
-        case 3:
-            allowed_roles = {
-                results["foundation_command"],
-                results["site_command"],
-                results["high_command"],
-                results["central_command"]
-            }
-        case 4:
-            allowed_roles = {
-                results["foundation_command"],
-                results["site_command"],
-                results["high_command"]
-            }
-        case 5:
-            allowed_roles = {
-                results["foundation_command"],
-                results["site_command"]
-            }
-        case 6:
-            allowed_roles = {
-                results["foundation_command"]
-            }
-    
-    roles = any(role.id in allowed_roles for role in member.roles)
-    if roles:
-        return True
-    
-    if send_message:
-        if isinstance(ctx, discord.Interaction):
-            try:
-                await ctx.response.send_message("You do not have the required permissions to use this command.", ephemeral=True)
-            except discord.HTTPException:
-                await ctx.followup.send("You do not have the required permissions to use this command.", ephemeral=True)
-        else:
-            await ctx.send("You do not have the required permissions to use this command.")
-    
-    return False
 
 async def fetch_profile(ctx: commands.Context, send_message: bool = True):
     profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': ctx.author.id})
@@ -147,10 +82,10 @@ def fetch_unit_options(profile):
     
     return options
 
-async def fetch_id(guild_id, id_names: list[str]):
-    results = await ids.find({"guild_id": int(guild_id), "key": {"$in": id_names}}).to_list(length=None)
+async def fetch_id(guild_id, id_key: str):
+    results = await ids.find_one({"guild_id": int(guild_id), "key": id_key})
 
-    return {result["key"]: result["value"] for result in results}
+    return results
 
 async def tts_to_file(user: discord.Member, last_speaker, last_message_time, text: str) -> str:
     filename = f"tts_{uuid.uuid4()}.mp3"
@@ -281,11 +216,6 @@ async def role_user(ctx: commands.Context, department: str):
     overall_role_id = department.get('role_id')
     first_rank_role_id = department.get('first_rank_id')
 
-    results = await fetch_id(ctx.guild.id, ['mtf_overall_role_id'])
-
-    if unit.startswith("MTF"):
-        mtf_overall_role_obj = ctx.guild.get_role(results['mtf_overall_role_id'])
-
     overall_role_obj = ctx.guild.get_role(overall_role_id)
     first_rank_role_obj = ctx.guild.get_role(first_rank_role_id)
 
@@ -298,10 +228,7 @@ async def role_user(ctx: commands.Context, department: str):
         await ctx.send(embed=embed, ephemeral=True)
         return False
 
-    if unit.startswith("MTF"):
-        await user.add_roles(mtf_overall_role_obj, overall_role_obj, first_rank_role_obj, reason=f"Role User Command used by {ctx.author}")
-    else:
-        await user.add_roles(overall_role_obj, first_rank_role_obj, reason=f"Role User Command used by {ctx.author}")
+    await user.add_roles(overall_role_obj, first_rank_role_obj, reason=f"Role User Command used by {ctx.author}")
     
     return True
 
@@ -314,27 +241,28 @@ async def log_action(ctx: commands.Context, log_type: str, **kwargs):
     log_embed = discord.Embed(title="", description="", color=discord.Color.light_grey())
     log_embed.set_footer(text=f"Blackstar Engine Logging • {datetime.now().date()}")
 
+    results = await fetch_id(ctx.guild.id, "logging_channels")
+
     match log_type:
         case "point_deduction":
-            results = await fetch_id(ctx.guild.id, ["point_deduction_log"])
+            channel_id = results["values"].get("point_deduction_log", 0)
             log_embed.title = "Point Deduction"
             log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Points Reduced:** {kwargs['points']}\n**Command:** {kwargs['command_name']}"
         case "point_addition":
-            results = await fetch_id(ctx.guild.id, ["point_addition_log"])
+            channel_id = results["values"].get("point_addition_log", 0)
             log_embed.title = "Point Addition"
             log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Points Added:** {kwargs['points']}\n**Command:** {kwargs['command_name']}"
         case "department":
-            results = await fetch_id(ctx.guild.id, ["department_log"])
+            channel_id = results["values"].get("department_log", 0)
             log_embed.title = "Department Updated"
             log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Updated Department:** {kwargs['department']}\n**Command:** {kwargs['command_name']}"
         case "mod_command":
-            results = await fetch_id(ctx.guild.id, ["mod_command_log"])
+            channel_id = results["values"].get("mod_command_log", 0)
             log_embed.title = "Mod Command Used"
             log_embed.description = f"**Moderator:** {author.mention}\n**Command:** {kwargs['command_name']}\n\n**Arguments:** {kwargs['arguments']}"
     
     try:
-        _, first_value = next(iter(results.items()), None)
-        channel = await ctx.guild.fetch_channel(int(first_value))
+        channel = await ctx.guild.fetch_channel(int(channel_id))
 
         await channel.send(embed=log_embed)
     except Exception:
@@ -398,20 +326,279 @@ async def check_currency(ctx: commands.Context, bet, user: discord.Member, guild
     
     return bet, profile
 
-async def get_limit(ctx: commands.Context, results):
-        limit = None
-        if ctx.author.id == 1371489554279825439:
-                limit = 999999999999999
-        elif ctx.guild.get_role(results["foundation_command"]) in ctx.author.roles:
-            limit = 6
-        elif ctx.guild.get_role(results["site_command"]) in ctx.author.roles:
-            limit = 4
-        elif ctx.guild.get_role(results["high_command"]) in ctx.author.roles:
-            limit = 3
-        elif ctx.guild.get_role(results["central_command"]) in ctx.author.roles:
-            limit = 1
-        else:
-            await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
-            return False
+async def get_gift_limit(ctx: commands.Context, user: discord.Member | None = None):
+    target_user = user or ctx.author
+
+    if int(target_user.id) == int(ctx.guild.owner.id):
+        return 999999999999999
+
+    user_role_ids = {role.id for role in target_user.roles}
+    matching_tiers = [
+        tier for tier in ctx.bot.permission_tiers
+        if tier.get("guild_id") == ctx.guild.id
+        and user_role_ids & set(tier.get("role_ids", []))
+    ]
+
+    if not matching_tiers:
+        await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
+        return False
+
+    matching_tier = max(matching_tiers, key=lambda tier: tier.get("rank", 0))
+
+    if not matching_tier.get("can_gift_points", False):
+        return False
+
+    gift_amount = matching_tier.get("gift_points_amount", 0)
+    if gift_amount <= 0:
+        return False
+
+    return gift_amount
+
+def find_override(bot: commands.Bot, ctx: commands.Context, scope_type: str, scope_key: str):
+    if isinstance(ctx, discord.Interaction):
+        user = ctx.user
+    else:
+        user = ctx.author
+
+    user_id = user.id
+    guild_id = ctx.guild.id
+    user_role_ids = {role.id for role in user.roles}
+    overrides = bot.permission_overrides
+
+    if scope_key is None:
+        return None
+    
+    scoped = [
+        r for r in overrides
+        if r.get("guild_id") == guild_id
+        and r.get("scope_type") == scope_type
+        and r.get("scope_key") == scope_key
+    ]
+
+    user_override = next(
+        (r for r in scoped if r.get("target_type") == "user" and r.get("target_id") == user_id),
+        None
+    )
+    if user_override:
+        effect = True if user_override.get("effect", False) == "allow" else False
+        return effect
+
+    role_override = next(
+        (r for r in scoped if r.get("target_type") == "role" and r.get("target_id") in user_role_ids),
+        None
+    )
+    if role_override:
+        effect = True if role_override.get("effect", False) == "allow" else False
+        return effect
+    
+def find_rule(bot: commands.Bot, ctx: commands.Context, scope_type: str, scope_key: str):
+    guild_id = ctx.guild.id
+    rules = bot.permission_rules
+
+    if scope_key is None:
+        return None
+    
+    return next(
+        (
+            r for r in rules
+            if r.get("guild_id") == guild_id
+            and r.get("scope_type") == scope_type
+            and r.get("scope_key") == scope_key
+        ),
+        None
+    )
+
+def find_tier(bot: commands.Bot, ctx: commands.Context, rank = None, name = None):
+    tiers = bot.permission_tiers
+    guild_id = ctx.guild.id
+
+    if name is None:
+        tier_doc = next(
+            (
+                t for t in tiers
+                if t.get("guild_id") == guild_id
+                and t.get("rank") == rank
+            ),
+            None
+        )
+
+    elif rank is None:
+        tier_doc = next(
+            (
+                t for t in tiers
+                if t.get("guild_id") == guild_id
+                and t.get("name") == name
+            ),
+            None
+        )
+    else:
+        tier_doc = next(
+            (
+                t for t in tiers
+                if t.get("guild_id") == guild_id
+                and t.get("name") == name
+                and t.get("rank") == rank
+            ),
+            None
+        )
+    
+    return tier_doc
+
+def find_tier_plus(bot: commands.Bot, ctx: commands.Context, min_rank: int):
+    tiers = bot.permission_tiers
+    guild_id = ctx.guild.id
+
+    matching_ranks = [
+        t for t in tiers
+        if t.get("guild_id") == guild_id
+        and t.get("rank") >= min_rank
+    ]
+
+    return matching_ranks
+
+def get_user_permissions(bot: commands.Bot, ctx: commands.Context, user: discord.Member):
+    tiers = bot.permission_tiers
+    guild_id = ctx.guild.id
+    user_role_ids = {role.id for role in user.roles}
+    
+
+    matching_ranks = [
+        t.get("rank", 0) for t in tiers
+        if t.get("guild_id") == guild_id
+        and user_role_ids & set(t.get("role_ids", []))
+    ]
+
+    return_value = int(max(matching_ranks, default=0))
+
+    return return_value
+
+def permissions():
+    async def predicate(ctx: commands.Context):
+        command = ctx.command.qualified_name
+        cog = ctx.cog.qualified_name if ctx.cog else None
+
+        command_override = find_override(ctx.bot, ctx, "command", command)
+        if command_override is not None:
+            return command_override
         
-        return limit
+        cog_override = find_override(ctx.bot, ctx, "feature", cog)
+        if cog_override is not None:
+            return cog_override
+        
+        rule = find_rule(ctx.bot, ctx, "command", command)
+        if rule is None:
+            rule = find_rule(ctx.bot, ctx, "feature", cog)
+        
+        if rule is not None:
+            required_rank = int(rule.get("min_rank", 0))
+            if get_user_permissions(ctx.bot, ctx, ctx.author) >= required_rank:
+                return True
+            
+        if ctx.author.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and ctx.author.id in bypassed_users):
+            return True
+        
+        raise PermissionDenied("fallback")
+    
+    check = commands.check(predicate)
+
+    def decorator(func):
+        func.permission_managed = True
+        return check(func)
+
+    return decorator
+
+async def get_permission_node(ctx: commands.Context, key: str):
+    if not key:
+        return False
+
+    if isinstance(ctx, discord.Interaction):
+        user = ctx.user
+        bot = ctx.client
+    else:
+        user = ctx.author
+        bot = ctx.bot
+
+    if not ctx.guild:
+        return False
+
+    if user.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and user.id in bypassed_users):
+        return True
+
+    result = await permission_rules.find_one({
+        "guild_id": ctx.guild.id,
+        "scope_type": "permission",
+        "scope_key": key
+    })
+
+    if not result:
+        return False
+
+    required_rank = int(result.get("min_rank", 0))
+    return get_user_permissions(bot, ctx, user) >= required_rank
+
+async def is_whitelisted(guild: discord.Guild, bot: commands.Bot):
+    if guild.id in whitelisted_guilds:
+        return True
+
+    message = "This is a whitelisted bot. You are not allowed to invite me."
+
+    try:
+        await guild.owner.send(message)
+    except (discord.Forbidden, discord.HTTPException, AttributeError):
+        me = guild.me or guild.get_member(bot.user.id)
+
+        for channel in guild.text_channels:
+            perms = channel.permissions_for(me)
+
+            if perms.view_channel and perms.send_messages:
+                try:
+                    await channel.send(message)
+                    break
+                except (discord.Forbidden, discord.HTTPException):
+                    continue
+
+    await guild.leave()
+    return False
+
+def format_permission_tier(guild_id: int, name: str, rank: int, role_ids: list[int], can_gift_points: bool, gift_points_amount: int):
+    return {
+        "guild_id": guild_id,
+        "name": name,
+        "rank": rank,
+        "role_ids": role_ids,
+        "can_gift_points": can_gift_points,
+        "gift_points_amount": gift_points_amount
+    }
+
+def format_permission_rule(guild_id: int, scope_type: str, scope_key: str, min_rank: int):
+    return {
+        "guild_id": guild_id,
+        "scope_type": scope_type,
+        "scope_key": scope_key,
+        "min_rank": min_rank
+    }
+
+def format_permission_override(guild_id: int, scope_type: str, scope_key: str, target_type: str, target_id: int, effect: str):
+    return {
+        "guild_id": guild_id,
+        "scope_type": scope_type,
+        "scope_key": scope_key,
+        "target_type": target_type,
+        "target_id": target_id,
+        "effect": effect
+    }
+
+def format_permission_node(guild_id: int, scope_type: str, scope_key: str, min_rank: int):
+    return {
+        "guild_id": guild_id,
+        "scope_type": scope_type,
+        "scope_key": scope_key,
+        "min_rank": min_rank
+    }
+
+def format_id(guild_id: int, key: str, values):
+    return {
+        "guild_id": guild_id,
+        "key": key,
+        "values": values
+    }

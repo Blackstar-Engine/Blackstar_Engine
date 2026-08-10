@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.points.views.UnitSelect import UnitSelectView
-from utils.utils import fetch_profile, fetch_unit_options, fetch_department, generate_timestamp, fetch_id, has_approval_perms, log_action, get_limit
+from utils.utils import fetch_profile, fetch_unit_options, fetch_department, generate_timestamp, fetch_id, permissions, log_action, get_gift_limit
 import uuid
 from utils.constants import point_requests, profiles
 from datetime import datetime
@@ -38,11 +38,11 @@ class Points(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group(name="points")
+    @commands.hybrid_group(invoke_without_sub_command=True)
     async def points(self, ctx: commands.Context):
         return
 
-    @points.command(name="request", description="Request points to be added to your profile", extras={'category': 'Profiles'})
+    @points.command(name="request", description="Request points to be added to your profile", with_app_command=True, extras={'category': 'Profiles'})
     async def request(self, ctx: commands.Context, points: float, *, proof: str):
         if points <= 0 or not isinstance(points, float):
             return await ctx.send("Please make sure the number is positive and is an number.", ephemeral=True)
@@ -88,17 +88,9 @@ class Points(commands.Cog):
 
         await select_message.edit(view=view)
 
-    @points.command(name="gift", description="Gift points to other units (Central Command+).", extras={'category': 'Profiles'})
+    @points.command(name="gift", description="Gift points to other units (Central Command+).", with_app_command=True, extras={'category': 'Profiles'})
+    @permissions()
     async def gift(self, ctx: commands.Context, user: discord.Member, points: int, *, reason: str):
-        results = await fetch_id(
-            ctx.guild.id,
-            ["central_command", "foundation_command", "high_command", "site_command"]
-        )
-
-        # Check to make sure they can run this command
-        if not await has_approval_perms(ctx, 3):
-            return
-
         # Command parsing checks
         if ctx.author.id == user.id:
             return await ctx.send("You can not gift points to yourself!", ephemeral=True)
@@ -106,7 +98,7 @@ class Points(commands.Cog):
             return await ctx.send("You must gift a positive number of points.", ephemeral=True)
 
         # Calculate the gifting point limit
-        limit = await get_limit(ctx, results)
+        limit = await get_gift_limit(ctx)
         if not limit:
             return
 

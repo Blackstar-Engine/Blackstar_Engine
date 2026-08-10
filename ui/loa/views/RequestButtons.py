@@ -12,7 +12,7 @@ class RequestAcceptDenyButtons(ui.LayoutView):
         self.start_date = start_date
         self.end_date = end_date
 
-        self.action_row = AcceptDenyButtons(bot, user, 3)
+        self.action_row = AcceptDenyButtons(bot, user, "loa.accept", "loa.deny")
         container = ui.Container(
             ui.TextDisplay("## LOA Request"),
             ui.TextDisplay(f"**Member:** {user.mention}\n"

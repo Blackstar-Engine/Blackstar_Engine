@@ -114,11 +114,12 @@ class Tasks(commands.Cog):
 
         today = datetime.now(timezone.utc).strftime("%m-%d")
 
+
         async for birthday in birthdays.find({"date": today}):
             try:
                 user = await self.bot.fetch_user(birthday["user_id"])
-                results = await fetch_id(guild_id, ["misc_announcements", "birthday_ping"])
-                channel = self.bot.get_channel(results["misc_announcements"])
+                results = await fetch_id(guild_id, "birthdays")
+                channel = self.bot.get_channel(int(results["values"]["channel"]))
 
                 embed = discord.Embed(
                     color=16087715,
@@ -126,7 +127,7 @@ class Tasks(commands.Cog):
                     description=f"Today is {user.mention}'s birthday, be sure to wish them a happy birthday!",
                 )
 
-                await channel.send(content=f"<@&{results['birthday_ping']}>", embed=embed)
+                await channel.send(content=f"<@&{results["values"]["role"]}>", embed=embed)
             except Exception as e:
                 channel = self.bot.get_channel(1464811075760427008)
                 await channel.send(f"Failed to post {user.mention}'s birthday;\n```py{e}```")
@@ -188,21 +189,22 @@ class Tasks(commands.Cog):
             {"end_date": {"$lte": now}}
         ).to_list(length=None)
 
-        if len(expired_loas) > 0:
-            results = await fetch_id(expired_loas[0]["guild_id"], ['loa_role', 'loa_channel', 'roa_role'])
-        elif len(expired_roas) > 0:
-            results = await fetch_id(expired_roas[0]["guild_id"], ['loa_role', 'loa_channel', 'roa_role'])
-        else:
+        if len(expired_loas) == 0 and len(expired_roas) == 0:
             return
+        
+        if len(expired_loas) > 0:
+            loa_results = await fetch_id(expired_loas[0]["guild_id"], "loa")
+        if len(expired_roas) > 0:
+            roa_results = await fetch_id(expired_roas[0]["guild_id"], "roa")
         
         for record in expired_roas:
             # Get guild, channel, and member
             guild = self.bot.get_guild(record.get("guild_id"))
-            channel = await self._fetch_channel(guild, results['loa_channel'])
+            channel = await self._fetch_channel(guild, roa_results["values"]['channel'])
             member = await self._fetch_member(guild, record.get("user_id"))
 
             # Remove LOA role
-            role = guild.get_role(results['roa_role'])
+            role = guild.get_role(roa_results["values"]['role'])
             try:
                 await member.remove_roles(role, reason="ROA expired")
             except (discord.Forbidden, AttributeError):
@@ -213,11 +215,11 @@ class Tasks(commands.Cog):
         for record in expired_loas:
             # Get guild, channel, and member
             guild = self.bot.get_guild(record.get("guild_id"))
-            channel = await self._fetch_channel(guild, results['loa_channel'])
+            channel = await self._fetch_channel(guild, loa_results["values"]['channel'])
             member = await self._fetch_member(guild, record.get("user_id"))
 
             # Remove LOA role
-            role = guild.get_role(results['loa_role'])
+            role = guild.get_role(loa_results["values"]['role'])
             try:
                 await member.remove_roles(role, reason="LOA expired")
             except (discord.Forbidden, AttributeError):

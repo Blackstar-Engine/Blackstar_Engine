@@ -8,11 +8,11 @@ class DepartmentRequest(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group()
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def enlistment(self, ctx: commands.Context):
         return
         
-    @enlistment.command(name="request", description="Send a request to join a department", extras={'category': 'Profiles'})
+    @enlistment.command(name="request", description="Send a request to join a department", with_app_command=True, extras={'category': 'Profiles'})
     async def enlistment_request(self, ctx: commands.Context):
         profile = await fetch_profile(ctx)
         if not profile:

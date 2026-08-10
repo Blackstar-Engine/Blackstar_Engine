@@ -8,7 +8,7 @@ from ui.paginator import PaginatorView
 from ui.roa.views.RequestButtons import RequestButtons
 from ui.roa.views.ManageButtons import ManageExtendButton
 from typing import Optional
-from utils.utils import fetch_id, has_approval_perms, fetch_profile
+from utils.utils import fetch_id, fetch_profile, permissions, get_permission_node
 
 
 class ROA(commands.Cog):
@@ -30,8 +30,8 @@ class ROA(commands.Cog):
         
         await roa.insert_one(loa_doc)
 
-        results = await fetch_id(ctx.guild.id, ["roa_role"])
-        loa_role = results["roa_role"]
+        results = await fetch_id(ctx.guild.id, "roa")
+        loa_role = results["values"]["role"]
 
         role = ctx.guild.get_role(loa_role)
         await ctx.author.add_roles(role)
@@ -111,11 +111,11 @@ class ROA(commands.Cog):
         except discord.Forbidden:
             pass
 
-    @commands.hybrid_group(name="roa", description="Create a roa", invoke_without_sub_command=False)
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def roa(self, ctx: commands.Context):
         return
 
-    @roa.command(description="Request an ROA to get time off.", extras={'category': 'ROA'})
+    @roa.command(description="Request an ROA to get time off.", with_app_command=True, extras={'category': 'ROA'})
     async def request(self, ctx: commands.Context, time: str, *, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
@@ -172,8 +172,8 @@ class ROA(commands.Cog):
         end_date = start_date + timedelta(days=total_days, hours=hours)
         
         # Creats the View and sends the message to the loa_channel
-        results = await fetch_id(ctx.guild.id, ["loa_channel"])
-        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["loa_channel"])
+        results = await fetch_id(ctx.guild.id, "roa")
+        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["values"]["channel"])
 
         view = RequestButtons(self.bot, ctx.author, reason, start_date, end_date, time)
         request_message = await channel.send(view=view)
@@ -188,12 +188,9 @@ class ROA(commands.Cog):
         else:
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
-    @roa.command(description="Get a list of all the active ROA's in the server.", extras={'category': 'ROA'})
-    async def active(self, ctx: commands.Context):
-        # Users have to be in foundation or site command to run this command
-        if not await has_approval_perms(ctx, 5):
-            return
-        
+    @roa.command(description="Get a list of all the active ROA's in the server.", with_app_command=True, extras={'category': 'ROA'})
+    @permissions()
+    async def active(self, ctx: commands.Context):        
         # Find all ROA's, create the view, create the embed, send to user
         items = await roa.find({'guild_id': ctx.guild.id}).to_list(length=None)
         view = PaginatorView(self.bot, ctx.author, items)
@@ -201,14 +198,14 @@ class ROA(commands.Cog):
 
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @roa.command(description="Manage a staff members ROA.", extras={'category': 'ROA'})
+    @roa.command(description="Manage a staff members ROA.", with_app_command=True, extras={'category': 'ROA'})
     async def manage(self, ctx: commands.Context, user: Optional[discord.Member | discord.User] = None):
         # Checking if user selected themselves
         if not user or user.id == ctx.author.id:
             member = ctx.author
         else:
             # If they are managing another user, they need to be in foundation or site command
-            if not await has_approval_perms(ctx, 5):
+            if not await get_permission_node(ctx, "roa.manage"):
                 return
             
             member = user

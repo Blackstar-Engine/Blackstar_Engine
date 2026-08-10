@@ -3,35 +3,27 @@ from discord.ext import commands
 from ui.SCC.views.SCCManage import CombatMain
 from utils.constants import combat_profiles, combat_classes
 from datetime import timedelta, datetime
-from utils.utils import fetch_id, has_approval_perms
+from utils.utils import permissions
 
 class SCC(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group(name="scc")
+    @commands.hybrid_group(name="scc", invoke_without_sub_command=False)
     async def SCC(self, ctx: commands.Context):
         return
 
-    @SCC.command(name="manage", description="Manage a user's combat classification.", extras={'category': 'Combat'})
+    @SCC.command(name="manage", description="Manage a user's combat classification.", with_app_command=True, extras={'category': 'Combat'})
+    @permissions()
     async def scc_manage(self, ctx: commands.Context, user: discord.Member):
         await ctx.defer(ephemeral=True)
-
-        results = await fetch_id(ctx.guild.id, ["bcs_officer"])
-        bcs_id = results["bcs_officer"]        
-
-        has_bcs_role = any(role.id == bcs_id for role in ctx.author.roles)
-        
-        if not has_bcs_role and not await has_approval_perms(ctx, 4):
-                return
-        
 
         documents = await combat_classes.find().to_list(length=None)
         view = CombatMain(documents, user, ctx.author)
 
         await ctx.send(view=view, ephemeral=True)
     
-    @SCC.command(name="profile", description="View a SCC profile", extras={'category': 'Combat'})
+    @SCC.command(name="profile", description="View a SCC profile", with_app_command=True, extras={'category': 'Combat'})
     async def scc_profile(self, ctx: commands.Context, user: discord.Member = None):
         if user == None:
             user = ctx.author

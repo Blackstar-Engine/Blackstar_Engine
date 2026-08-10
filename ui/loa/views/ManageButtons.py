@@ -52,9 +52,9 @@ class ManageExtendButton(ui.LayoutView):
 
         reason = modal.data
 
-        results = await fetch_id(interaction.guild.id, ["loa_channel", "loa_role"])
-        loa_channel = results["loa_channel"]
-        loa_role = results["loa_role"]
+        results = await fetch_id(interaction.guild.id, "loa")
+        loa_channel = results["values"]["channel"]
+        loa_role = results["values"]["role"]
 
         channel = await interaction.guild.fetch_channel(loa_channel)
 

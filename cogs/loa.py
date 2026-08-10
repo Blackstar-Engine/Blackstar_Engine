@@ -8,7 +8,7 @@ from ui.paginator import PaginatorView
 from ui.loa.views.RequestButtons import RequestAcceptDenyButtons
 from ui.loa.views.ManageButtons import ManageExtendButton
 from typing import Optional
-from utils.utils import fetch_id, has_approval_perms, fetch_profile
+from utils.utils import fetch_id, fetch_profile, permissions, get_permission_node
 
 
 class LOA(commands.Cog):
@@ -30,8 +30,9 @@ class LOA(commands.Cog):
         
         await loa.insert_one(loa_doc)
 
-        results = await fetch_id(ctx.guild.id, ["loa_role"])
-        loa_role = results["loa_role"]
+        results = await fetch_id(ctx.guild.id, "loa")
+        loa_role = results["values"]["role"]
+
 
         role = ctx.guild.get_role(loa_role)
         await ctx.author.add_roles(role)
@@ -103,11 +104,11 @@ class LOA(commands.Cog):
         except discord.Forbidden:
             pass
 
-    @commands.hybrid_group(name="loa", description="Create a loa", invoke_without_sub_command=False)
+    @commands.hybrid_group(invoke_without_sub_command=False)
     async def loa(self, ctx: commands.Context):
         return
 
-    @loa.command(description="Request an LOA to get time off.", extras={'category': 'LOA'})
+    @loa.command(description="Request an LOA to get time off.", with_app_command=True, extras={'category': 'LOA'})
     async def request(self, ctx: commands.Context, time: str, *, reason: str):
         def extract_time_values(time_string):
             # Create a reg match
@@ -164,8 +165,8 @@ class LOA(commands.Cog):
         end_date = start_date + timedelta(days=total_days, hours=hours)
         
         # Creats the View and sends the message to the loa_channel
-        results = await fetch_id(ctx.guild.id, ["loa_channel"])
-        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["loa_channel"])
+        results = await fetch_id(ctx.guild.id, "loa")
+        channel: discord.TextChannel = await ctx.guild.fetch_channel(results["values"]["channel"])
 
         view = RequestAcceptDenyButtons(self.bot, ctx.author, reason, start_date, end_date, time)
         request_message = await channel.send(view=view)
@@ -180,11 +181,9 @@ class LOA(commands.Cog):
         else:
             await self.handle_accepted(ctx, view, reason, start_date, end_date, time, request_message)
 
-    @loa.command(description="Get a list of all the active LOA's in the server.", extras={'category': 'LOA'})
+    @loa.command(description="Get a list of all the active LOA's in the server.", with_app_command=True, extras={'category': 'LOA'})
+    @permissions()
     async def active(self, ctx: commands.Context):
-        # Users have to be in foundation or site command to run this command
-        if not await has_approval_perms(ctx, 5):
-            return
         
         # Find all LOA's, create the view, create the embed, send to user
         items = await loa.find({'guild_id': ctx.guild.id}).to_list(length=None)
@@ -193,14 +192,14 @@ class LOA(commands.Cog):
 
         await ctx.send(embed=embed, view=view, ephemeral=True)
 
-    @loa.command(description="Manage a staff members LOA.", extras={'category': 'LOA'})
+    @loa.command(description="Manage a staff members LOA.", with_app_command=True, extras={'category': 'LOA'})
     async def manage(self, ctx: commands.Context, user: Optional[discord.Member | discord.User] = None):
         # Checking if user selected themselves
         if not user or user.id == ctx.author.id:
             member = ctx.author
         else:
             # If they are managing another user, they need to be in foundation or site command
-            if not await has_approval_perms(ctx, 5):
+            if not await get_permission_node(ctx, "loa.manage"):
                 return
             
             member = user

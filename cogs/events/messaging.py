@@ -101,29 +101,9 @@ class Messaging(commands.Cog):
     
     async def React_To_Message(self, message: discord.Message):
         try:
-            results = await fetch_id(message.guild.id, ["sessions_channel_id",
-                                                        "event_channel_id",
-                                                        "mission_channel_id",
-                                                        "training_channel_id",
-                                                        "a1_events",
-                                                        "b7_events",
-                                                        "nu7_events",
-                                                        "e11_events",
-                                                        "mtf_events",
-                                                        "ci_events",
-                                                        "md_events"])
+            results = await fetch_id(message.guild.id, "sessions_channels")
 
-            valid_channels = [results.get("sessions_channel_id", 0),
-                                results.get("event_channel_id", 0),
-                                results.get("mission_channel_id", 0), 
-                                results.get("training_channel_id", 0),
-                                results.get("a1_events", 0),
-                                results.get("b7_events", 0),
-                                results.get("nu7_events", 0),
-                                results.get("e11_events", 0),
-                                results.get("mtf_events", 0),
-                                results.get("ci_events", 0),
-                                results.get("md_events", 0)]
+            valid_channels = results["values"]
             
             if message.channel.id in valid_channels and MESSAGE_CODE_RE.search(message.content):
                 session_document = {

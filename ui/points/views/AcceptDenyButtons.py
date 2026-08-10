@@ -3,7 +3,7 @@ from discord import ui
 from utils.constants import (
     profiles, point_requests, BlackstarConstants
 )
-from utils.utils import generate_timestamp, has_approval_perms, log_action
+from utils.utils import get_permission_node, log_action
 from ui.ReasonModal import ReasonModal
 
 constants = BlackstarConstants()
@@ -18,16 +18,16 @@ async def has_points_approval_perms(interaction: discord.Interaction, snapshot: 
     points = snapshot["points"]
 
     if 0.5 <= points <= 1.5:
-        if not await has_approval_perms(interaction, 1):
+        if not await get_permission_node(interaction, "point_request.max_1.5"):
             return False
     elif 1.5 < points <= 2:
-        if not await has_approval_perms(interaction, 3):
+        if not await get_permission_node(interaction, "point_request.max_2"):
             return False
     elif 2 < points <= 7.99:
-        if not await has_approval_perms(interaction, 4):
+        if not await get_permission_node(interaction, "point_request.max_7.99"):
             return False
     elif points >= 8:
-        if not await has_approval_perms(interaction, 6):
+        if not await get_permission_node(interaction, "point_request.max_8"):
             return False
     else:
         return False
@@ -229,4 +229,7 @@ async def handle_points_decision(interaction: discord.Interaction, approved: boo
             color=color
         )
 
-        await member.send(embed=embed)
+        try:
+            await member.send(embed=embed)
+        except discord.Forbidden:
+            pass

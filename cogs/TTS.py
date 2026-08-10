@@ -3,17 +3,15 @@ from discord.ext import commands
 import os
 import asyncio
 from ui.tts.views.RequestButton import RequestButtonView
-from utils.utils import has_approval_perms
+from utils.utils import permissions
 
-class tts_system_commands(commands.Cog):
+class TTS(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
-    @commands.hybrid_command(name="move", description="Force move the bot to a different VC (Central Command+).", extras={'category': 'TTS'})
+    @commands.hybrid_command(name="move", description="Force move the bot to a different VC (Central Command+).", with_app_command=True, extras={'category': 'TTS'})
+    @permissions()
     async def move(self, ctx: commands.Context, channel: discord.VoiceChannel):
-        if not await has_approval_perms(ctx, 3):
-            return
-
         if not ctx.author.voice:
             embed = discord.Embed(title="Whoops....", description="Please make sure you are in a channel!", color=discord.Color.light_grey())
             return await ctx.send(embed=embed, ephemeral=True)
@@ -41,7 +39,7 @@ class tts_system_commands(commands.Cog):
         await ctx.send(embed=embed)
 
     
-    @commands.hybrid_command(name="join", description="Have the bot join your current VC.", extras={'category': 'TTS'})
+    @commands.hybrid_command(name="join", description="Have the bot join your current VC.", with_app_command=True, extras={'category': 'TTS'})
     async def join(self, ctx: commands.Context, channel: discord.VoiceChannel = None):
         if not ctx.author.voice:
             embed = discord.Embed(title="Whoops....", description="Please make sure you are in a channel!", color=discord.Color.light_grey())
@@ -67,7 +65,7 @@ class tts_system_commands(commands.Cog):
         await ctx.send(embed=embed)
 
     
-    @commands.hybrid_command(name="leave", description="Have the bot leave your current VC.", extras={'category': 'TTS'})
+    @commands.hybrid_command(name="leave", description="Have the bot leave your current VC.", with_app_command=True, extras={'category': 'TTS'})
     async def leave(self, ctx: commands.Context):
         if ctx.voice_client is not None:
             guild_id = ctx.guild.id
@@ -120,7 +118,7 @@ class tts_system_commands(commands.Cog):
                 except OSError:
                     pass
 
-    @commands.hybrid_command(name="clear", description="Clear the TTS queue.", extras={'category': 'TTS'})
+    @commands.hybrid_command(name="clear", description="Clear the TTS queue.", with_app_command=True, extras={'category': 'TTS'})
     async def clear(self, ctx: commands.Context):
         guild_id = ctx.guild.id
         vc = ctx.guild.voice_client
@@ -148,4 +146,4 @@ class tts_system_commands(commands.Cog):
     
     
 async def setup(bot: commands.Bot):
-    await bot.add_cog(tts_system_commands(bot))
+    await bot.add_cog(TTS(bot))

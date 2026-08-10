@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import ui
-from utils.utils import fetch_department, has_approval_perms, log_action
+from utils.utils import fetch_department, get_permission_node, log_action
 from ui.PointsRemoval import PointsRemovalModal
 from utils.constants import profiles
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
@@ -90,9 +90,8 @@ class DepartmentButtons(ui.ActionRow):
         )
 
         is_bot_owner = await self.bot.is_owner(interaction.user)
-        if is_bot_owner:
-            if not await has_approval_perms(interaction, 6):
-                return
+        perms = await get_permission_node(interaction, "manage_profile.admin")
+        if is_bot_owner or perms:
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))
 

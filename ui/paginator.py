@@ -2,9 +2,10 @@ import discord
 from discord.ui import View, Button
 from utils.utils import interaction_check
 from datetime import datetime
+from discord.ext import commands
 
 class PaginatorView(View):
-    def __init__(self, bot, user, items):
+    def __init__(self, bot: commands.Bot, user, items):
         super().__init__()
         self.bot = bot
         self.user = user
@@ -107,11 +108,29 @@ class PaginatorView(View):
             return f"<@{v}>"
         return str(v)
 
+    def resolve_id(self, guild: discord.Guild, obj_id: int):
+        if role := guild.get_role(obj_id):
+            return role.mention
+
+        if channel := guild.get_channel(obj_id):
+            return channel.mention
+
+        if member := guild.get_member(obj_id):
+            return member.mention
+
+        if user := self.bot.get_user(obj_id):
+            return user.mention
+
+        if emoji := self.bot.get_emoji(obj_id):
+            return str(emoji)
+
+        return str(obj_id)
+
     def _format_list(self, v: list):
         parts = []
         for item in v:
             if isinstance(item, int):
-                parts.append(f"<@{item}>")
+                parts.append(self.resolve_id(self.bot.get_guild(self.user.guild.id), item))
             else:
                 parts.append(str(item))
         return ", ".join(parts)

@@ -27,13 +27,70 @@ ROLE_RE = re.compile(r"<@&\d{17,20}>")
 URL_RE = re.compile(r"https?://\S+")
 MESSAGE_CODE_RE = re.compile(r"^(\[[^\]]+\]|\*\*[\s\S]+?\*\*)")#  \*\*(.*?)\*\* | This will check for ****
 profanity_list = [
-                    "dick", "cock", "whore", "tranny", "faggot", "nig", "nigga", "fag",
+                    "dick", "cock", "whore", "tranny", "faggot", "nigga", "fag",
                     "pussy", "vagina", "penis", "bitch", "fuck", "shit", "asshole",
                     "cunt", "nigger", "mother fucker", "titties", "titty", "boobs", "cum",
                     "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker",
                     "fucking", "fucker", "fucked", "fucks", "fuk"
                 ]
-whitelisted_guilds = [1411941814923169826, 1450297281088720928, 846843382713417810]
+whitelisted_guilds = [1411941814923169826, 1450297281088720928]
+PERMISSION_NODES = {
+    "roa.manage": {
+        "description": "Manage other peoples roas"
+    },
+    "roa.accept": {
+        "description": "Accept roas"
+    },
+    "roa.deny": {
+        "description": "Deny roas"
+    },
+    "loa.manage": {
+        "description": "Manage other peoples loas"
+    },
+    "loa.accept": {
+        "description": "Accept loas"
+    },
+    "loa.deny": {
+        "description": "Deny loas"
+    },
+    "promotion.appointment": {
+        "description": "Be able to take appointment only promotions"
+    },
+    "promotion.accept": {
+        "description": "Accept promotions"
+    },
+    "promotion.deny": {
+        "description": "Deny promotions"
+    },
+    "enlistment.accept": {
+        "description": "Accept enlistments"
+    },
+    "enlistment.deny": {
+        "description": "Deny enlistments"
+    },
+    "enlistment.claim": {
+        "description": "Claim any enlistments"
+    },
+    "point_request.max_1.5": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_2": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_7.99": {
+        "description": "Accept/deny point requests"
+    },
+    "point_request.max_8": {
+        "description": "Accept/deny point requests"
+    },
+    "manage_profile.admin": {
+        "description": "Gain access to admin tools for any department"
+    },
+    "export_data.manage": {
+        "description": "Manage all aspects of data exports"
+    },
+
+}
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     constants.MONGO_URI,
@@ -68,56 +125,65 @@ economy_profiles = db.economy_profiles
 combat_classes = db.combat_classes
 combat_profiles = db.combat_profiles
 birthdays = db.birthdays
+permission_tiers = db.permission_tiers
+permission_rules = db.permission_rules
+permission_overrides = db.permission_overrides
 
-if constants.ENVIRONMENT == "PRODUCTION":
-    annoucement_role_id = 1413199178934259844
-    misc_role_id = 1413199348753498222
-    game_night_role_id = 1413199433264398517
-    question_role_id = 1413199535081259079
-    vote_role_id = 1416830734760546476
-    chat_revive_role_id = 1450660091442368612
-    dpr_display_role_id = 1460112895252758569
-    raid_role_id = 1457222250817392661
-    session_role_id = 1456018515050893425
-    external_role_id = 1481419195903381716
-    giveaway_role_id = 1486817352384385135
-    birthday_role_id = 1481462452301467730
+bypassed_users = [
+            758170288566566952, #Ghost
+            1371489554279825439, #Wolf
+            1007353417779396709 #Option
+        ]
 
-    application_channels = {
-        "Internal Security Department":1434725921537134602,
-        "Intelligence Agency":1425652577046888570,
-        "Rapid Response Team":1426997569933938778,
-        "Omega-1":1441490947627290734,
-        "Alpha-1":1427671200162779197,
-        "Resh-1":1428164900823371926,
-        "Moderation Team":1456858048537559272,
-        "BCS Officer":1499514012701036574
-    }
+# if constants.ENVIRONMENT == "PRODUCTION":
+#     annoucement_role_id = 1413199178934259844
+#     misc_role_id = 1413199348753498222
+#     game_night_role_id = 1413199433264398517
+#     question_role_id = 1413199535081259079
+#     vote_role_id = 1416830734760546476
+#     chat_revive_role_id = 1450660091442368612
+#     dpr_display_role_id = 1460112895252758569
+#     raid_role_id = 1457222250817392661
+#     session_role_id = 1456018515050893425
+#     external_role_id = 1481419195903381716
+#     giveaway_role_id = 1486817352384385135
+#     birthday_role_id = 1481462452301467730
 
-else:
-    annoucement_role_id = 1450297860846387312
-    dpr_display_role_id = 1450297861836247050
-    misc_role_id = 1450297863145001030
-    game_night_role_id = 1450297865569304596
-    question_role_id = 1450297866991042701
-    vote_role_id = 1450297868459049131
-    chat_revive_role_id = 1450297899811475558
-    raid_role_id = 1470978604883116245
-    session_role_id = 1470978602324590789
-    external_role_id = 1481485568784470127
-    giveaway_role_id = 1512629470908121278
-    birthday_role_id = 1512629488402436206
+#     application_channels = {
+#         "Internal Security Department":1434725921537134602,
+#         "Intelligence Agency":1425652577046888570,
+#         "Rapid Response Team":1426997569933938778,
+#         "Omega-1":1441490947627290734,
+#         "Alpha-1":1427671200162779197,
+#         "Resh-1":1428164900823371926,
+#         "Moderation Team":1456858048537559272,
+#         "BCS Officer":1499514012701036574
+#     }
 
-    application_channels = {
-        "Intelligence Agency":1450297920896237623,
-        "Moderation Team":1486904854965387334,
-        "Rapid Response Team":1450297912188993690,
-        "Omega-1":1450297923991769148,
-        "Alpha-1":1450297927976095838,
-        "Internal Security Department":1450297930060791977,
-        "Resh-1":1450297939510689986,
-        "BCS Officer":1500126140478525451
-    }
+# else:
+#     annoucement_role_id = 1450297860846387312
+#     dpr_display_role_id = 1450297861836247050
+#     misc_role_id = 1450297863145001030
+#     game_night_role_id = 1450297865569304596
+#     question_role_id = 1450297866991042701
+#     vote_role_id = 1450297868459049131
+#     chat_revive_role_id = 1450297899811475558
+#     raid_role_id = 1470978604883116245
+#     session_role_id = 1470978602324590789
+#     external_role_id = 1481485568784470127
+#     giveaway_role_id = 1512629470908121278
+#     birthday_role_id = 1512629488402436206
+
+#     application_channels = {
+#         "Intelligence Agency":1450297920896237623,
+#         "Moderation Team":1486904854965387334,
+#         "Rapid Response Team":1450297912188993690,
+#         "Omega-1":1450297923991769148,
+#         "Alpha-1":1450297927976095838,
+#         "Internal Security Department":1450297930060791977,
+#         "Resh-1":1450297939510689986,
+#         "BCS Officer":1500126140478525451
+#     }
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console

@@ -5,10 +5,16 @@ import os
 import sys
 import asyncio
 from collections import defaultdict
-from utils.constants import BlackstarConstants, auto_replys, enlistment_requests, point_requests, promotion_requests, whitelisted_guilds, logger, discord_http_logger, discord_logger
+from utils.constants import (
+                            BlackstarConstants, auto_replys, enlistment_requests, point_requests,
+                            promotion_requests, whitelisted_guilds, logger, discord_http_logger,
+                            discord_logger, permission_tiers, permission_rules, permission_overrides,
+                            bypassed_users, ids
+                            )
 from ui.promotion.views.PromotionRequest import PromotionRequestView
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.enlistment_request.views.EnlistmentRequestView import EnlistmentRequestView
+from utils.utils import is_whitelisted
 
 constants = BlackstarConstants()
 
@@ -33,12 +39,6 @@ class Bot(commands.Bot):
         )
     
     async def is_owner(self, user: discord.User) -> bool:
-        bypassed_users = [
-            758170288566566952, #Ghost
-            1371489554279825439, #Wolf
-            1007353417779396709 #Option
-        ]
-
         return user.id in bypassed_users
 
     async def setup_hook(self):
@@ -61,6 +61,14 @@ class Bot(commands.Bot):
                         logger.error(f"{cog_module} failed to load: {e}")
 
         logger.info(f"Successfully loaded {cog_counter} cog(s)")
+
+        from discord import app_commands
+
+        for command in self.tree.walk_commands():
+            app_commands.allowed_installs(guilds=True, users=False)(command)
+            app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)(command)
+
+        logger.info(f"Applied guild-only install/context to {len(list(self.tree.walk_commands()))} commands")
 
         async for req in enlistment_requests.find({"is_active": True}):
             view = EnlistmentRequestView(req["_id"], req["snapshot"])
@@ -90,7 +98,6 @@ class Bot(commands.Bot):
         discord_http_logger.error('Disconnected from discord gateway')
 
     async def on_shard_connect(self, shard_id: int):
-        await self.tree.sync()
         discord_http_logger.info(f'Shard {shard_id} has connected to discord gateway')
     
     async def on_shard_disconnected(self, shard_id: int):
@@ -112,16 +119,18 @@ class Bot(commands.Bot):
         await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
         for guild in bot.guilds:
-            if guild.id not in whitelisted_guilds:
-                logger.error(f"Server not found: {guild.name}({guild.id})")
-                try:
-                    await guild.leave()
-                except Exception:
-                    await guild.owner.send(f"Please remove me from **{guild.name}**, I will not work!")
-                
+            if await is_whitelisted(guild, bot):
+                await guild.chunk(cache=True)
+                logger.info(f"Chunked guild: \"{guild.name}\" ({guild.id})")
             else:
-                logger.info(f'Chunked: {guild.id}')
-                await guild.chunk()
+                logger.warning(f"I have left \"{guild.name}\" ({guild.id}) because it is not whitelisted.")
+        
+        bot.permission_tiers = await permission_tiers.find().to_list(length=None)
+        bot.permission_rules = await permission_rules.find().to_list(length=None)
+        bot.permission_overrides = await permission_overrides.find().to_list(length=None)
+
+        bot.reaction_roles = await ids.find({"key": "reaction_roles"}).to_list(length=None)
+
         
         logger.info(f'{self.user} is ready.')
 

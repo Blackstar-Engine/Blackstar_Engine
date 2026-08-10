@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-from utils.constants import db
-from utils.utils import fetch_id
+from utils.constants import db, bypassed_users
+from utils.utils import permissions, get_permission_node
 import csv
 import os
 
@@ -103,11 +103,7 @@ class AllOrRecordButtons(discord.ui.View):
     @discord.ui.button(label="All Records", style = discord.ButtonStyle.primary)
     async def all_records(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
-        bypassed_ids = await fetch_id(interaction.guild.id, ["foundation_command", "wolf_id", "ghost_id", "option_id"])
-        
-        foundation_role = interaction.guild.get_role(bypassed_ids["foundation_command"])
-
-        if foundation_role in interaction.user.roles or interaction.user.id in [bypassed_ids["wolf_id"], bypassed_ids["ghost_id"], bypassed_ids["option_id"]]:
+        if interaction.user.id in bypassed_users or await get_permission_node(interaction, "export_data.manage"):
             collection = db[self.collection_name]
             records = await collection.find().to_list(length=None)
 
@@ -141,22 +137,14 @@ class AllOrRecordButtons(discord.ui.View):
     
     @discord.ui.button(label="By ID", style = discord.ButtonStyle.primary)
     async def by_id(self, interaction: discord.Interaction, button: discord.ui.Button):
-        bypassed_ids = await fetch_id(interaction.guild.id, ["foundation_command", "wolf_id", "ghost_id", "option_id"])
-        
-        foundation_role = interaction.guild.get_role(bypassed_ids["foundation_command"])
-
-        if foundation_role in interaction.user.roles or interaction.user.id in [bypassed_ids["wolf_id"], bypassed_ids["ghost_id"], bypassed_ids["option_id"]]:
+        if interaction.user.id in bypassed_users or await get_permission_node(interaction, "export_data.manage"):
             modal = IDInputModal(self.bot, self.collection_name)
             await interaction.response.send_modal(modal)
 
     
     @discord.ui.button(label="Return", style = discord.ButtonStyle.secondary)
     async def return_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        bypassed_ids = await fetch_id(interaction.guild.id, ["foundation_command", "wolf_id", "ghost_id", "option_id"])
-        
-        foundation_role = interaction.guild.get_role(bypassed_ids["foundation_command"])
-
-        if foundation_role in interaction.user.roles or interaction.user.id in [bypassed_ids["wolf_id"], bypassed_ids["ghost_id"], bypassed_ids["option_id"]]:
+        if interaction.user.id in bypassed_users or await get_permission_node(interaction, "export_data.manage"):
             options = []
             collections = await db.list_collection_names()
 
@@ -179,13 +167,12 @@ class DataExport(commands.Cog):
         self.bot = bot
     
     @commands.hybrid_command(name="export_data", description="Export entire collections or individual records by user_id to a CSV file (DSM/Foundation Command +).", extras={'category': 'Administration'})
+    @permissions()
     async def export_data(self, ctx: commands.Context):
         await ctx.defer(ephemeral=True)
-        bypassed_ids = await fetch_id(ctx.guild.id, ["foundation_command", "wolf_id", "ghost_id", "option_id"])
         
-        foundation_role = ctx.guild.get_role(bypassed_ids["foundation_command"])
 
-        if foundation_role in ctx.author.roles or ctx.author.id in [bypassed_ids["wolf_id"], bypassed_ids["ghost_id"], bypassed_ids["option_id"]]:
+        if ctx.author.id in bypassed_users or await get_permission_node(ctx, "export_data.manage"):
             options = []
             collections = await db.list_collection_names()
 
