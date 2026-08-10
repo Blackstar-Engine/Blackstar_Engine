@@ -1,3 +1,4 @@
+from aiohttp.web_routedef import view
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -152,6 +153,116 @@ class Permissions(commands.Cog):
         new_embed = self.manage_permissions_tiers_view.create_record_embed()
 
         await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=new_embed, content=None)
+
+    async def PT_edit_points(self, interaction: discord.Interaction):
+        if not self.manage_permissions_tiers_view.items or self.manage_permissions_tiers_view.current_index >= len(self.manage_permissions_tiers_view.items):
+            return await interaction.response.send_message("No record to edit.", ephemeral=True)
+        current_record = self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]
+        current_gift = current_record.get("gift_points_amount", 0) or 0
+
+        modal = CustomModal(
+            "Edit Gift Points",
+            [
+                (
+                    "gift_amt",
+                    discord.ui.TextInput(
+                        label="Point Gift Limit (blank or 0 or nothing)?",
+                        placeholder=str(current_gift),
+                        default=str(current_gift),
+                        required=False,
+                        max_length=25,
+                    )
+                )
+            ]
+        )
+
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        gift_amt = modal.gift_amt.value
+        try:
+            if gift_amt:
+                gift_amt = int(gift_amt)
+        except ValueError:
+            await interaction.channel.send(f"Failed to convert number of gift points from `{gift_amt}` to a number! Reverting to 0!")
+            gift_amt = 0
+
+        can_gift = True if gift_amt and gift_amt > 0 else False
+        gift_points = 0 if not gift_amt or gift_amt <= 0 else gift_amt
+
+        # current_record already set above
+        await permission_tiers.update_one({"guild_id": interaction.guild.id, "name": current_record.get("name"), "rank": int(current_record.get("rank"))}, {"$set": {"can_gift_points": can_gift, "gift_points_amount": gift_points}})
+
+        self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["can_gift_points"] = can_gift
+        self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["gift_points_amount"] = gift_points
+
+        self.manage_permissions_tiers_view.update_buttons()
+        new_embed = self.manage_permissions_tiers_view.create_record_embed()
+
+        await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=new_embed, content=None)
+
+    async def PT_edit_roles(self, interaction: discord.Interaction):
+        if not self.manage_permissions_tiers_view.items or self.manage_permissions_tiers_view.current_index >= len(self.manage_permissions_tiers_view.items):
+            return await interaction.response.send_message("No record to edit.", ephemeral=True)
+        # present a role-select + cancel button on the paginator message itself
+        current_record = self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]
+
+        embed = discord.Embed(title="Roles", description="Please select the roles for this permission tier then submit. Or Cancel to return.", color=discord.Color.light_grey())
+
+        class RolesEditView(discord.ui.View):
+            def __init__(self, bot, min_values: int = 1, max_values: int = 25, placeholder: str = "Select roles"):
+                super().__init__(timeout=None)
+                self.bot = bot
+                self.roles = None
+                self.cancelled = False
+                # configure the select callback's constraints
+                self.role_select_callback.min_values = min_values
+                self.role_select_callback.max_values = max_values
+                self.role_select_callback.placeholder = placeholder
+
+            @discord.ui.select(cls=discord.ui.RoleSelect)
+            async def role_select_callback(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+                self.roles = select.values
+                await interaction.response.defer(ephemeral=True)
+                self.stop()
+
+            @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
+            async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                self.cancelled = True
+                await interaction.response.defer(ephemeral=True)
+                self.stop()
+
+        view = RolesEditView(self.bot, min_values=1, max_values=25)
+
+        # replace the paginator message with the role editor
+        await interaction.response.edit_message(embed=embed, view=view)
+
+        await view.wait()
+
+        # if cancelled, restore paginator view
+        if getattr(view, "cancelled", False):
+            self.manage_permissions_tiers_view.update_buttons()
+            embed = self.manage_permissions_tiers_view.create_record_embed()
+            await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=embed, content=None)
+            return
+
+        # otherwise, update roles and return to paginator
+        if not getattr(view, "roles", None):
+            # no roles selected; just return paginator
+            self.manage_permissions_tiers_view.update_buttons()
+            embed = self.manage_permissions_tiers_view.create_record_embed()
+            await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=embed, content=None)
+            return
+
+        roles = [int(role.id) for role in view.roles]
+        await permission_tiers.update_one({"guild_id": interaction.guild.id, "name": current_record.get("name"), "rank": int(current_record.get("rank"))}, {"$set": {"role_ids": roles}})
+
+        self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["role_ids"] = roles
+
+        self.manage_permissions_tiers_view.update_buttons()
+        new_embed = self.manage_permissions_tiers_view.create_record_embed()
+
+        await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=new_embed, content=None)
     
     async def PT_edit_record(self, interaction: discord.Interaction):
         if not self.manage_permissions_tiers_view.items or self.manage_permissions_tiers_view.current_index >= len(self.manage_permissions_tiers_view.items):
@@ -159,21 +270,35 @@ class Permissions(commands.Cog):
         
         embed = discord.Embed(
             title="Record Edit",
-            description="You can only edit the roles, if you would like to edit the name or rank please delete and re-add",
+            description="You can only edit roles or gift points for this tier. If you want to edit the name or rank, please delete and re-add the tier.",
             color=discord.Color.light_grey()
         )
-        view = RoleView(self.bot, min_values=1, max_values=25)
-        cancel_button = CustomButton(label="Cancel", style=discord.ButtonStyle.red, row=2)
+        view = discord.ui.View()
+        edit_gift_points_button = CustomButton(label="Edit Gift Points", style=discord.ButtonStyle.gray, row=1, auto_defer=False)
+        edit_roles_button = CustomButton(label="Edit Roles", style=discord.ButtonStyle.gray, row=1, auto_defer=False)
+        cancel_button = CustomButton(label="Cancel", style=discord.ButtonStyle.red, row=1)
+        
         view.add_item(cancel_button)
+        view.add_item(edit_gift_points_button)
+        view.add_item(edit_roles_button)
         await interaction.response.edit_message(embed=embed, view=view)
         await view.wait()
+        # prefer the interaction from the button click so we can send modals/messages
+        button_interaction = None
+        if edit_gift_points_button.status:
+            button_interaction = getattr(edit_gift_points_button, "clicked_interaction", None)
+        elif edit_roles_button.status:
+            button_interaction = getattr(edit_roles_button, "clicked_interaction", None)
+        elif cancel_button.status:
+            button_interaction = getattr(cancel_button, "clicked_interaction", None)
 
-        if view.roles and not cancel_button.status:
-            roles = [int(role.id) for role in view.roles]
-            current_record = self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]
-            await permission_tiers.update_one({"guild_id": interaction.guild.id, "name": current_record.get("name"), "rank": int(current_record.get("rank"))}, {"$set": {"role_ids": roles}})
+        if button_interaction is None:
+            button_interaction = interaction
 
-            self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["role_ids"] = roles
+        if edit_gift_points_button.status and not cancel_button.status:
+            await self.PT_edit_points(button_interaction)
+        elif edit_roles_button.status and not cancel_button.status:
+            await self.PT_edit_roles(button_interaction)
 
         self.manage_permissions_tiers_view.update_buttons()
         new_embed = self.manage_permissions_tiers_view.create_record_embed()

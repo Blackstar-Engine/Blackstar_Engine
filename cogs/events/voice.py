@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import asyncio
-from cogs.TTS import tts_system_commands
+from cogs.TTS import TTS
 from utils.constants import active_sessions
 from datetime import datetime, UTC
 
@@ -105,9 +105,9 @@ class Voice(commands.Cog):
     
     async def clear_queue(self, queue, guild_id):
         try:
-            tts_system_commands._drain_queue(self, queue)
-            await tts_system_commands._cancel_tts_task(self, guild_id)
-            tts_system_commands._cleanup_mp3_files(self)
+            TTS._drain_queue(self, queue)
+            await TTS._cancel_tts_task(self, guild_id)
+            TTS._cleanup_mp3_files(self)
         except Exception as e:
             print(f"VC Update Error: {e}")
     

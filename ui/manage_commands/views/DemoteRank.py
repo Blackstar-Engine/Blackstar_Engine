@@ -71,10 +71,8 @@ class DemoteRankView(ui.ActionRow):
         )
         
         is_bot_owner = await self.bot.is_owner(interaction.user)
-        if is_bot_owner:
-            if not await get_permission_node(interaction, "manage_profile.admin"):
-                return
-
+        perms = await get_permission_node(interaction, "manage_profile.admin")
+        if is_bot_owner or perms:
             container.add_item(ui.Separator())
             container.add_item(ManageDepartmentRow(self.profile, self.unit))
 

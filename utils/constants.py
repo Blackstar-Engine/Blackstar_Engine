@@ -135,55 +135,55 @@ bypassed_users = [
             1007353417779396709 #Option
         ]
 
-if constants.ENVIRONMENT == "PRODUCTION":
-    annoucement_role_id = 1413199178934259844
-    misc_role_id = 1413199348753498222
-    game_night_role_id = 1413199433264398517
-    question_role_id = 1413199535081259079
-    vote_role_id = 1416830734760546476
-    chat_revive_role_id = 1450660091442368612
-    dpr_display_role_id = 1460112895252758569
-    raid_role_id = 1457222250817392661
-    session_role_id = 1456018515050893425
-    external_role_id = 1481419195903381716
-    giveaway_role_id = 1486817352384385135
-    birthday_role_id = 1481462452301467730
+# if constants.ENVIRONMENT == "PRODUCTION":
+#     annoucement_role_id = 1413199178934259844
+#     misc_role_id = 1413199348753498222
+#     game_night_role_id = 1413199433264398517
+#     question_role_id = 1413199535081259079
+#     vote_role_id = 1416830734760546476
+#     chat_revive_role_id = 1450660091442368612
+#     dpr_display_role_id = 1460112895252758569
+#     raid_role_id = 1457222250817392661
+#     session_role_id = 1456018515050893425
+#     external_role_id = 1481419195903381716
+#     giveaway_role_id = 1486817352384385135
+#     birthday_role_id = 1481462452301467730
 
-    application_channels = {
-        "Internal Security Department":1434725921537134602,
-        "Intelligence Agency":1425652577046888570,
-        "Rapid Response Team":1426997569933938778,
-        "Omega-1":1441490947627290734,
-        "Alpha-1":1427671200162779197,
-        "Resh-1":1428164900823371926,
-        "Moderation Team":1456858048537559272,
-        "BCS Officer":1499514012701036574
-    }
+#     application_channels = {
+#         "Internal Security Department":1434725921537134602,
+#         "Intelligence Agency":1425652577046888570,
+#         "Rapid Response Team":1426997569933938778,
+#         "Omega-1":1441490947627290734,
+#         "Alpha-1":1427671200162779197,
+#         "Resh-1":1428164900823371926,
+#         "Moderation Team":1456858048537559272,
+#         "BCS Officer":1499514012701036574
+#     }
 
-else:
-    annoucement_role_id = 1450297860846387312
-    dpr_display_role_id = 1450297861836247050
-    misc_role_id = 1450297863145001030
-    game_night_role_id = 1450297865569304596
-    question_role_id = 1450297866991042701
-    vote_role_id = 1450297868459049131
-    chat_revive_role_id = 1450297899811475558
-    raid_role_id = 1470978604883116245
-    session_role_id = 1470978602324590789
-    external_role_id = 1481485568784470127
-    giveaway_role_id = 1512629470908121278
-    birthday_role_id = 1512629488402436206
+# else:
+#     annoucement_role_id = 1450297860846387312
+#     dpr_display_role_id = 1450297861836247050
+#     misc_role_id = 1450297863145001030
+#     game_night_role_id = 1450297865569304596
+#     question_role_id = 1450297866991042701
+#     vote_role_id = 1450297868459049131
+#     chat_revive_role_id = 1450297899811475558
+#     raid_role_id = 1470978604883116245
+#     session_role_id = 1470978602324590789
+#     external_role_id = 1481485568784470127
+#     giveaway_role_id = 1512629470908121278
+#     birthday_role_id = 1512629488402436206
 
-    application_channels = {
-        "Intelligence Agency":1450297920896237623,
-        "Moderation Team":1486904854965387334,
-        "Rapid Response Team":1450297912188993690,
-        "Omega-1":1450297923991769148,
-        "Alpha-1":1450297927976095838,
-        "Internal Security Department":1450297930060791977,
-        "Resh-1":1450297939510689986,
-        "BCS Officer":1500126140478525451
-    }
+#     application_channels = {
+#         "Intelligence Agency":1450297920896237623,
+#         "Moderation Team":1486904854965387334,
+#         "Rapid Response Team":1450297912188993690,
+#         "Omega-1":1450297923991769148,
+#         "Alpha-1":1450297927976095838,
+#         "Internal Security Department":1450297930060791977,
+#         "Resh-1":1450297939510689986,
+#         "BCS Officer":1500126140478525451
+#     }
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console

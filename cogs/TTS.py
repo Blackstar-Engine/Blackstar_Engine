@@ -5,7 +5,7 @@ import asyncio
 from ui.tts.views.RequestButton import RequestButtonView
 from utils.utils import permissions
 
-class tts_system_commands(commands.Cog):
+class TTS(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
@@ -146,4 +146,4 @@ class tts_system_commands(commands.Cog):
     
     
 async def setup(bot: commands.Bot):
-    await bot.add_cog(tts_system_commands(bot))
+    await bot.add_cog(TTS(bot))
