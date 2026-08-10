@@ -1,5 +1,4 @@
 import discord
-from discord import guild
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, time, UTC
 from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, profiles, birthdays, active_sessions
@@ -71,9 +70,18 @@ class Tasks(commands.Cog):
             
             if date and (now - date).total_seconds() >= hours * 3600:
                 guild = self.bot.get_guild(session.get("guild_id", 0))
+                if not guild:
+                    continue
+
                 host = guild.get_member(session.get("host_id", 0))
-                channel = guild.get_channel(session.get("channel_id", 0))
-                message = await channel.fetch_message(session.get("message_id", 0))
+                channel = await self._fetch_channel(guild, session.get("channel_id", 0))
+                if not channel:
+                    continue
+
+                try:
+                    message = await channel.fetch_message(session.get("message_id", 0))
+                except Exception:
+                    continue
 
                 embed = discord.Embed(
                         title=f"{session_type.title()} Session Reminder",
@@ -86,10 +94,17 @@ class Tasks(commands.Cog):
                     )
 
                 view = EndCancelSessionView(session, end_style)
+                if isinstance(host, discord.Member):
+                    try:
+                        await host.send(embed=embed, view=view)
+                        continue
+                    except Exception:
+                        pass
+
                 try:
-                    await host.send(embed=embed, view=view)
+                    await channel.send(content=f"<@{session.get('host_id', 0)}>", embed=embed, view=view)
                 except Exception:
-                    await channel.send(content=f"<@{session.get("host_id", 0)}>", embed=embed, view=view)
+                    pass
 
     @tasks.loop(hours=1)
     async def session_reminders(self):
@@ -114,23 +129,8 @@ class Tasks(commands.Cog):
 
         today = datetime.now(timezone.utc).strftime("%m-%d")
 
-
         async for birthday in birthdays.find({"date": today}):
-            try:
-                user = await self.bot.fetch_user(birthday["user_id"])
-                results = await fetch_id(guild_id, "birthdays")
-                channel = self.bot.get_channel(int(results["values"]["channel"]))
-
-                embed = discord.Embed(
-                    color=16087715,
-                    title="🎉 Happy Birthday!",
-                    description=f"Today is {user.mention}'s birthday, be sure to wish them a happy birthday!",
-                )
-
-                await channel.send(content=f"<@&{results["values"]["role"]}>", embed=embed)
-            except Exception as e:
-                channel = self.bot.get_channel(1464811075760427008)
-                await channel.send(f"Failed to post {user.mention}'s birthday;\n```py{e}```")
+            await self._send_birthday_message(guild_id, birthday)
 
     @tasks.loop(time=enlistment_reminder_run_time)
     async def enlistment_reminder(self):
@@ -189,44 +189,14 @@ class Tasks(commands.Cog):
             {"end_date": {"$lte": now}}
         ).to_list(length=None)
 
-        if len(expired_loas) == 0 and len(expired_roas) == 0:
+        if not expired_loas and not expired_roas:
             return
-        
-        if len(expired_loas) > 0:
-            loa_results = await fetch_id(expired_loas[0]["guild_id"], "loa")
-        if len(expired_roas) > 0:
-            roa_results = await fetch_id(expired_roas[0]["guild_id"], "roa")
-        
-        for record in expired_roas:
-            # Get guild, channel, and member
-            guild = self.bot.get_guild(record.get("guild_id"))
-            channel = await self._fetch_channel(guild, roa_results["values"]['channel'])
-            member = await self._fetch_member(guild, record.get("user_id"))
 
-            # Remove LOA role
-            role = guild.get_role(roa_results["values"]['role'])
-            try:
-                await member.remove_roles(role, reason="ROA expired")
-            except (discord.Forbidden, AttributeError):
-                pass
+        loa_config_cache = {}
+        roa_config_cache = {}
 
-            await self._preform_final_action(member, record, channel, guild, "ROA")
-
-        for record in expired_loas:
-            # Get guild, channel, and member
-            guild = self.bot.get_guild(record.get("guild_id"))
-            channel = await self._fetch_channel(guild, loa_results["values"]['channel'])
-            member = await self._fetch_member(guild, record.get("user_id"))
-            
-
-            # Remove LOA role
-            role = guild.get_role(loa_results["values"]['role'])
-            try:
-                await member.remove_roles(role, reason="LOA expired")
-            except (discord.Forbidden, AttributeError):
-                pass
-
-            await self._preform_final_action(member, record, channel, guild, "LOA")
+        await self._process_expired_records(expired_roas, roa_config_cache, "roa", "ROA")
+        await self._process_expired_records(expired_loas, loa_config_cache, "loa", "LOA")
 
     async def _fetch_channel(self, guild: discord.Guild, loa_channel):
         channel = guild.get_channel(loa_channel)
@@ -239,72 +209,127 @@ class Tasks(commands.Cog):
     
     async def _fetch_member(self, guild: discord.Guild, user_id: int):
         member = guild.get_member(user_id)
-        if not member:
-            return user_id
-        return member
+        if member:
+            return member
 
-    async def _preform_final_action(self, member: discord.Member, record: dict, channel: discord.TextChannel, guild: discord.Guild, record_type: str):
         try:
-            await profiles.update_one({"user_id": member.id, "guild_id": guild.id}, {"$set": {"status": "Active"}})
+            member = await guild.fetch_member(user_id)
+            return member
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return user_id
+
+    async def _send_birthday_message(self, guild_id: int, birthday: dict):
+        user = None
+        try:
+            user = await self.bot.fetch_user(birthday["user_id"])
+            results = await fetch_id(guild_id, "birthdays")
+            if not results or not results.get("values"):
+                raise ValueError("Missing birthday channel/role configuration")
+
+            channel_id = results["values"].get("channel")
+            role_id = results["values"].get("role")
+            if channel_id is None or role_id is None:
+                raise ValueError("Birthday channel or role not configured")
+
+            channel = self.bot.get_channel(int(channel_id))
+            if not channel:
+                raise ValueError("Birthday channel not found")
+
+            embed = discord.Embed(
+                color=16087715,
+                title="🎉 Happy Birthday!",
+                description=f"Today is {user.mention}'s birthday, be sure to wish them a happy birthday!",
+            )
+
+            await channel.send(content=f"<@&{role_id}>", embed=embed)
+        except Exception as e:
+            fallback_channel = self.bot.get_channel(1464811075760427008)
+            user_repr = user.mention if user else f"<@{birthday['user_id']}>"
+            if fallback_channel:
+                await fallback_channel.send(f"Failed to post {user_repr}'s birthday;\n```py{e}```")
+
+    async def _process_expired_records(self, records: list[dict], config_cache: dict, config_type: str, record_type: str):
+        for record in records:
+            guild_id = record.get("guild_id")
+            if not guild_id:
+                continue
+
+            if guild_id not in config_cache:
+                config_cache[guild_id] = await fetch_id(guild_id, config_type)
+            config = config_cache[guild_id]
+            if not config or not config.get("values"):
+                continue
+
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                continue
+
+            channel = await self._fetch_channel(guild, config["values"].get('channel'))
+            member = await self._fetch_member(guild, record.get("user_id"))
+
+            if isinstance(member, discord.Member):
+                role = guild.get_role(config["values"].get('role'))
+                try:
+                    await member.remove_roles(role, reason=f"{record_type} expired")
+                except (discord.Forbidden, AttributeError):
+                    pass
+
+            await self._preform_final_action(member, record, channel, guild, record_type)
+
+    async def _send_expiration_embed(self, channel: discord.TextChannel | None, member: discord.Member | int, embed: discord.Embed):
+        if channel is None:
+            return
+
+        try:
+            if isinstance(member, discord.Member):
+                await channel.send(embed=embed)
+            else:
+                await channel.send(content=f"<@{member}>", embed=embed)
+        except discord.Forbidden:
+            pass
+
+    async def _notify_expired_user(self, member: discord.Member | int, guild: discord.Guild, record_type: str, record: dict | None = None):
+        if not isinstance(member, discord.Member):
+            return
+
+        try:
+            await member.send(f"Your {record_type} in **{guild.name}** has **ENDED**!")
+        except discord.Forbidden:
+            pass
+
+        if record is None:
+            return
+
+        try:
+            await member.edit(nick=record.get("nickname"))
+        except discord.Forbidden:
+            pass
+
+    async def _preform_final_action(self, member: discord.Member | int, record: dict, channel: discord.TextChannel, guild: discord.Guild, record_type: str):
+        try:
+            user_id = member.id if isinstance(member, discord.Member) else member
+            await profiles.update_one({"user_id": user_id, "guild_id": guild.id}, {"$set": {"status": "Active"}})
         except Exception:
             pass
 
+        user_mention = member.mention if isinstance(member, discord.Member) else f"<@{member}>"
+        embed = discord.Embed(
+            title=f"{record_type} Ended",
+            description=(
+                f"**User:** {user_mention}\n"
+                f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
+                f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
+                f"**Reason:** Auto Ended"
+            ),
+            color=discord.Color.light_grey()
+        )
+
+        await self._send_expiration_embed(channel, member, embed)
+        await self._notify_expired_user(member, guild, record_type, record)
+
         if record_type == "LOA":
-            embed = discord.Embed(
-                title="LOA Ended",
-                description=(
-                    f"**User:** {member.mention if member else f'<@{user_id}>'}\n"
-                    f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
-                    f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
-                    f"**Reason:** Auto Ended"
-                ),
-                color=discord.Color.light_grey()
-            )
-
-            try:
-                await channel.send(embed=embed)
-            except discord.Forbidden:
-                pass
-            
-            # Notify User
-            try:
-                await member.send(f"Your LOA in **{guild.name}** has **ENDED**!")
-            except discord.Forbidden:
-                pass
-
-            try:
-                await member.edit(nick=record.get("nickname"))
-            except discord.Forbidden:
-                pass
-
             await self._cleanup_loa_record(record)
-        elif record_type == "ROA":
-            embed = discord.Embed(
-                title="ROA Ended",
-                description=(
-                    f"**User:** {member.mention}\n"
-                    f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
-                    f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
-                    f"**Reason:** Auto Ended"
-                ),
-                color=discord.Color.light_grey()
-            )
-            try:
-                await channel.send(embed=embed)
-            except discord.Forbidden:
-                pass
-            
-            # Notify User
-            try:
-                await member.send(f"Your ROA in **{guild.name}** has **ENDED**!")
-            except discord.Forbidden:
-                pass
-
-            try:
-                await member.edit(nick=record.get("nickname"))
-            except discord.Forbidden:
-                pass
-
+        else:
             await self._cleanup_roa_record(record)
 
 
