@@ -494,7 +494,7 @@ def permissions():
             if get_user_permissions(ctx.bot, ctx, ctx.author) >= required_rank:
                 return True
             
-        if ctx.author.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and ctx.author.id in bypassed_users):
+        if ctx.author.guild_permissions.administrator or ctx.author.id in bypassed_users:
             return True
         
         raise PermissionDenied("fallback")
@@ -521,7 +521,7 @@ async def get_permission_node(ctx: commands.Context, key: str):
     if not ctx.guild:
         return False
 
-    if user.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and user.id in bypassed_users):
+    if user.guild_permissions.administrator or user.id in bypassed_users:
         return True
 
     result = await permission_rules.find_one({
