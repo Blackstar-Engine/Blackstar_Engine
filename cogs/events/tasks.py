@@ -217,6 +217,7 @@ class Tasks(commands.Cog):
             guild = self.bot.get_guild(record.get("guild_id"))
             channel = await self._fetch_channel(guild, loa_results["values"]['channel'])
             member = await self._fetch_member(guild, record.get("user_id"))
+            
 
             # Remove LOA role
             role = guild.get_role(loa_results["values"]['role'])
@@ -239,7 +240,7 @@ class Tasks(commands.Cog):
     async def _fetch_member(self, guild: discord.Guild, user_id: int):
         member = guild.get_member(user_id)
         if not member:
-            return None
+            return user_id
         return member
 
     async def _preform_final_action(self, member: discord.Member, record: dict, channel: discord.TextChannel, guild: discord.Guild, record_type: str):
@@ -252,7 +253,7 @@ class Tasks(commands.Cog):
             embed = discord.Embed(
                 title="LOA Ended",
                 description=(
-                    f"**User:** {member.mention}\n"
+                    f"**User:** {member.mention if member else f'<@{user_id}>'}\n"
                     f"**Start Time:** {discord.utils.format_dt(record.get('start_date'))}\n"
                     f"**End Date:** {discord.utils.format_dt(record.get('end_date'))}\n"
                     f"**Reason:** Auto Ended"
