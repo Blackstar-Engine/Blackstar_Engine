@@ -84,8 +84,11 @@ PERMISSION_NODES = {
         "description": "Accept/deny point requests"
     },
     "manage_profile.admin": {
-        "description": "Gain access to admin tools for any department"
+        "description": "Gain access to all features in manage profile"
     },
+    "manage_profile.mod": {
+            "description": "Gain access to a little more feature in manage profile"
+        },
     "export_data.manage": {
         "description": "Manage all aspects of data exports"
     },
