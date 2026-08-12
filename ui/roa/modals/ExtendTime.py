@@ -54,7 +54,7 @@ class AddTimeModal(discord.ui.Modal):
         if self.member == self.user:  # If managing your own ROA
             channel = await interaction.guild.fetch_channel(loa_channel)
 
-            action_row = AcceptDenyButtons(bot = self.bot, user=interaction.user, permission_level=3)
+            action_row = AcceptDenyButtons(bot=self.bot, user=interaction.user, node_accept="roa.accept", node_deny="roa.deny", ask_reason=False)
             container = ui.Container(
                 ui.TextDisplay("## ROA Extension Requested"),
                 ui.TextDisplay(f"**Member:** {self.member.mention}\n**Requested by:** {interaction.user.mention}\n**New End Date:** {discord.utils.format_dt(new_end_date)}\n**Reason:** {reason}"),

@@ -54,7 +54,7 @@ class AddTimeModal(discord.ui.Modal):
         if self.member == self.user:  # If managing your own LOA
             channel = await interaction.guild.fetch_channel(loa_channel)
 
-            action_row = AcceptDenyButtons(bot = self.bot, user=interaction.user, permission_level=3)
+            action_row = AcceptDenyButtons(bot=self.bot, user=interaction.user, node_accept="loa.accept", node_deny="loa.deny", ask_reason=False)
             container = ui.Container(
                 ui.TextDisplay("## LOA Extension Requested"),
                 ui.TextDisplay(f"**Member:** {self.member.mention}\n"
