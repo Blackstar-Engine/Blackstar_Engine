@@ -3,18 +3,19 @@ from discord import ui
 from ui.AcceptDenyButtons import AcceptDenyButtons
 
 class RequestAcceptDenyButtons(ui.LayoutView):
-    def __init__(self, bot, user: discord.Member, reason: str, start_date, end_date, time):
+    def __init__(self, bot, user: discord.Member, abtype: str, reason: str, start_date, end_date, time):
         super().__init__(timeout=None)
         self.bot = bot
         self.user = user
+        self.abtype = abtype
         self.time = time
         self.reason = reason
         self.start_date = start_date
         self.end_date = end_date
 
-        self.action_row = AcceptDenyButtons(bot, user, "loa.accept", "loa.deny")
+        self.action_row = AcceptDenyButtons(bot, user, f"{self.abtype}.accept", f"{self.abtype}.deny")
         container = ui.Container(
-            ui.TextDisplay("## LOA Request"),
+            ui.TextDisplay(f"## {self.abtype.upper()} Request"),
             ui.TextDisplay(f"**Member:** {user.mention}\n"
                            f"**Start:** {discord.utils.format_dt(start_date)}\n"
                            f"**End:** {discord.utils.format_dt(end_date)}\n"
