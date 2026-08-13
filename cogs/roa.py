@@ -5,8 +5,10 @@ import re
 from utils.constants import roa, stored_roa, loa, LOARegFormat, profiles
 from datetime import datetime, timedelta
 from ui.paginator import PaginatorView
-from ui.roa.views.RequestButtons import RequestButtons
-from ui.roa.views.ManageButtons import ManageExtendButton
+# from ui.roa.views.RequestAcceptDenyButtons import RequestAcceptDenyButtons
+# from ui.roa.views.ManageButtons import ManageExtendButton
+from ui.loa_roa.views.RequestButtons import RequestAcceptDenyButtons
+from ui.loa_roa.views.ManageButtons import ManageExtendButton
 from typing import Optional
 from utils.utils import fetch_id, fetch_profile, permissions, get_permission_node
 
@@ -15,7 +17,7 @@ class ROA(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    async def handle_accepted(self, ctx: commands.Context, view: RequestButtons, reason: str, start_date: datetime, end_date: datetime, time: str, request_message: discord.Message):
+    async def handle_accepted(self, ctx: commands.Context, view: RequestAcceptDenyButtons, reason: str, start_date: datetime, end_date: datetime, time: str, request_message: discord.Message):
         moderator: discord.Member = view.action_row.kwargs.get('moderator_obj')
         loa_doc = {
                 "user_id": ctx.author.id,
@@ -83,7 +85,7 @@ class ROA(commands.Cog):
         except discord.Forbidden:
             pass
     
-    async def handle_denied(self, ctx: commands.Context, view: RequestButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
+    async def handle_denied(self, ctx: commands.Context, view: RequestAcceptDenyButtons, start_date: datetime, end_date: datetime, reason: str, time: str, request_message: discord.Message):
         moderator: discord.Member = view.action_row.kwargs.get('moderator_obj')
         container = ui.Container(
                 ui.TextDisplay("## ROA Denied"),
@@ -175,7 +177,7 @@ class ROA(commands.Cog):
         results = await fetch_id(ctx.guild.id, "roa")
         channel: discord.TextChannel = await ctx.guild.fetch_channel(results["values"]["channel"])
 
-        view = RequestButtons(self.bot, ctx.author, reason, start_date, end_date, time)
+        view = RequestAcceptDenyButtons(self.bot, ctx.author, "roa", reason, start_date, end_date, time)
         request_message = await channel.send(view=view)
 
         # Sends confirmation to user
@@ -229,7 +231,7 @@ class ROA(commands.Cog):
         )
 
         # Create the rest of the embed
-        view = ManageExtendButton(self.bot, ctx.author, member, active_roa, des)
+        view = ManageExtendButton(self.bot, ctx.author, "roa", member, active_roa, des)
 
         await ctx.send(view=view, ephemeral=True)
 

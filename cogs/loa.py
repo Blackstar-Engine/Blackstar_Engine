@@ -5,8 +5,11 @@ import re
 from utils.constants import loa, stored_loa, roa, LOARegFormat, profiles
 from datetime import datetime, timedelta
 from ui.paginator import PaginatorView
-from ui.loa.views.RequestButtons import RequestAcceptDenyButtons
-from ui.loa.views.ManageButtons import ManageExtendButton
+# from ui.loa.views.RequestButtons import RequestAcceptDenyButtons
+# from ui.loa.views.ManageButtons import ManageExtendButton
+
+from ui.loa_roa.views.RequestButtons import RequestAcceptDenyButtons
+from ui.loa_roa.views.ManageButtons import ManageExtendButton
 from typing import Optional
 from utils.utils import fetch_id, fetch_profile, permissions, get_permission_node
 
@@ -168,7 +171,7 @@ class LOA(commands.Cog):
         results = await fetch_id(ctx.guild.id, "loa")
         channel: discord.TextChannel = await ctx.guild.fetch_channel(results["values"]["channel"])
 
-        view = RequestAcceptDenyButtons(self.bot, ctx.author, reason, start_date, end_date, time)
+        view = RequestAcceptDenyButtons(self.bot, ctx.author, "loa", reason, start_date, end_date, time)
         request_message = await channel.send(view=view)
 
         # Sends confirmation to user
@@ -223,7 +226,7 @@ class LOA(commands.Cog):
         )
 
         # Create the rest of the embed
-        view = ManageExtendButton(self.bot, ctx.author, member, active_loa, des)
+        view = ManageExtendButton(self.bot, ctx.author, "loa", member, active_loa, des)
 
         await ctx.send(view=view, ephemeral=True)
 

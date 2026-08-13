@@ -2,13 +2,14 @@ import discord
 from discord.ext import commands
 from utils.constants import MESSAGE_CODE_RE, active_sessions
 from utils.utils import permissions
-from ui.sessions.views.VCChannelSelect import VCChannelSelectView
 from datetime import datetime, UTC
 import re
 from ui.CustomModal import CustomModal
 from ui.sessions.views.SessionEnd import EnterModal
 from ui.sessions.views.MVPSelect import MVPSelectView
 from discord import app_commands
+from ui.CustomSelects import ChannelView
+from discord import ui
 
 class Sessions(commands.Cog):
     def __init__(self, bot):
@@ -98,6 +99,33 @@ class Sessions(commands.Cog):
 
             await _set_fields(sets)
 
+    async def _build_message(self, interaction: commands.Context, message: discord.Message, embed: discord.Embed, vc: discord.VoiceChannel, note):
+        users = {"\U0001F7E9": [], "\U0001F7E8": []}  # green + yellow
+
+        valid_emojis = ("\U0001F7E9", "\U0001F7E8")  # green + yellow
+
+        for reaction in message.reactions:
+            emoji = str(reaction.emoji)
+
+            if emoji in valid_emojis:
+                async for user in reaction.users():
+                    if not user.bot:
+                        users[emoji] += [user.mention]
+
+        if not users or users == {}:
+            embed.title = "No voters found."
+            return await interaction.send(embed=embed)
+
+
+        send_message = f"**We are starting, please join {vc.mention}**\n{note}\n\n"
+        
+        for key, values in users.items():
+            send_message += f"{key}: "
+            send_message += " ".join(str(v) for v in values)
+            send_message += "\n"
+        
+        return send_message, users
+
     @commands.hybrid_group(invoke_without_sub_command=False)
     async def session(self, ctx: commands.Context):
         # parent command
@@ -105,8 +133,7 @@ class Sessions(commands.Cog):
 
     @session.command(name="start", description="Start a new session in this channel (Central Command+).", with_app_command=True, extras={'category': 'Sessions'})
     @permissions()
-    async def session_start(self, ctx: commands.Context, game_link: str):
-            
+    async def session_start(self, ctx: commands.Context, note: str = ""):
         try:
             await ctx.message.delete()
         except discord.NotFound:
@@ -116,8 +143,63 @@ class Sessions(commands.Cog):
         if session:
             return await ctx.send("A session is already active in this channel. Please end it to start a new one!", ephemeral=True)
 
-        view = VCChannelSelectView(game_link, ctx.author)
-        await ctx.send(view=view)
+        view = ChannelView(self.bot, placeholder="Select a channel for the session", types=discord.ChannelType.voice)
+        embed = discord.Embed(
+            title="VC Selection",
+            description="Which VC will you mainly use?",
+            color=discord.Color.light_grey()
+        )
+        vc_message = await ctx.send(view=view, embed=embed, ephemeral=True)
+
+        await view.wait()
+
+        vc = ctx.guild.get_channel(int(view.channels[0].id))
+        
+        data = await active_sessions.find_one({"guild_id": ctx.guild.id, "channel_id": ctx.channel.id, "status": "waiting"})
+
+        embed = discord.Embed(color=discord.Color.light_grey())
+
+        if not data:
+            embed.title = "No active votes found in this channel."
+            return await ctx.send(embed=embed)
+
+        message_id = data.get("message_id")
+
+        try:
+            message = await ctx.channel.fetch_message(message_id)
+        except discord.NotFound:
+            embed.title = "This message could not be found."
+            return await ctx.send(embed=embed)
+        
+        try:
+            await vc_message.delete()
+        except Exception:
+            pass
+        
+        send_message, users = await self._build_message(ctx, message, embed, vc, note)
+
+        await message.reply(send_message)
+
+        try:
+            await message.clear_reactions()
+        except discord.NotFound:
+            pass
+
+        await active_sessions.update_one(
+            {"guild_id": ctx.guild.id, "channel_id": ctx.channel.id, "status": "waiting"},
+            {
+                "$set": {
+                    "vc_channel_id": vc.id,
+                    "game_link": note,
+                    "status": "active",
+                    "started_at": datetime.now(UTC),
+                    "rsvp": {
+                        "green": users.get("\U0001F7E9", []),
+                        "yellow": users.get("\U0001F7E8", [])
+                        }
+                }
+            }
+        )
     
     @session.command(name="cancel", description="Cancel the current session in this channel (Central Command+)", with_app_command=True, extras={'category': 'Sessions'})
     @permissions()
