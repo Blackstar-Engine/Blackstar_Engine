@@ -1,14 +1,16 @@
 import discord
+from discord.ext import commands
 from discord import ui
 from utils.constants import profiles
 from utils.utils import fetch_unit_options, interaction_check
 
 class ReturnButton(ui.Button):
-    def __init__(self, bot, moderator: discord.Member, inacted_user: discord.Member):
+    def __init__(self, bot: commands.Bot, user: discord.Member, moderator: discord.Member, nodes: dict):
         super().__init__(label="Return", style=discord.ButtonStyle.gray)
         self.moderator = moderator
-        self.inacted_user = inacted_user
+        self.user = user
         self.bot = bot
+        self.nodes = nodes
     
     async def callback(self, interaction: discord.Interaction):
         from ui.manage_commands.views.ManageProfileMainView import ManageProfileMainView
@@ -23,6 +25,12 @@ class ReturnButton(ui.Button):
             options = fetch_unit_options(profile)
 
             is_owner = await self.bot.is_owner(interaction.user)
-            view = ManageProfileMainView(self.bot, self.moderator, self.inacted_user, profile, options, is_owner)
+            view = ManageProfileMainView(bot=self.bot,
+                                         user=self.user,
+                                         moderator=self.moderator,
+                                         user_profile=profile,
+                                         user_dept_options=options,
+                                         nodes=self.nodes,
+                                         is_owner=is_owner)
 
             await interaction.response.edit_message(view=view)

@@ -5,14 +5,16 @@ from ui.paginator import PaginatorView
 from utils.constants import enlistment_requests, promotion_requests, point_requests
 
 class ManageProfileViewRequests(ui.LayoutView):
-    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict):
+    def __init__(self, bot: commands.Bot, user: discord.Member, moderator: discord.Member, user_profile: dict, nodes: dict):
         super().__init__(timeout=None)
         self.bot = bot
         self.moderator = moderator
-        self.inacted_user = inacted_user
-        self.profile = profile
+        self.user = user
+        self.user_profile = user_profile
+        self.nodes = nodes
+
         from ui.manage_commands.views.ReturnButton import ReturnButton
-        return_button = ReturnButton(self.bot, self.moderator, self.inacted_user)
+        return_button = ReturnButton(self.bot, self.user, self.moderator, self.nodes)
 
         self.select_menu = ui.Select(
             placeholder="Select a request",
@@ -43,7 +45,7 @@ class ManageProfileViewRequests(ui.LayoutView):
     
     async def select_menu_callback(self, interaction: discord.Interaction):
         if self.select_menu.values[0] == "enlistments":
-            records = await enlistment_requests.find({"guild_id": interaction.guild.id, "target_user_id": self.inacted_user.id, "is_active": False}, {"_id": 0, "snapshot": 1}).to_list(length=None)
+            records = await enlistment_requests.find({"guild_id": interaction.guild.id, "target_user_id": self.user.id, "is_active": False}, {"_id": 0, "snapshot": 1}).to_list(length=None)
             new_records = [record["snapshot"] for record in records]
 
             self.select_menu.values.clear()
@@ -58,7 +60,7 @@ class ManageProfileViewRequests(ui.LayoutView):
             
 
         elif self.select_menu.values[0] == "promotions":
-            records = await promotion_requests.find({"guild_id": interaction.guild.id, "target_user_id": self.inacted_user.id, "is_active": False}, {"_id": 0, "snapshot": 1}).to_list(length=None)
+            records = await promotion_requests.find({"guild_id": interaction.guild.id, "target_user_id": self.user.id, "is_active": False}, {"_id": 0, "snapshot": 1}).to_list(length=None)
             new_records = [record["snapshot"] for record in records]
 
             self.select_menu.values.clear()
@@ -71,7 +73,7 @@ class ManageProfileViewRequests(ui.LayoutView):
             else:
                 await interaction.followup.send("No promotion requests found.", ephemeral=True)
         elif self.select_menu.values[0] == "points":
-            records = await point_requests.find({"guild_id": interaction.guild.id, "target_user_id": self.inacted_user.id, "is_active": False}, {"_id": 0, "snapshot": 1}).to_list(length=None)
+            records = await point_requests.find({"guild_id": interaction.guild.id, "target_user_id": self.user.id, "is_active": False}, {"_id": 0, "snapshot": 1}).to_list(length=None)
             new_records = [record["snapshot"] for record in records]
 
             self.select_menu.values.clear()

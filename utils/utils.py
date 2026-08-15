@@ -340,7 +340,6 @@ async def get_gift_limit(ctx: commands.Context, user: discord.Member | None = No
     ]
 
     if not matching_tiers:
-        await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
         return False
 
     matching_tier = max(matching_tiers, key=lambda tier: tier.get("rank", 0))
@@ -476,34 +475,26 @@ def permissions():
     async def predicate(ctx: commands.Context):
         command = ctx.command.qualified_name
         cog = ctx.cog.qualified_name if ctx.cog else None
-        print(command)
-        print(cog)
 
         command_override = find_override(ctx.bot, ctx, "command", command)
         if command_override is not None:
             return command_override
-
-        print(f"Command: {command_override}")
         
         cog_override = find_override(ctx.bot, ctx, "feature", cog)
         if cog_override is not None:
             return cog_override
-
-        print(f"Cog: {cog_override}")
         
         rule = find_rule(ctx.bot, ctx, "command", command)
         if rule is None:
             rule = find_rule(ctx.bot, ctx, "feature", cog)
-
-        print(f"Rule: {rule}")
         
         if rule is not None:
             required_rank = int(rule.get("min_rank", 0))
             if get_user_permissions(ctx.bot, ctx, ctx.author) >= required_rank:
                 return True
             
-        # if ctx.author.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and ctx.author.id in bypassed_users):
-        #     return True
+        if ctx.author.guild_permissions.administrator or ctx.author.id in bypassed_users:
+            return True
         
         raise PermissionDenied("fallback")
     
@@ -529,7 +520,7 @@ async def get_permission_node(ctx: commands.Context, key: str):
     if not ctx.guild:
         return False
 
-    # if user.guild_permissions.administrator or (constants.ENVIRONMENT == "DEVELOPMENT" and user.id in bypassed_users):
+    # if user.guild_permissions.administrator or user.id in bypassed_users:
     #     return True
 
     result = await permission_rules.find_one({
@@ -567,3 +558,46 @@ async def is_whitelisted(guild: discord.Guild, bot: commands.Bot):
 
     await guild.leave()
     return False
+
+def format_permission_tier(guild_id: int, name: str, rank: int, role_ids: list[int], can_gift_points: bool, gift_points_amount: int):
+    return {
+        "guild_id": guild_id,
+        "name": name,
+        "rank": rank,
+        "role_ids": role_ids,
+        "can_gift_points": can_gift_points,
+        "gift_points_amount": gift_points_amount
+    }
+
+def format_permission_rule(guild_id: int, scope_type: str, scope_key: str, min_rank: int):
+    return {
+        "guild_id": guild_id,
+        "scope_type": scope_type,
+        "scope_key": scope_key,
+        "min_rank": min_rank
+    }
+
+def format_permission_override(guild_id: int, scope_type: str, scope_key: str, target_type: str, target_id: int, effect: str):
+    return {
+        "guild_id": guild_id,
+        "scope_type": scope_type,
+        "scope_key": scope_key,
+        "target_type": target_type,
+        "target_id": target_id,
+        "effect": effect
+    }
+
+def format_permission_node(guild_id: int, scope_type: str, scope_key: str, min_rank: int):
+    return {
+        "guild_id": guild_id,
+        "scope_type": scope_type,
+        "scope_key": scope_key,
+        "min_rank": min_rank
+    }
+
+def format_id(guild_id: int, key: str, values):
+    return {
+        "guild_id": guild_id,
+        "key": key,
+        "values": values
+    }

@@ -1,3 +1,4 @@
+from aiohttp.web_routedef import view
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -16,6 +17,19 @@ class Permissions(commands.Cog):
         self.manage_perm_view = None
         self.manage_perm_type = None
 
+    def _autocomplete_is_expired(self, interaction: discord.Interaction | None) -> bool:
+        if interaction is None:
+            return True
+
+        is_expired = getattr(interaction, "is_expired", None)
+        if callable(is_expired):
+            try:
+                return bool(is_expired())
+            except Exception:
+                return False
+
+        return False
+
     async def command_autocomplete(
         self,
         interaction: discord.Interaction,
@@ -23,18 +37,26 @@ class Permissions(commands.Cog):
     ):
         """Get all permission-managed commands and return them as choices."""
 
-        all_commands = [
-            cmd.qualified_name
-            for cmd in self.bot.walk_commands()
-            if (
-                isinstance(cmd, commands.Command)
-                and not isinstance(cmd, (commands.Group, commands.HybridGroup))
-                and not cmd.qualified_name.startswith("jishaku")
-                and getattr(cmd.callback, "permission_managed", False)
-            )
-        ]
+        if self._autocomplete_is_expired(interaction):
+            return []
 
-        matches = [cmd for cmd in all_commands if current.lower() in cmd.lower()]
+        query = str(current or "").lower()
+
+        try:
+            all_commands = [
+                cmd.qualified_name
+                for cmd in self.bot.walk_commands()
+                if (
+                    isinstance(cmd, commands.Command)
+                    and not isinstance(cmd, (commands.Group, commands.HybridGroup))
+                    and not cmd.qualified_name.startswith("jishaku")
+                    and getattr(cmd.callback, "permission_managed", False)
+                )
+            ]
+        except (AttributeError, TypeError):
+            return []
+
+        matches = [cmd for cmd in sorted(all_commands) if query in cmd.lower()]
         return [app_commands.Choice(name=cmd, value=cmd) for cmd in matches[:25]]
     
     async def feature_autocomplete(
@@ -44,34 +66,59 @@ class Permissions(commands.Cog):
     ):
         """Get all cogs that contain at least one permission-managed command."""
 
-        all_cogs = []
+        if self._autocomplete_is_expired(interaction):
+            return []
 
-        for cog_name, cog in self.bot.cogs.items():
-            if cog_name == "jishaku":
-                continue
+        query = str(current or "").lower()
 
-            has_permission_command = any(
-                getattr(command.callback, "permission_managed", False)
-                for command in cog.walk_commands()
-                if isinstance(command, commands.Command)
-            )
+        try:
+            all_cogs = []
 
-            if has_permission_command:
-                all_cogs.append(cog_name)
+            for cog_name, cog in self.bot.cogs.items():
+                if cog_name == "jishaku":
+                    continue
 
-        matches = [cog for cog in all_cogs if current.lower() in cog.lower()]
+                has_permission_command = any(
+                    getattr(command.callback, "permission_managed", False)
+                    for command in cog.walk_commands()
+                    if isinstance(command, commands.Command)
+                )
+
+                if has_permission_command:
+                    all_cogs.append(cog_name)
+        except (AttributeError, TypeError):
+            return []
+
+        matches = [cog for cog in sorted(all_cogs) if query in cog.lower()]
         return [app_commands.Choice(name=cog, value=cog) for cog in matches[:25]]
     
     async def min_rank_autocomplete(self, interaction: discord.Interaction, current: str):
-        ''''get all min ranks and return them as a choice'''
-        all_ranks = [rank.get("name", "Unknown") for rank in self.bot.permission_tiers]
-        matches = [rank for rank in all_ranks if current.lower() in rank.lower()]
+        '''Get all min ranks and return them as a choice, ordered from highest to lowest rank.'''
+        if self._autocomplete_is_expired(interaction):
+            return []
+
+        query = str(current or "").lower()
+
+        try:
+            ordered_tiers = sorted(
+                self.bot.permission_tiers,
+                key=lambda tier: int((tier or {}).get("rank", 0) or 0),
+                reverse=True,
+            )
+            all_ranks = [str((tier or {}).get("name", "Unknown") or "Unknown") for tier in ordered_tiers]
+        except (AttributeError, TypeError, ValueError):
+            return []
+
+        matches = [rank for rank in all_ranks if query in rank.lower()]
         return [app_commands.Choice(name=rank, value=rank) for rank in matches[:25]]
 
     async def perm_nodes_autocomplete(self, interaction: discord.Interaction, current: str):
         '''get all permission nodes located in constants and return them as a choice'''
-        all_nodes = [node for node in PERMISSION_NODES.keys()]
-        matches = [node for node in all_nodes if current.lower() in node]
+        if self._autocomplete_is_expired(interaction):
+            return []
+
+        query = str(current or "").lower()
+        matches = [node for node in PERMISSION_NODES.keys() if query in node.lower()]
         return [app_commands.Choice(name=node, value=node) for node in matches[:25]]
 
     async def PT_add_record(self, interaction: discord.Interaction):
@@ -152,6 +199,116 @@ class Permissions(commands.Cog):
         new_embed = self.manage_permissions_tiers_view.create_record_embed()
 
         await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=new_embed, content=None)
+
+    async def PT_edit_points(self, interaction: discord.Interaction):
+        if not self.manage_permissions_tiers_view.items or self.manage_permissions_tiers_view.current_index >= len(self.manage_permissions_tiers_view.items):
+            return await interaction.response.send_message("No record to edit.", ephemeral=True)
+        current_record = self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]
+        current_gift = current_record.get("gift_points_amount", 0) or 0
+
+        modal = CustomModal(
+            "Edit Gift Points",
+            [
+                (
+                    "gift_amt",
+                    discord.ui.TextInput(
+                        label="Point Gift Limit (blank or 0 or nothing)?",
+                        placeholder=str(current_gift),
+                        default=str(current_gift),
+                        required=False,
+                        max_length=25,
+                    )
+                )
+            ]
+        )
+
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        gift_amt = modal.gift_amt.value
+        try:
+            if gift_amt:
+                gift_amt = int(gift_amt)
+        except ValueError:
+            await interaction.channel.send(f"Failed to convert number of gift points from `{gift_amt}` to a number! Reverting to 0!")
+            gift_amt = 0
+
+        can_gift = True if gift_amt and gift_amt > 0 else False
+        gift_points = 0 if not gift_amt or gift_amt <= 0 else gift_amt
+
+        # current_record already set above
+        await permission_tiers.update_one({"guild_id": interaction.guild.id, "name": current_record.get("name"), "rank": int(current_record.get("rank"))}, {"$set": {"can_gift_points": can_gift, "gift_points_amount": gift_points}})
+
+        self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["can_gift_points"] = can_gift
+        self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["gift_points_amount"] = gift_points
+
+        self.manage_permissions_tiers_view.update_buttons()
+        new_embed = self.manage_permissions_tiers_view.create_record_embed()
+
+        await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=new_embed, content=None)
+
+    async def PT_edit_roles(self, interaction: discord.Interaction):
+        if not self.manage_permissions_tiers_view.items or self.manage_permissions_tiers_view.current_index >= len(self.manage_permissions_tiers_view.items):
+            return await interaction.response.send_message("No record to edit.", ephemeral=True)
+        # present a role-select + cancel button on the paginator message itself
+        current_record = self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]
+
+        embed = discord.Embed(title="Roles", description="Please select the roles for this permission tier then submit. Or Cancel to return.", color=discord.Color.light_grey())
+
+        class RolesEditView(discord.ui.View):
+            def __init__(self, bot, min_values: int = 1, max_values: int = 25, placeholder: str = "Select roles"):
+                super().__init__(timeout=None)
+                self.bot = bot
+                self.roles = None
+                self.cancelled = False
+                # configure the select callback's constraints
+                self.role_select_callback.min_values = min_values
+                self.role_select_callback.max_values = max_values
+                self.role_select_callback.placeholder = placeholder
+
+            @discord.ui.select(cls=discord.ui.RoleSelect)
+            async def role_select_callback(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+                self.roles = select.values
+                await interaction.response.defer(ephemeral=True)
+                self.stop()
+
+            @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
+            async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+                self.cancelled = True
+                await interaction.response.defer(ephemeral=True)
+                self.stop()
+
+        view = RolesEditView(self.bot, min_values=1, max_values=25)
+
+        # replace the paginator message with the role editor
+        await interaction.response.edit_message(embed=embed, view=view)
+
+        await view.wait()
+
+        # if cancelled, restore paginator view
+        if getattr(view, "cancelled", False):
+            self.manage_permissions_tiers_view.update_buttons()
+            embed = self.manage_permissions_tiers_view.create_record_embed()
+            await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=embed, content=None)
+            return
+
+        # otherwise, update roles and return to paginator
+        if not getattr(view, "roles", None):
+            # no roles selected; just return paginator
+            self.manage_permissions_tiers_view.update_buttons()
+            embed = self.manage_permissions_tiers_view.create_record_embed()
+            await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=embed, content=None)
+            return
+
+        roles = [int(role.id) for role in view.roles]
+        await permission_tiers.update_one({"guild_id": interaction.guild.id, "name": current_record.get("name"), "rank": int(current_record.get("rank"))}, {"$set": {"role_ids": roles}})
+
+        self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["role_ids"] = roles
+
+        self.manage_permissions_tiers_view.update_buttons()
+        new_embed = self.manage_permissions_tiers_view.create_record_embed()
+
+        await interaction.edit_original_response(view=self.manage_permissions_tiers_view, embed=new_embed, content=None)
     
     async def PT_edit_record(self, interaction: discord.Interaction):
         if not self.manage_permissions_tiers_view.items or self.manage_permissions_tiers_view.current_index >= len(self.manage_permissions_tiers_view.items):
@@ -159,21 +316,35 @@ class Permissions(commands.Cog):
         
         embed = discord.Embed(
             title="Record Edit",
-            description="You can only edit the roles, if you would like to edit the name or rank please delete and re-add",
+            description="You can only edit roles or gift points for this tier. If you want to edit the name or rank, please delete and re-add the tier.",
             color=discord.Color.light_grey()
         )
-        view = RoleView(self.bot, min_values=1, max_values=25)
-        cancel_button = CustomButton(label="Cancel", style=discord.ButtonStyle.red, row=2)
+        view = discord.ui.View()
+        edit_gift_points_button = CustomButton(label="Edit Gift Points", style=discord.ButtonStyle.gray, row=1, auto_defer=False)
+        edit_roles_button = CustomButton(label="Edit Roles", style=discord.ButtonStyle.gray, row=1, auto_defer=False)
+        cancel_button = CustomButton(label="Cancel", style=discord.ButtonStyle.red, row=1)
+        
         view.add_item(cancel_button)
+        view.add_item(edit_gift_points_button)
+        view.add_item(edit_roles_button)
         await interaction.response.edit_message(embed=embed, view=view)
         await view.wait()
+        # prefer the interaction from the button click so we can send modals/messages
+        button_interaction = None
+        if edit_gift_points_button.status:
+            button_interaction = getattr(edit_gift_points_button, "clicked_interaction", None)
+        elif edit_roles_button.status:
+            button_interaction = getattr(edit_roles_button, "clicked_interaction", None)
+        elif cancel_button.status:
+            button_interaction = getattr(cancel_button, "clicked_interaction", None)
 
-        if view.roles and not cancel_button.status:
-            roles = [int(role.id) for role in view.roles]
-            current_record = self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]
-            await permission_tiers.update_one({"guild_id": interaction.guild.id, "name": current_record.get("name"), "rank": int(current_record.get("rank"))}, {"$set": {"role_ids": roles}})
+        if button_interaction is None:
+            button_interaction = interaction
 
-            self.manage_permissions_tiers_view.items[self.manage_permissions_tiers_view.current_index]["role_ids"] = roles
+        if edit_gift_points_button.status and not cancel_button.status:
+            await self.PT_edit_points(button_interaction)
+        elif edit_roles_button.status and not cancel_button.status:
+            await self.PT_edit_roles(button_interaction)
 
         self.manage_permissions_tiers_view.update_buttons()
         new_embed = self.manage_permissions_tiers_view.create_record_embed()

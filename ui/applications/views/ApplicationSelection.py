@@ -1,6 +1,5 @@
 import discord
 from discord.ui import View, Select
-from utils.constants import application_channels
 from ui.applications.modals.app_closure import ApplicationCloseModal
 
 class ApplicationOpen(View):

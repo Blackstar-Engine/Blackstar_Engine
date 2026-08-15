@@ -84,8 +84,11 @@ PERMISSION_NODES = {
         "description": "Accept/deny point requests"
     },
     "manage_profile.admin": {
-        "description": "Gain access to admin tools for any department"
+        "description": "Gain access to all features in manage profile"
     },
+    "manage_profile.mod": {
+            "description": "Gain access to a little more feature in manage profile"
+        },
     "export_data.manage": {
         "description": "Manage all aspects of data exports"
     },
@@ -148,18 +151,6 @@ if constants.ENVIRONMENT == "PRODUCTION":
     external_role_id = 1481419195903381716
     giveaway_role_id = 1486817352384385135
     birthday_role_id = 1481462452301467730
-
-    application_channels = {
-        "Internal Security Department":1434725921537134602,
-        "Intelligence Agency":1425652577046888570,
-        "Rapid Response Team":1426997569933938778,
-        "Omega-1":1441490947627290734,
-        "Alpha-1":1427671200162779197,
-        "Resh-1":1428164900823371926,
-        "Moderation Team":1456858048537559272,
-        "BCS Officer":1499514012701036574
-    }
-
 else:
     annoucement_role_id = 1450297860846387312
     dpr_display_role_id = 1450297861836247050
@@ -173,17 +164,6 @@ else:
     external_role_id = 1481485568784470127
     giveaway_role_id = 1512629470908121278
     birthday_role_id = 1512629488402436206
-
-    application_channels = {
-        "Intelligence Agency":1450297920896237623,
-        "Moderation Team":1486904854965387334,
-        "Rapid Response Team":1450297912188993690,
-        "Omega-1":1450297923991769148,
-        "Alpha-1":1450297927976095838,
-        "Internal Security Department":1450297930060791977,
-        "Resh-1":1450297939510689986,
-        "BCS Officer":1500126140478525451
-    }
 
 if constants.ENVIRONMENT != "PRODUCTION":
     from rich.console import Console

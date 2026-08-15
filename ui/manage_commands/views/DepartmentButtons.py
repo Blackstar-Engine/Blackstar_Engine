@@ -7,13 +7,16 @@ from utils.constants import profiles
 from ui.manage_commands.views.AdminTools import ManageDepartmentRow
 
 class DepartmentButtons(ui.ActionRow):
-    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, unit: str):
+    def __init__(self, bot: commands.Bot, user: discord.Member, moderator: discord.Member, user_profile: dict, unit: str, is_owner: bool, nodes: dict):
         super().__init__()
         self.bot = bot
         self.moderator = moderator
-        self.inacted_user = inacted_user
-        self.profile = profile
+        self.user = user
+        self.user_profile = user_profile
         self.unit = unit
+        self.is_owner = is_owner
+        self.nodes = nodes
+        self.node_admin = nodes.get("admin")
 
         self.demote_button = ui.Button(label="Demote", style=discord.ButtonStyle.blurple)
         self.point_reduction = ui.Button(label="Reduce Points", style=discord.ButtonStyle.blurple)
@@ -33,16 +36,24 @@ class DepartmentButtons(ui.ActionRow):
         
         from ui.manage_commands.views.ReturnButton import ReturnButton
 
-        current_rank = self.profile["unit"][self.unit]["rank"]
+        current_rank = self.user_profile["unit"][self.unit]["rank"]
         ranks = dept.get("ranks", [])
 
         view = discord.ui.LayoutView()
-        action_row = discord.ui.ActionRow(ReturnButton(self.bot, self.moderator, self.inacted_user))
+        action_row = discord.ui.ActionRow(ReturnButton(self.bot, self.user, self.moderator, self.nodes))
         container = discord.ui.Container(
             discord.ui.TextDisplay(f"**Selected Unit:** {self.unit}\n**Current Rank:** {current_rank}"),
             discord.ui.Separator(),
             discord.ui.TextDisplay("Select the new rank to demote to:"),
-            DemoteRankView(self.bot, self.moderator, self.inacted_user, self.profile, self.unit, ranks, current_rank),
+            DemoteRankView(bot=self.bot,
+                           user=self.user,
+                           moderator=self.moderator,
+                           user_profile=self.user_profile,
+                           unit=self.unit, 
+                           ranks=ranks, 
+                           current_rank=current_rank,
+                           nodes=self.nodes,
+                           is_owner=self.is_owner),
             action_row,
             accent_color=discord.Color.yellow()
         )
@@ -52,20 +63,20 @@ class DepartmentButtons(ui.ActionRow):
         await interaction.response.edit_message(view=view)
     
     async def _point_reduction_callback(self, interaction: discord.Interaction):
-        modal = PointsRemovalModal(self.profile)
+        modal = PointsRemovalModal(self.user_profile)
         await interaction.response.send_modal(modal)
 
         await modal.wait()
 
         points = modal.data
 
-        current_points = self.profile["units"][self.unit]["current_points"]
+        current_points = self.user_profile["units"][self.unit]["current_points"]
         if current_points <= 0:
             return await interaction.followup.send("This users current points are already 0 or below, sorry you can reduce points", ephemeral=True)
 
         await log_action(ctx=interaction, log_type="point_deduction", user_id=self.moderator.id, points=points, command_name="manage profile")
 
-        await profiles.update_one({"guild_id": interaction.guild.id, "user_id": self.inacted_user.id}, {"$inc": {f"unit.{self.unit}.current_points": -float(points)}})
+        await profiles.update_one({"guild_id": interaction.guild.id, "user_id": self.user.id}, {"$inc": {f"unit.{self.unit}.current_points": -float(points)}})
 
         confirm_view = ui.LayoutView()
         container = ui.Container(
@@ -75,9 +86,9 @@ class DepartmentButtons(ui.ActionRow):
         confirm_view.add_item(container)
         await interaction.followup.send(view=confirm_view, ephemeral=True)
 
-        self.profile["unit"][self.unit]["current_points"] += -float(points)
+        self.user_profile["unit"][self.unit]["current_points"] += -float(points)
 
-        department = self.profile["unit"][self.unit]
+        department = self.user_profile["unit"][self.unit]
 
         main_view = ui.LayoutView()
 
@@ -85,16 +96,19 @@ class DepartmentButtons(ui.ActionRow):
             ui.TextDisplay(f"## {self.unit} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
             ui.Separator(),
-            DepartmentButtons(self.bot, self.moderator, self.inacted_user, self.profile, self.unit),
+            DepartmentButtons(bot=self.bot,
+                              user=self.user,
+                              moderator=self.moderator,
+                              user_profile=self.user_profile,
+                              unit=self.unit,
+                              is_owner=self.is_owner,
+                              nodes=self.nodes),
             accent_color=discord.Color.light_grey()
         )
 
-        is_bot_owner = await self.bot.is_owner(interaction.user)
-        if is_bot_owner:
-            if not await get_permission_node(interaction, "manage_profile.admin"):
-                return
+        if self.is_owner or self.node_admin:
             container.add_item(ui.Separator())
-            container.add_item(ManageDepartmentRow(self.profile, self.unit))
+            container.add_item(ManageDepartmentRow(self.user_profile, self.unit))
 
         main_view.add_item(container)
 
