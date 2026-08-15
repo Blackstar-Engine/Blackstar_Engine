@@ -340,7 +340,6 @@ async def get_gift_limit(ctx: commands.Context, user: discord.Member | None = No
     ]
 
     if not matching_tiers:
-        await ctx.send("Something went wrong, please contact **DSM**!", ephemeral=True)
         return False
 
     matching_tier = max(matching_tiers, key=lambda tier: tier.get("rank", 0))
@@ -521,8 +520,8 @@ async def get_permission_node(ctx: commands.Context, key: str):
     if not ctx.guild:
         return False
 
-    if user.guild_permissions.administrator or user.id in bypassed_users:
-        return True
+    # if user.guild_permissions.administrator or user.id in bypassed_users:
+    #     return True
 
     result = await permission_rules.find_one({
         "guild_id": ctx.guild.id,

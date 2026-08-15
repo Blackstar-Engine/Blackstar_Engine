@@ -17,6 +17,19 @@ class Permissions(commands.Cog):
         self.manage_perm_view = None
         self.manage_perm_type = None
 
+    def _autocomplete_is_expired(self, interaction: discord.Interaction | None) -> bool:
+        if interaction is None:
+            return True
+
+        is_expired = getattr(interaction, "is_expired", None)
+        if callable(is_expired):
+            try:
+                return bool(is_expired())
+            except Exception:
+                return False
+
+        return False
+
     async def command_autocomplete(
         self,
         interaction: discord.Interaction,
@@ -24,18 +37,26 @@ class Permissions(commands.Cog):
     ):
         """Get all permission-managed commands and return them as choices."""
 
-        all_commands = [
-            cmd.qualified_name
-            for cmd in self.bot.walk_commands()
-            if (
-                isinstance(cmd, commands.Command)
-                and not isinstance(cmd, (commands.Group, commands.HybridGroup))
-                and not cmd.qualified_name.startswith("jishaku")
-                and getattr(cmd.callback, "permission_managed", False)
-            )
-        ]
+        if self._autocomplete_is_expired(interaction):
+            return []
 
-        matches = [cmd for cmd in all_commands if current.lower() in cmd.lower()]
+        query = str(current or "").lower()
+
+        try:
+            all_commands = [
+                cmd.qualified_name
+                for cmd in self.bot.walk_commands()
+                if (
+                    isinstance(cmd, commands.Command)
+                    and not isinstance(cmd, (commands.Group, commands.HybridGroup))
+                    and not cmd.qualified_name.startswith("jishaku")
+                    and getattr(cmd.callback, "permission_managed", False)
+                )
+            ]
+        except (AttributeError, TypeError):
+            return []
+
+        matches = [cmd for cmd in sorted(all_commands) if query in cmd.lower()]
         return [app_commands.Choice(name=cmd, value=cmd) for cmd in matches[:25]]
     
     async def feature_autocomplete(
@@ -45,34 +66,59 @@ class Permissions(commands.Cog):
     ):
         """Get all cogs that contain at least one permission-managed command."""
 
-        all_cogs = []
+        if self._autocomplete_is_expired(interaction):
+            return []
 
-        for cog_name, cog in self.bot.cogs.items():
-            if cog_name == "jishaku":
-                continue
+        query = str(current or "").lower()
 
-            has_permission_command = any(
-                getattr(command.callback, "permission_managed", False)
-                for command in cog.walk_commands()
-                if isinstance(command, commands.Command)
-            )
+        try:
+            all_cogs = []
 
-            if has_permission_command:
-                all_cogs.append(cog_name)
+            for cog_name, cog in self.bot.cogs.items():
+                if cog_name == "jishaku":
+                    continue
 
-        matches = [cog for cog in all_cogs if current.lower() in cog.lower()]
+                has_permission_command = any(
+                    getattr(command.callback, "permission_managed", False)
+                    for command in cog.walk_commands()
+                    if isinstance(command, commands.Command)
+                )
+
+                if has_permission_command:
+                    all_cogs.append(cog_name)
+        except (AttributeError, TypeError):
+            return []
+
+        matches = [cog for cog in sorted(all_cogs) if query in cog.lower()]
         return [app_commands.Choice(name=cog, value=cog) for cog in matches[:25]]
     
     async def min_rank_autocomplete(self, interaction: discord.Interaction, current: str):
-        ''''get all min ranks and return them as a choice'''
-        all_ranks = [rank.get("name", "Unknown") for rank in self.bot.permission_tiers]
-        matches = [rank for rank in all_ranks if current.lower() in rank.lower()]
+        '''Get all min ranks and return them as a choice, ordered from highest to lowest rank.'''
+        if self._autocomplete_is_expired(interaction):
+            return []
+
+        query = str(current or "").lower()
+
+        try:
+            ordered_tiers = sorted(
+                self.bot.permission_tiers,
+                key=lambda tier: int((tier or {}).get("rank", 0) or 0),
+                reverse=True,
+            )
+            all_ranks = [str((tier or {}).get("name", "Unknown") or "Unknown") for tier in ordered_tiers]
+        except (AttributeError, TypeError, ValueError):
+            return []
+
+        matches = [rank for rank in all_ranks if query in rank.lower()]
         return [app_commands.Choice(name=rank, value=rank) for rank in matches[:25]]
 
     async def perm_nodes_autocomplete(self, interaction: discord.Interaction, current: str):
         '''get all permission nodes located in constants and return them as a choice'''
-        all_nodes = [node for node in PERMISSION_NODES.keys()]
-        matches = [node for node in all_nodes if current.lower() in node]
+        if self._autocomplete_is_expired(interaction):
+            return []
+
+        query = str(current or "").lower()
+        matches = [node for node in PERMISSION_NODES.keys() if query in node.lower()]
         return [app_commands.Choice(name=node, value=node) for node in matches[:25]]
 
     async def PT_add_record(self, interaction: discord.Interaction):

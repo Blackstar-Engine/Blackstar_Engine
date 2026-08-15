@@ -59,7 +59,7 @@ class PrivateUnitsRow(ui.ActionRow):
         await interaction.response.defer(ephemeral=True)
 
 class SubmitButtonRow(ui.ActionRow):
-    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, normal_row_select: NormalUnitsRow, private_row_select: PrivateUnitsRow):
+    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, normal_row_select: NormalUnitsRow, private_row_select: PrivateUnitsRow, nodes: dict):
         super().__init__()
         from ui.manage_commands.views.ReturnButton import ReturnButton
         self.profile = profile
@@ -67,13 +67,14 @@ class SubmitButtonRow(ui.ActionRow):
         self.private_row_select = private_row_select
         self.moderator = moderator
         self.inacted_user = inacted_user
+        self.nodes = nodes
 
         submit_button = ui.Button(label="Submit", style=discord.ButtonStyle.green)
 
         submit_button.callback = self.profile_manage_units_submit
 
         self.add_item(submit_button)
-        self.add_item(ReturnButton(bot, moderator, inacted_user))
+        self.add_item(ReturnButton(bot, inacted_user, moderator, nodes))
 
     async def profile_manage_units_submit(self, interaction: discord.Interaction):
 
@@ -143,12 +144,13 @@ class SubmitButtonRow(ui.ActionRow):
         self.view.stop()
 
 class ProfileManageUnitsView(ui.LayoutView):
-    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, normal_units_results: list, private_units_results: list):
+    def __init__(self, bot: commands.Bot, user: discord.Member, moderator: discord.Member, user_profile: dict, normal_units_results: list, private_units_results: list, nodes: dict):
         super().__init__()
         self.bot = bot
         self.moderator = moderator
-        self.inacted_user = inacted_user
-        self.profile = profile
+        self.user = user
+        self.user_profile = user_profile
+        self.nodes = nodes
 
         self.normal_units_select = NormalUnitsRow(normal_units_results)
         self.private_units_select = PrivateUnitsRow(private_units_results)
@@ -156,10 +158,11 @@ class ProfileManageUnitsView(ui.LayoutView):
         self.submit_button = SubmitButtonRow(
             bot,
             moderator,
-            inacted_user,
-            profile,
+            user,
+            user_profile,
             self.normal_units_select,
-            self.private_units_select
+            self.private_units_select,
+            self.nodes
         )
 
         container = ui.Container(
