@@ -185,7 +185,7 @@ class HelpCommandOptions(discord.ui.LayoutView):
         
 
 class HelpCommand(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.hybrid_command(
@@ -197,24 +197,92 @@ class HelpCommand(commands.Cog):
         await ctx.defer()
         commands_list = {}
 
-        command_ids = {
-            f"{cmd.name} {child.name}": cmd.id
-            for cmd in await self.bot.tree.fetch_commands()
-            for child in cmd.options
-        }
+        fetched_commands = await self.bot.tree.fetch_commands()
 
-        command_ids.update({
-            str(cmd): cmd.id
-            for cmd in await self.bot.tree.fetch_commands()
-        })
+        command_ids = {}
+
+        def add_command_ids(command, parent_name="", root_id=None):
+            # Only top-level AppCommands have an ID
+            if root_id is None:
+                root_id = command.id
+
+            command_name = (
+                f"{parent_name} {command.name}"
+                if parent_name
+                else command.name
+            )
+
+            command_ids[command_name] = root_id
+
+            for option in getattr(command, "options", []):
+                if hasattr(option, "name"):
+                    add_command_ids(
+                        option,
+                        command_name,
+                        root_id
+                    )
+
+
+        for command in fetched_commands:
+            if hasattr(command, "id"):
+                add_command_ids(command)
+
+        # YOUR EXISTING HYBRID/PREFIX COMMANDS
         for command in self.bot.walk_commands():
             category = command.extras.get('category')
             if category and category not in ('Group', 'Staff'):
                 commands_list.setdefault(category, "")
                 commands_list[category] += f"**→** </{command}:{command_ids.get(str(command))}> \n> {command.description}\n\n"
-        
 
-        help_view = HelpCommandOptions(self.bot, commands_list, ctx.author.id)
+        # -------------------------------------------------
+        # ADD SLASH COMMANDS
+        # -------------------------------------------------
+
+        for command in self.bot.tree.walk_commands():
+
+            # Skip groups themselves
+            if isinstance(command, discord.app_commands.Group):
+                continue
+
+            category = command.extras.get("category")
+
+            # No category = don't add it
+            if not category or category in ("Group", "Staff"):
+                continue
+
+            command_name = command.qualified_name
+
+            # Don't add hybrid commands a second time
+            if self.bot.get_command(command_name):
+                continue
+
+            # Find the Discord ID using the same command_ids
+            command_id = command_ids.get(command_name)
+
+            if command_id is None:
+                # For a subcommand, the ID is the parent command's ID
+                command_id = command_ids.get(
+                    f"{command.parent.name} {command.name}"
+                    if command.parent
+                    else command.name
+                )
+
+            if command_id is None:
+                continue
+
+            commands_list.setdefault(category, "")
+
+            commands_list[category] += (
+                f"**→** </{command_name}:{command_id}> \n"
+                f"> {command.description}\n\n"
+            )
+
+        help_view = HelpCommandOptions(
+            self.bot,
+            commands_list,
+            ctx.author.id
+        )
+
         await ctx.send(view=help_view, ephemeral=True)
 
 async def setup(bot):

@@ -131,6 +131,7 @@ birthdays = db.birthdays
 permission_tiers = db.permission_tiers
 permission_rules = db.permission_rules
 permission_overrides = db.permission_overrides
+reaction_roles = db.reaction_roles
 
 bypassed_users = [
             758170288566566952, #Ghost

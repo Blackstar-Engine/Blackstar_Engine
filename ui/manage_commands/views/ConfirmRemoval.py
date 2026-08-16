@@ -1,16 +1,16 @@
 import discord
 from discord.ui import Button
+from discord.ext import commands
 
 class ConfirmRemovalView(discord.ui.ActionRow):
-    def __init__(self, bot, moderator, inacted_user, record, index):
+    def __init__(self, bot: commands.Bot, user: discord.Member, moderator: discord.Member, nodes: dict):
         super().__init__()
         from ui.manage_commands.views.ReturnButton import ReturnButton
         self.bot = bot
-        self.record = record
-        self.index = index
         self.status = None
+        self.nodes = nodes
 
-        cancel_button = ReturnButton(bot, moderator, inacted_user)
+        cancel_button = ReturnButton(bot, user, moderator, nodes)
         cancel_button.label = "Cancel"
         cancel_button.style = discord.ButtonStyle.red
 

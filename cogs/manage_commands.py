@@ -8,7 +8,7 @@ from ui.manage_commands.modals.AutoReply import AutoReplyAddModal
 from ui.manage_commands.modals.AutoReplyEdit import AutoReplyEditModal
 from ui.manage_commands.views.ManageProfileMainView import ManageProfileMainView
 from ui.manage_commands.views.ManageDeptMainView import ManageDeptMainView
-from utils.utils import fetch_unit_options, permissions, fetch_department, fetch_profile
+from utils.utils import fetch_unit_options, permissions, fetch_department, fetch_profile, get_permission_node
 
 class ConfirmRemovalView(View):
     def __init__(self, bot, user, record, index):
@@ -177,15 +177,27 @@ class ManageCommands(commands.Cog):
         is_bot_owner = await self.bot.is_owner(ctx.author)
 
         # check to see if they have a profile
-        profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
-        if not profile:
+        user_profile = await profiles.find_one({'guild_id': ctx.guild.id, 'user_id': user.id})
+        if not user_profile:
             embed = discord.Embed(title="", description="Profile Not Found", color=discord.Color.dark_embed())
             return await ctx.send(embed=embed)
 
         # Fetch active departments
-        options = fetch_unit_options(profile)
+        options = fetch_unit_options(user_profile)
+        profile_admin = await get_permission_node(ctx, "manage_profile.admin")
+        profile_mod = await get_permission_node(ctx, "manage_profile.mod")
+        nodes = {
+            "admin": profile_admin,
+            "mod": profile_mod
+        }
 
-        view = ManageProfileMainView(bot=self.bot, moderator=ctx.author, inacted_user=user, profile=profile, dept_options=options, is_owner=is_bot_owner)
+        view = ManageProfileMainView(bot=self.bot, 
+                                     user=user,
+                                     moderator=ctx.author,
+                                     user_profile=user_profile,
+                                     user_dept_options=options,
+                                     nodes=nodes,
+                                     is_owner=False) # is_bot_owner
 
         # Send to the user
         await ctx.send(view=view, ephemeral=True)

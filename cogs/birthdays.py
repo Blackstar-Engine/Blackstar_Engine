@@ -15,16 +15,12 @@ class Birthday(commands.Cog):
     
     @birthday.command(name="set", description="Set your birthday", with_app_command=True)
     async def set(self, ctx: commands.Context, date):
-        info = await birthdays.find_one({"user_id":ctx.author.id})
-        if info:
-            embed = discord.Embed(description="Your birthday has already been set, please contact DSM to change it.", color=discord.Color.light_gray())
-            return await ctx.send(embed=embed, ephemeral=True)
         try:
             birthday = datetime.strptime(date, "%m/%d")
             string = birthday.strftime("%m-%d")
             display = birthday.strftime("%B %d").replace(" 0", " ")
 
-            birthdays.insert_one({"user_id": ctx.author.id, "date": string})
+            await birthdays.update_one({"user_id": ctx.author.id}, {"$set": {"date": string}}, upsert=True)
             embed = discord.Embed(description=f"Your birthday has been set to `{display}`", color=discord.Color.light_gray())
             await ctx.send(embed=embed, ephemeral=True)
         except ValueError:

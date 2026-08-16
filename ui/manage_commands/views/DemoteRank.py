@@ -7,14 +7,16 @@ from discord import ui
 from utils.utils import get_permission_node
 
 class DemoteRankView(ui.ActionRow):
-    def __init__(self, bot: commands.Bot, moderator: discord.Member, inacted_user: discord.Member, profile: dict, unit: str, ranks: list, current_rank: str):
+    def __init__(self, bot: commands.Bot, user: discord.Member, moderator: discord.Member, user_profile: dict, unit: str, ranks: list, current_rank: str, nodes: dict, is_owner: bool):
         super().__init__()
 
-        self.profile = profile
+        self.user_profile = user_profile
         self.unit = unit
         self.bot = bot
         self.moderator = moderator
-        self.inacted_user = inacted_user
+        self.user = user
+        self.nodes = nodes
+        self.is_owner = is_owner
 
         # Find current rank order
         current_rank_obj = next(
@@ -46,19 +48,18 @@ class DemoteRankView(ui.ActionRow):
         self.add_item(self.rank_select)
 
     async def rank_select_callback(self, interaction: discord.Interaction):
-        from ui.manage_commands.views.ManageProfileMainView import ManageProfileMainView
         new_rank = self.rank_select.values[0]
 
         await profiles.update_one(
-            {"_id": self.profile["_id"]},
+            {"_id": self.user_profile["_id"]},
             {"$set": {
                 f"unit.{self.unit}.rank": new_rank
             }}
         )
 
-        self.profile["unit"][self.unit]["rank"] = new_rank
+        self.user_profile["unit"][self.unit]["rank"] = new_rank
 
-        department = self.profile["unit"][self.unit]
+        department = self.user_profile["unit"][self.unit]
 
         main_view = ui.LayoutView()
 
@@ -66,7 +67,13 @@ class DemoteRankView(ui.ActionRow):
             ui.TextDisplay(f"## {self.unit} Information"),
             ui.TextDisplay(f"**Rank: ** {department.get('rank')}\n**Current Points: ** {department.get('current_points')}\n**Total Points: ** {department.get('total_points')}"),
             ui.Separator(),
-            DepartmentButtons(self.bot, self.moderator, self.inacted_user, self.profile, self.unit),
+            DepartmentButtons(bot=self.bot,
+                              user=self.user,
+                              moderator=self.moderator,
+                              user_profile=self.user_profile,
+                              unit=self.unit,
+                              is_owner=self.is_owner,
+                              nodes=self.nodes),
             accent_color=discord.Color.light_grey()
         )
         
@@ -74,7 +81,7 @@ class DemoteRankView(ui.ActionRow):
         perms = await get_permission_node(interaction, "manage_profile.admin")
         if is_bot_owner or perms:
             container.add_item(ui.Separator())
-            container.add_item(ManageDepartmentRow(self.profile, self.unit))
+            container.add_item(ManageDepartmentRow(self.user_profile, self.unit))
 
         main_view.add_item(container)
 
