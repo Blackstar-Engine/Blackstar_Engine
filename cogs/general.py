@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands
 from datetime import timedelta, datetime
-from utils.constants import bypassed_users
+from utils.constants import bypassed_users, permission_tiers
 from ui.leaderboard.ScrollButtons import LeaderboardView
 from utils.utils import fetch_id, log_action, permissions
 from ui.general.views.DmView import DMEmbedView
 import random
 import secrets
+from ui.general.views.ViewMemView import ViewMemView
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -116,6 +117,19 @@ class General(commands.Cog):
         await ctx.send(view=view, allowed_mentions=discord.AllowedMentions(users=False))
 
     
+    @commands.hybrid_command(name="view_members", description="View members of a certain tier within the bot.", with_app_command=True, extras={'category': 'Other'})
+    async def view_members(self, ctx: commands.Context):
+        all_tiers = await permission_tiers.find({"guild_id": ctx.guild.id}).to_list(length=None)
+        options = []
+
+        for tier in all_tiers:
+            options.append(discord.SelectOption(label=tier.get("name"), value=tier.get("rank")))
+
+        if len(options) == 0:
+            return await ctx.send("It looks like you have no tiers in this server!", ephemeral=True)
+
+        view = ViewMemView(self.bot, options, all_tiers)
+        await ctx.send(view=view)
 
     
 async def setup(bot: commands.Bot):
