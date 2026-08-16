@@ -71,4 +71,4 @@ class ReactionRoles(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ReactionRoles(bot))
-    bot.add_view(RoleSelect(bot))
+    bot.add_view(RoleSelect())
