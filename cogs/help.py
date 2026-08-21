@@ -42,8 +42,8 @@ class HelpCommandOptions(discord.ui.LayoutView):
         self.button_row = ui.ActionRow(self.search_button_component)
 
         container = ui.Container(
-            ui.TextDisplay("## Blackstar Engine"),
-            ui.TextDisplay("We use blackstar engine as the main system for tracking users, point requests, promotions, sessions, games, and more."),
+            ui.TextDisplay("## Vaptic"),
+            ui.TextDisplay("Vaptic is a multi-purpose roleplay bot target to help make manual processes easy and automated."),
             self.select_row,
             ui.Separator(),
             self.button_row,
@@ -189,7 +189,7 @@ class HelpCommand(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(
-        description="Display all of Blackstar Engine's commands.",
+        description="Display all of Vaptic's commands.",
         with_app_command=True,
         extras={"category": "Other"}
     )

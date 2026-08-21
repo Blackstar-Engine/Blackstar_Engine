@@ -27,10 +27,12 @@ async def send_dev_error(bot: commands.Bot, ctx, error):
 
     dev_embed = create_dev_embed(error, ctx)
 
-   
-    channel = await bot.fetch_channel(1464811075760427008)
-    if channel:
-        await channel.send(embed=dev_embed)
+    try:
+        channel = await bot.fetch_channel(1540184954468835378)
+        if channel:
+            await channel.send(embed=dev_embed)
+    except (discord.Forbidden, discord.NotFound):
+        logger.error("Unable to send the developer error report.")
 
 class Errors(commands.Cog):
     def __init__(self, bot):
@@ -80,7 +82,10 @@ class Errors(commands.Cog):
 
         else:
             embed.description = "❌ Uh oh! An unexpected error occurred."
-            logger.error(f'An unexpected error has occurred: {error}')
+            logger.error(
+                "An unexpected error has occurred.",
+                exc_info=(type(error), error, error.__traceback__),
+            )
 
             await send_dev_error(self.bot, ctx, error)
         

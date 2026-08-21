@@ -33,7 +33,6 @@ profanity_list = [
                     "tit", "douche", "douchebag", "blowjob", "handjob", "ass", "seman", "anel", "wanker",
                     "fucking", "fucker", "fucked", "fucks", "fuk"
                 ]
-whitelisted_guilds = [1411941814923169826, 1450297281088720928]
 PERMISSION_NODES = {
     "roa.manage": {
         "description": "Manage other peoples roas"
@@ -135,7 +134,6 @@ reaction_roles = db.reaction_roles
 
 bypassed_users = [
             758170288566566952, #Ghost
-            1371489554279825439, #Wolf
             1007353417779396709 #Option
         ]
 
@@ -189,7 +187,7 @@ else:
 handler.setFormatter(logging.Formatter('%(name)s: %(message)s'))
 level = logging.DEBUG if constants.ENVIRONMENT != "PRODUCTION" else logging.INFO
 
-logger = logging.getLogger('Blackstar Engine')
+logger = logging.getLogger('Vaptic')
 logger.setLevel(level)
 logger.addHandler(handler)
 logger.propagate = False

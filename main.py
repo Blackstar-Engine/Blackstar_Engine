@@ -7,14 +7,13 @@ import asyncio
 from collections import defaultdict
 from utils.constants import (
                             BlackstarConstants, auto_replys, enlistment_requests, point_requests,
-                            promotion_requests, whitelisted_guilds, logger, discord_http_logger,
+                            promotion_requests, logger, discord_http_logger,
                             discord_logger, permission_tiers, permission_rules, permission_overrides,
                             bypassed_users, ids
                             )
 from ui.promotion.views.PromotionRequest import PromotionRequestView
 from ui.points.views.AcceptDenyButtons import PointsRequestView
 from ui.enlistment_request.views.EnlistmentRequestView import EnlistmentRequestView
-from utils.utils import is_whitelisted
 
 constants = BlackstarConstants()
 
@@ -118,17 +117,28 @@ class Bot(commands.Bot):
 
         await bot.change_presence(activity=discord.CustomActivity(name=presence))
 
-        for guild in bot.guilds:
-            if await is_whitelisted(guild, bot):
-                await guild.chunk(cache=True)
-                logger.info(f"Chunked guild: \"{guild.name}\" ({guild.id})")
-            else:
-                logger.warning(f"I have left \"{guild.name}\" ({guild.id}) because it is not whitelisted.")
-        
-        bot.permission_tiers = await permission_tiers.find().to_list(length=None)
-        bot.permission_rules = await permission_rules.find().to_list(length=None)
-        bot.permission_overrides = await permission_overrides.find().to_list(length=None)
+        # Get all tiers, generate a new dict obj
+        raw_tiers = await permission_tiers.find().to_list(length=None)
+        bot.permission_tiers = {}
+        for tier in raw_tiers:
+            bot.permission_tiers.setdefault(tier["guild_id"], {})[tier["name"]] = tier
 
+        # Get all rules, generate a new dict obj
+        raw_rules = await permission_rules.find().to_list(length=None)
+        bot.permission_rules = {
+            (rule["guild_id"], rule["scope_type"], rule["scope_key"]): rule
+            for rule in raw_rules
+        }
+
+        # Get all overrides, generate a new dict obj
+        raw_overrides = await permission_overrides.find().to_list(length=None)
+        bot.permission_overrides = {}
+        for override in raw_overrides:
+            scope_key = (override["guild_id"], override["scope_type"], override["scope_key"])
+            target_key = (override["target_type"], override["target_id"])
+            bot.permission_overrides.setdefault(scope_key, {})[target_key] = override
+
+        # Get all reaction roles
         bot.reaction_roles = await ids.find({"key": "reaction_roles"}).to_list(length=None)
 
         

@@ -3,7 +3,9 @@ from discord.ext import commands
 from utils.constants import db, bypassed_users
 from utils.utils import permissions, get_permission_node
 import csv
+import io
 import os
+import aiofiles
 
 def flatten_dict(data, parent_key=""):
         items = {}
@@ -58,12 +60,17 @@ class IDInputModal(discord.ui.Modal):
 
             fieldnames = sorted(fieldnames)
 
-            with open(f"{interaction.user.id}_{self.collection_name}_{record_id}.csv", "w", newline="", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerow(record)
-            await interaction.response.send_message(file=discord.File(f"{interaction.user.id}_{self.collection_name}_{record_id}.csv"), content=f"Exported record with user id `{record_id}` from `{self.collection_name}` collection.", ephemeral=True)
-            os.remove(f"{interaction.user.id}_{self.collection_name}_{record_id}.csv")
+            # build CSV content in-memory then write asynchronously to disk
+            csv_buffer = io.StringIO()
+            writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow(record)
+            csv_content = csv_buffer.getvalue()
+            file_path = f"{interaction.user.id}_{self.collection_name}_{record_id}.csv"
+            async with aiofiles.open(file_path, "w", encoding="utf-8", newline="") as af:
+                await af.write(csv_content)
+            await interaction.response.send_message(file=discord.File(file_path), content=f"Exported record with user id `{record_id}` from `{self.collection_name}` collection.", ephemeral=True)
+            os.remove(file_path)
         else:
             await interaction.response.send_message(f"No record found with user id: {record_id}", ephemeral=True)
 
@@ -124,13 +131,18 @@ class AllOrRecordButtons(discord.ui.View):
 
                 fieldnames = sorted(fieldnames)
 
-                with open(f"{interaction.user.id}_{self.collection_name}.csv", "w", newline="", encoding="utf-8") as file:
-                    writer = csv.DictWriter(file, fieldnames=fieldnames)
-                    writer.writeheader()
-                    writer.writerows(clean_records)
-                
-                await interaction.followup.send(file=discord.File(f"{interaction.user.id}_{self.collection_name}.csv"), content=f"Exported all records from `{self.collection_name}` collection.", ephemeral=True)
-                os.remove(f"{interaction.user.id}_{self.collection_name}.csv")
+                # build CSV content in-memory then write asynchronously to disk
+                csv_buffer = io.StringIO()
+                writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(clean_records)
+                csv_content = csv_buffer.getvalue()
+                file_path = f"{interaction.user.id}_{self.collection_name}.csv"
+                async with aiofiles.open(file_path, "w", encoding="utf-8", newline="") as af:
+                    await af.write(csv_content)
+
+                await interaction.followup.send(file=discord.File(file_path), content=f"Exported all records from `{self.collection_name}` collection.", ephemeral=True)
+                os.remove(file_path)
 
                 
 

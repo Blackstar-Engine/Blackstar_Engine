@@ -50,7 +50,7 @@ class SCC(commands.Cog):
             description="▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n"+ "\n".join(lines),
             color=discord.Color.light_gray()
         )
-        embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+        embed.set_footer(text=f"Vaptic • {datetime.now().date()}")
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         await ctx.send(embed=embed)

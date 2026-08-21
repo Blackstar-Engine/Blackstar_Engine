@@ -21,14 +21,16 @@ class Permissions(commands.Cog):
         if interaction is None:
             return True
 
-        is_expired = getattr(interaction, "is_expired", None)
-        if callable(is_expired):
-            try:
-                return bool(is_expired())
-            except Exception:
-                return False
+        created_at = getattr(interaction, "created_at", None)
+        if created_at is None:
+            return False
 
-        return False
+        # Discord requires an autocomplete response within ~3 seconds of the
+        # interaction being created. Bail out early once we're close to that
+        # so we don't waste time building choices for a token that's already
+        # (or about to be) invalid.
+        elapsed = (discord.utils.utcnow() - created_at).total_seconds()
+        return elapsed >= 2.5
 
     async def command_autocomplete(
         self,
@@ -93,20 +95,22 @@ class Permissions(commands.Cog):
         return [app_commands.Choice(name=cog, value=cog) for cog in matches[:25]]
     
     async def min_rank_autocomplete(self, interaction: discord.Interaction, current: str):
-        '''Get all min ranks and return them as a choice, ordered from highest to lowest rank.'''
+        '''Get all min ranks for this guild, ordered from highest to lowest rank.'''
         if self._autocomplete_is_expired(interaction):
             return []
 
         query = str(current or "").lower()
+        guild_id = interaction.guild.id if interaction.guild else None
 
         try:
+            guild_tiers = list(self.bot.permission_tiers.get(guild_id, {}).values())
             ordered_tiers = sorted(
-                self.bot.permission_tiers,
+                guild_tiers,
                 key=lambda tier: int((tier or {}).get("rank", 0) or 0),
                 reverse=True,
             )
             all_ranks = [str((tier or {}).get("name", "Unknown") or "Unknown") for tier in ordered_tiers]
-        except (AttributeError, TypeError, ValueError):
+        except Exception:
             return []
 
         matches = [rank for rank in all_ranks if query in rank.lower()]
@@ -194,6 +198,7 @@ class Permissions(commands.Cog):
         await permission_tiers.insert_one(perms_tier_doc)
 
         self.manage_permissions_tiers_view.items.append(perms_tier_doc)
+        self.bot.permission_tiers.setdefault(interaction.guild.id, {})[perms_tier_doc["name"]] = perms_tier_doc
 
         self.manage_permissions_tiers_view.update_buttons()
         new_embed = self.manage_permissions_tiers_view.create_record_embed()
@@ -373,6 +378,8 @@ class Permissions(commands.Cog):
 
         if confirm.status and not cancel.status:
             self.manage_permissions_tiers_view.items.remove(current_record)
+            guild_tiers = self.bot.permission_tiers.get(interaction.guild.id, {})
+            guild_tiers.pop(current_record.get("name"), None)
 
             await permission_tiers.delete_one({"guild_id": interaction.guild.id, "name": current_record.get("name")})
         
@@ -408,10 +415,22 @@ class Permissions(commands.Cog):
 
             if self.manage_perm_type == "rules":
                 await permission_rules.delete_one(current_record)
-                self.bot.permission_rules.remove(current_record)
+                rule_key = (
+                    current_record["guild_id"],
+                    current_record["scope_type"],
+                    current_record["scope_key"],
+                )
+                self.bot.permission_rules.pop(rule_key, None)
             elif self.manage_perm_type == "overrides":
                 await permission_overrides.delete_one(current_record)
-                self.bot.permission_overrides.remove(current_record)
+                scope_key = (
+                    current_record["guild_id"],
+                    current_record["scope_type"],
+                    current_record["scope_key"],
+                )
+                target_key = (current_record["target_type"], current_record["target_id"])
+                scoped_overrides = self.bot.permission_overrides.get(scope_key, {})
+                scoped_overrides.pop(target_key, None)
 
         self.manage_rules_view.current_index = 0
         self.manage_rules_view.update_buttons()
@@ -432,7 +451,8 @@ class Permissions(commands.Cog):
     @permission_tiers.command(name="manage", description="Manage permission tier.", extras={'category': 'Permissions'})
     @permissions()
     async def manage_permissions_tiers(self, interaction: discord.Interaction):
-        self.manage_permissions_tiers_view = PaginatorView(self.bot, interaction.user, self.bot.permission_tiers)
+        guild_tiers = list(self.bot.permission_tiers.get(interaction.guild.id, {}).values())
+        self.manage_permissions_tiers_view = PaginatorView(self.bot, interaction.user, guild_tiers)
 
         add_button = Button(
             label="Add",
@@ -494,6 +514,86 @@ class Permissions(commands.Cog):
         embed = self.manage_rules_view.create_record_embed()
         await interaction.response.send_message(embed=embed, view=self.manage_rules_view, ephemeral=True)
 
+    @set_permissions.command(name="all", description="Set the permission for every command, feature, or node at once.", extras={'category': 'Permissions'})
+    @permissions()
+    @app_commands.describe(scope="Which set of things to bulk-update.", min_rank="The min tier required.")
+    @app_commands.choices(scope=[
+        app_commands.Choice(name="Commands", value="command"),
+        app_commands.Choice(name="Features", value="feature"),
+        app_commands.Choice(name="Nodes", value="permission"),
+    ])
+    @app_commands.autocomplete(min_rank=min_rank_autocomplete)
+    async def set_all_permissions(self, interaction: discord.Interaction, scope: app_commands.Choice[str], min_rank: str):
+        await interaction.response.defer(ephemeral=True)
+
+        tier_info = await permission_tiers.find_one({"guild_id": interaction.guild.id, "name": min_rank})
+        if not tier_info:
+            return await interaction.followup.send("Failed to find tier!", ephemeral=True)
+
+        scope_type = scope.value
+        new_rank = tier_info.get("rank")
+
+        if scope_type == "command":
+            keys = sorted({
+                cmd.qualified_name
+                for cmd in self.bot.walk_commands()
+                if (
+                    isinstance(cmd, commands.Command)
+                    and not isinstance(cmd, (commands.Group, commands.HybridGroup))
+                    and not cmd.qualified_name.startswith("jishaku")
+                    and getattr(cmd.callback, "permission_managed", False)
+                )
+            })
+        elif scope_type == "feature":
+            keys = []
+            for cog_name, cog in self.bot.cogs.items():
+                if cog_name == "jishaku":
+                    continue
+                has_permission_command = any(
+                    getattr(cmd.callback, "permission_managed", False)
+                    for cmd in cog.walk_commands()
+                    if isinstance(cmd, commands.Command)
+                )
+                if has_permission_command:
+                    keys.append(cog_name)
+            keys.sort()
+        elif scope_type == "permission":
+            keys = sorted(PERMISSION_NODES.keys())
+        else:
+            keys = []
+
+        if not keys:
+            return await interaction.followup.send("Couldn't find anything to update for that scope.", ephemeral=True)
+
+        for key in keys:
+            await permission_rules.update_one(
+                {"guild_id": interaction.guild.id, "scope_type": scope_type, "scope_key": key},
+                {"$set": {
+                    "guild_id": interaction.guild.id,
+                    "scope_type": scope_type,
+                    "scope_key": key,
+                    "min_rank": new_rank,
+                }},
+                upsert=True,
+            )
+
+            rule_key = (interaction.guild.id, scope_type, key)
+            cached_rule = self.bot.permission_rules.get(rule_key)
+            if cached_rule:
+                cached_rule["min_rank"] = new_rank
+            else:
+                self.bot.permission_rules[rule_key] = {
+                    "guild_id": interaction.guild.id,
+                    "scope_type": scope_type,
+                    "scope_key": key,
+                    "min_rank": new_rank,
+                }
+
+        await interaction.followup.send(
+            f"Set all **{scope.name.lower()}** to require a min rank of `{min_rank}` ({len(keys)} updated).",
+            ephemeral=True,
+        )
+
     @set_permissions.command(name="node", description="Set the permissions for a node.", extras={'category': 'Permissions'})
     @permissions()
     @app_commands.describe(node="This is the node name", min_rank="The min tier required for this command.")
@@ -511,6 +611,7 @@ class Permissions(commands.Cog):
         }
 
         await permission_rules.update_one({"guild_id": interaction.guild.id, "scope_type": "permission", "scope_key": node}, {"$set": node_doc}, upsert=True)
+        self.bot.permission_rules[(interaction.guild.id, "permission", node)] = node_doc
 
         await interaction.response.send_message(f"Set permission node `{node}` to require a min rank of `{min_rank}`", ephemeral=True)
 
@@ -530,15 +631,8 @@ class Permissions(commands.Cog):
             "min_rank": tier_info.get("rank")
         }
 
-        cached_rule = next(
-           ( 
-                rule for rule in self.bot.permission_rules
-                if rule["guild_id"] == interaction.guild.id
-                and rule["scope_type"] == "command"
-                and rule["scope_key"] == command
-            ),
-            None
-        )
+        rule_key = (interaction.guild.id, "command", command)
+        cached_rule = self.bot.permission_rules.get(rule_key)
 
         if cached_rule:
 
@@ -550,7 +644,7 @@ class Permissions(commands.Cog):
 
         else:
             await permission_rules.insert_one(perm_rules_doc)
-            self.bot.permission_rules.append(perm_rules_doc)
+            self.bot.permission_rules[rule_key] = perm_rules_doc
 
         await interaction.response.send_message(f"Set minimum rank for command `{command}` to `{min_rank}`.", ephemeral=True)
 
@@ -570,15 +664,8 @@ class Permissions(commands.Cog):
             "min_rank": tier_info.get("rank")
         }
 
-        cached_rule = next(
-           ( 
-                rule for rule in self.bot.permission_rules
-                if rule["guild_id"] == interaction.guild.id
-                and rule["scope_type"] == "feature"
-                and rule["scope_key"] == feature
-            ),
-            None
-        )
+        rule_key = (interaction.guild.id, "feature", feature)
+        cached_rule = self.bot.permission_rules.get(rule_key)
 
         if cached_rule:
             await permission_rules.update_one(
@@ -588,7 +675,7 @@ class Permissions(commands.Cog):
             cached_rule["min_rank"] = tier_info["rank"]
         else:
             await permission_rules.insert_one(perm_rules_doc)
-            self.bot.permission_rules.append(perm_rules_doc)
+            self.bot.permission_rules[rule_key] = perm_rules_doc
 
         await interaction.response.send_message(f"Set minimum rank for feature `{feature}` to `{min_rank}`.", ephemeral=True)
 
@@ -633,17 +720,9 @@ class Permissions(commands.Cog):
             perm_override_doc["target_type"] = "user"
             perm_override_doc["target_id"] = int(view.users[0].id)
 
-        cached_rule = next(
-           ( 
-                rule for rule in self.bot.permission_overrides
-                if rule["guild_id"] == interaction.guild.id
-                and rule["scope_type"] == "command"
-                and rule["scope_key"] == command
-                and rule["target_type"] == perm_override_doc["target_type"]
-                and rule["target_id"] == perm_override_doc["target_id"]
-            ),
-            None
-        )
+        scope_key = (interaction.guild.id, "command", command)
+        target_key = (perm_override_doc["target_type"], perm_override_doc["target_id"])
+        cached_rule = self.bot.permission_overrides.get(scope_key, {}).get(target_key)
         
         if cached_rule:
             await permission_overrides.update_one(
@@ -653,7 +732,7 @@ class Permissions(commands.Cog):
             cached_rule["effect"] = effect
         else:
             await permission_overrides.insert_one(perm_override_doc)
-            self.bot.permission_overrides.append(perm_override_doc)
+            self.bot.permission_overrides.setdefault(scope_key, {})[target_key] = perm_override_doc
 
         await interaction.followup.send(f"Overwrote permissions for command `{command}` for {scope_type} `{perm_override_doc['target_id']}` with effect `{effect}`.", ephemeral=True)
 
@@ -698,17 +777,9 @@ class Permissions(commands.Cog):
             perm_override_doc["target_type"] = "user"
             perm_override_doc["target_id"] = int(view.users[0].id)
 
-        cached_rule = next(
-           ( 
-                rule for rule in self.bot.permission_overrides
-                if rule["guild_id"] == interaction.guild.id
-                and rule["scope_type"] == "feature"
-                and rule["scope_key"] == feature
-                and rule["target_type"] == perm_override_doc["target_type"]
-                and rule["target_id"] == perm_override_doc["target_id"]
-            ),
-            None
-        )
+        scope_key = (interaction.guild.id, "feature", feature)
+        target_key = (perm_override_doc["target_type"], perm_override_doc["target_id"])
+        cached_rule = self.bot.permission_overrides.get(scope_key, {}).get(target_key)
         
         if cached_rule:
             await permission_overrides.update_one(
@@ -718,7 +789,7 @@ class Permissions(commands.Cog):
             cached_rule["effect"] = effect
         else:
             await permission_overrides.insert_one(perm_override_doc)
-            self.bot.permission_overrides.append(perm_override_doc)
+            self.bot.permission_overrides.setdefault(scope_key, {})[target_key] = perm_override_doc
 
         await interaction.followup.send(f"Overwrote permissions for feature `{feature}` for {scope_type} `{perm_override_doc['target_id']}` with effect `{effect}`.", ephemeral=True)
         

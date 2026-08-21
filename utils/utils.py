@@ -23,8 +23,7 @@ from utils.constants import (
     ids,
     economy_profiles,
     bypassed_users,
-    permission_rules,
-    whitelisted_guilds
+    permission_rules
 )
 from edge_tts.exceptions import NoAudioReceived
 from utils.custom_errors import PermissionDenied
@@ -143,7 +142,7 @@ def profile_creation_embed():
             inline=False
     )
 
-    dm_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+    dm_embed.set_footer(text=f"Vaptic • {datetime.now().date()}")
     dm_embed.set_image(url="https://cdn.discordapp.com/attachments/1450512700034781256/1463307219159220316/Untitled_design_13.gif?ex=697be68b&is=697a950b&hm=53b2c67aedf52d6392e6c41c4d708e1a52b1c4c9bdda5c7c0f304c717e04cf04&")
 
     return dm_embed
@@ -239,25 +238,26 @@ async def log_action(ctx: commands.Context, log_type: str, **kwargs):
         author = ctx.author
 
     log_embed = discord.Embed(title="", description="", color=discord.Color.light_grey())
-    log_embed.set_footer(text=f"Blackstar Engine Logging • {datetime.now().date()}")
+    log_embed.set_footer(text=f"Vaptic Logging • {datetime.now().date()}")
 
     results = await fetch_id(ctx.guild.id, "logging_channels")
+    log_values = (results or {}).get("values") or {}
 
     match log_type:
         case "point_deduction":
-            channel_id = results["values"].get("point_deduction_log", 0)
+            channel_id = log_values.get("point_deduction_log", 0)
             log_embed.title = "Point Deduction"
             log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Points Reduced:** {kwargs['points']}\n**Command:** {kwargs['command_name']}"
         case "point_addition":
-            channel_id = results["values"].get("point_addition_log", 0)
+            channel_id = log_values.get("point_addition_log", 0)
             log_embed.title = "Point Addition"
             log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Points Added:** {kwargs['points']}\n**Command:** {kwargs['command_name']}"
         case "department":
-            channel_id = results["values"].get("department_log", 0)
+            channel_id = log_values.get("department_log", 0)
             log_embed.title = "Department Updated"
             log_embed.description = f"**Moderator:** {author.mention}\n**User:** <@{kwargs['user_id']}>\n**Updated Department:** {kwargs['department']}\n**Command:** {kwargs['command_name']}"
         case "mod_command":
-            channel_id = results["values"].get("mod_command_log", 0)
+            channel_id = log_values.get("mod_command_log", 0)
             log_embed.title = "Mod Command Used"
             log_embed.description = f"**Moderator:** {author.mention}\n**Command:** {kwargs['command_name']}\n\n**Arguments:** {kwargs['arguments']}"
     
@@ -334,9 +334,8 @@ async def get_gift_limit(ctx: commands.Context, user: discord.Member | None = No
 
     user_role_ids = {role.id for role in target_user.roles}
     matching_tiers = [
-        tier for tier in ctx.bot.permission_tiers
-        if tier.get("guild_id") == ctx.guild.id
-        and user_role_ids & set(tier.get("role_ids", []))
+        tier for tier in ctx.bot.permission_tiers.get(ctx.guild.id, {}).values()
+        if user_role_ids & set(tier.get("role_ids", []))
     ]
 
     if not matching_tiers:
@@ -367,24 +366,16 @@ def find_override(bot: commands.Bot, ctx: commands.Context, scope_type: str, sco
     if scope_key is None:
         return None
     
-    scoped = [
-        r for r in overrides
-        if r.get("guild_id") == guild_id
-        and r.get("scope_type") == scope_type
-        and r.get("scope_key") == scope_key
-    ]
+    scoped = overrides.get((guild_id, scope_type, scope_key), {})
 
-    user_override = next(
-        (r for r in scoped if r.get("target_type") == "user" and r.get("target_id") == user_id),
-        None
-    )
+    user_override = scoped.get(("user", user_id))
     if user_override:
         effect = True if user_override.get("effect", False) == "allow" else False
         return effect
 
     role_override = next(
-        (r for r in scoped if r.get("target_type") == "role" and r.get("target_id") in user_role_ids),
-        None
+        (scoped.get(("role", role_id)) for role_id in user_role_ids if ("role", role_id) in scoped),
+        None,
     )
     if role_override:
         effect = True if role_override.get("effect", False) == "allow" else False
@@ -397,49 +388,22 @@ def find_rule(bot: commands.Bot, ctx: commands.Context, scope_type: str, scope_k
     if scope_key is None:
         return None
     
-    return next(
-        (
-            r for r in rules
-            if r.get("guild_id") == guild_id
-            and r.get("scope_type") == scope_type
-            and r.get("scope_key") == scope_key
-        ),
-        None
-    )
+    return rules.get((guild_id, scope_type, scope_key))
 
 def find_tier(bot: commands.Bot, ctx: commands.Context, rank = None, name = None):
     tiers = bot.permission_tiers
     guild_id = ctx.guild.id
 
+    guild_tiers = tiers.get(guild_id, {})
     if name is None:
         tier_doc = next(
-            (
-                t for t in tiers
-                if t.get("guild_id") == guild_id
-                and t.get("rank") == rank
-            ),
-            None
-        )
-
-    elif rank is None:
-        tier_doc = next(
-            (
-                t for t in tiers
-                if t.get("guild_id") == guild_id
-                and t.get("name") == name
-            ),
-            None
+            (tier for tier in guild_tiers.values() if tier.get("rank") == rank),
+            None,
         )
     else:
-        tier_doc = next(
-            (
-                t for t in tiers
-                if t.get("guild_id") == guild_id
-                and t.get("name") == name
-                and t.get("rank") == rank
-            ),
-            None
-        )
+        tier_doc = guild_tiers.get(name)
+        if tier_doc is not None and rank is not None and tier_doc.get("rank") != rank:
+            tier_doc = None
     
     return tier_doc
 
@@ -448,9 +412,8 @@ def find_tier_plus(bot: commands.Bot, ctx: commands.Context, min_rank: int):
     guild_id = ctx.guild.id
 
     matching_ranks = [
-        t for t in tiers
-        if t.get("guild_id") == guild_id
-        and t.get("rank") >= min_rank
+        tier for tier in tiers.get(guild_id, {}).values()
+        if tier.get("rank", 0) >= min_rank
     ]
 
     return matching_ranks
@@ -462,9 +425,8 @@ def get_user_permissions(bot: commands.Bot, ctx: commands.Context, user: discord
     
 
     matching_ranks = [
-        t.get("rank", 0) for t in tiers
-        if t.get("guild_id") == guild_id
-        and user_role_ids & set(t.get("role_ids", []))
+        tier.get("rank", 0) for tier in tiers.get(guild_id, {}).values()
+        if user_role_ids & set(tier.get("role_ids", []))
     ]
 
     return_value = int(max(matching_ranks, default=0))
@@ -534,30 +496,6 @@ async def get_permission_node(ctx: commands.Context, key: str):
 
     required_rank = int(result.get("min_rank", 0))
     return get_user_permissions(bot, ctx, user) >= required_rank
-
-async def is_whitelisted(guild: discord.Guild, bot: commands.Bot):
-    if guild.id in whitelisted_guilds:
-        return True
-
-    message = "This is a whitelisted bot. You are not allowed to invite me."
-
-    try:
-        await guild.owner.send(message)
-    except (discord.Forbidden, discord.HTTPException, AttributeError):
-        me = guild.me or guild.get_member(bot.user.id)
-
-        for channel in guild.text_channels:
-            perms = channel.permissions_for(me)
-
-            if perms.view_channel and perms.send_messages:
-                try:
-                    await channel.send(message)
-                    break
-                except (discord.Forbidden, discord.HTTPException):
-                    continue
-
-    await guild.leave()
-    return False
 
 def format_permission_tier(guild_id: int, name: str, rank: int, role_ids: list[int], can_gift_points: bool, gift_points_amount: int):
     return {
