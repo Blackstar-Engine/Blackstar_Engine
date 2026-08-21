@@ -264,7 +264,7 @@ async def annouce_promotion(bot, interaction: discord.Interaction, snapshot: dic
             )
 
             embed.description = f"{member.mention} has been promoted to **{snapshot.get('new_rank', 'Unknown')}** in **{department}**!"
-            embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+            embed.set_footer(text=f"Vaptic • {datetime.now().date()}")
             embed.set_thumbnail(url=member.display_avatar.url)
             message = await channel.send(embed=embed)
 

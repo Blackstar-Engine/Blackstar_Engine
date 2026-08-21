@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, time, UTC
-from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, profiles, birthdays, active_sessions
+from utils.constants import loa, stored_loa, roa, stored_roa, BlackstarConstants, logger, profiles, birthdays, active_sessions, enlistment_requests, promotion_requests, point_requests
 from utils.utils import fetch_id
 
 constants = BlackstarConstants()
@@ -54,12 +54,21 @@ class Tasks(commands.Cog):
             logger.info("Birthdays is running.")
         else:
             logger.error("Birthdays is not running!")
+
+        self.per_view_cleanup.start()
+        if self.per_view_cleanup.is_running():
+            logger.info("View Cleanup is running.")
+        else:
+            logger.error("View Cleanup is not running!")
+
+        
     
     def cog_unload(self):
         self.check_loa_end_date.cancel()
         self.enlistment_reminder.cancel()
         self.session_reminders.cancel()
         self.birthday.cancel()
+        self.per_view_cleanup.cancel()
     
     async def _handle_sessions(self, all_sessions: dict, now: datetime, use_date: str, session_type: str, end_style: str, hours: int):
         for session in all_sessions:
@@ -106,6 +115,54 @@ class Tasks(commands.Cog):
                 except Exception:
                     pass
 
+    async def _get_message_by_ids(self, guild_id: int, channel_id: int, message_id: int):
+        # 1. Get the guild from the bot's internal cache
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            return None
+            
+        # 2. Get the channel from the guild's cache
+        channel = guild.get_channel(channel_id)
+        # Ensure it is a text/thread channel capable of having messages
+        if not isinstance(channel, (discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.StageChannel)):
+            return None
+
+        # 3. Attempt to fetch the message from the API
+        try:
+            return await channel.fetch_message(message_id)
+        except discord.NotFound:
+            # Returns None if message is deleted
+            return None
+
+    async def _delete_invalid_records(self, collection):
+        all_records = await collection.find().to_list(length=None)
+        delete_records = []
+        ignore_status = [-1, "ended", False, "cancelled"]
+        ignore_active = [-1, False]
+
+        for record in all_records:
+            guild_id = record.get("guild_id", None)
+            channel_id = record.get("channel_id", None)
+            message_id = record.get("message_id", None)
+            status = record.get("status", -1)
+            is_active = record.get("is_active", -1)
+            if status not in ignore_status or is_active not in ignore_active:
+                message = await self._get_message_by_ids(guild_id=guild_id, channel_id=channel_id, message_id=message_id)
+                if not message:
+                    delete_records.append(record.get("_id", None))
+
+        if len(delete_records) > 0:
+            logger.info(f"{len(delete_records)} invalid records found on {active_sessions.full_name}, deleting.....")
+            await collection.delete_many({"_id": {"$in": delete_records}})
+
+    @tasks.loop(hours=24)
+    async def per_view_cleanup(self):
+        await self._delete_invalid_records(active_sessions)
+        await self._delete_invalid_records(point_requests)
+        await self._delete_invalid_records(promotion_requests)
+        await self._delete_invalid_records(enlistment_requests)
+
+    
     @tasks.loop(hours=1)
     async def session_reminders(self):
         now = datetime.now(UTC)

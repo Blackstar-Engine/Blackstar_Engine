@@ -48,7 +48,7 @@ class General(commands.Cog):
             pass
         
         custom_embed = discord.Embed(title="The Blackstar Corporation", description=f"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n{text}", color=discord.Color.light_grey())
-        custom_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+        custom_embed.set_footer(text=f"Vaptic • {datetime.now().date()}")
         custom_embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
 

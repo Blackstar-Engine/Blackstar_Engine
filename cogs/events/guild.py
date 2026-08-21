@@ -1,16 +1,10 @@
 import discord
 from discord.ext import commands
-from utils.utils import is_whitelisted
 from datetime import datetime
 
 class Guild(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-
-    @commands.Cog.listener()
-    async def on_guild_join(self, guild: discord.Guild):
-        if not is_whitelisted(guild, self.bot):
-            return
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -49,7 +43,7 @@ class Guild(commands.Cog):
             inline=False
         )
 
-        dm_embed.set_footer(text=f"Blackstar Engine • {datetime.now().date()}")
+        dm_embed.set_footer(text=f"Vaptic • {datetime.now().date()}")
         dm_embed.set_image(url="https://cdn.discordapp.com/attachments/1450512700034781256/1463307219159220316/Untitled_design_13.gif?ex=697be68b&is=697a950b&hm=53b2c67aedf52d6392e6c41c4d708e1a52b1c4c9bdda5c7c0f304c717e04cf04&")
         dm_embed.set_thumbnail(url=member.display_avatar.url)
 
